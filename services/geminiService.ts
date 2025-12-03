@@ -50,9 +50,10 @@ const invoiceSchema: Schema = {
 export const parseInvoiceText = async (text: string): Promise<Partial<InvoiceData> | null> => {
   let apiKey = '';
   try {
-    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-      apiKey = process.env.API_KEY;
-    }
+    // In a bundler environment like Vite, process.env.API_KEY is replaced by the actual string value
+    // defined in vite.config.ts. We access it directly here.
+    // @ts-ignore
+    apiKey = process.env.API_KEY;
   } catch (e) {
     // Ignore environment access error
   }

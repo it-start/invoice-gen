@@ -3,7 +3,7 @@ import { InvoiceData, INITIAL_INVOICE, VAT_RATES, InvoiceItem, SellerType } from
 import InvoicePreview from './components/InvoicePreview';
 import { InvoicePdf } from './components/PdfDocument';
 import { pdf } from '@react-pdf/renderer';
-import { Plus, Trash2, Download, Wand2, Loader2, AlertCircle, Building2, User } from 'lucide-react';
+import { Plus, Trash2, Download, Wand2, Loader2, AlertCircle, Building2, User, RotateCcw } from 'lucide-react';
 import { parseInvoiceText } from './services/geminiService';
 
 // Reusable Input Component
@@ -21,7 +21,18 @@ const InputGroup = ({ label, value, onChange, placeholder, type = "text", classN
 );
 
 function App() {
-  const [data, setData] = useState<InvoiceData>(INITIAL_INVOICE);
+  const [data, setData] = useState<InvoiceData>(() => {
+    try {
+      const saved = localStorage.getItem('invoice_data');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error("Failed to parse invoice data from local storage", e);
+    }
+    return INITIAL_INVOICE;
+  });
+  
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
   const [aiInputText, setAiInputText] = useState('');
@@ -30,10 +41,16 @@ function App() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   useEffect(() => {
+    // Save data to local storage on change
+    localStorage.setItem('invoice_data', JSON.stringify(data));
+  }, [data]);
+
+  useEffect(() => {
     // Safe check for API Key
     let hasKey = false;
     try {
-        if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+        // @ts-ignore
+        if (process.env.API_KEY) {
             hasKey = true;
         }
     } catch (e) {
@@ -44,6 +61,17 @@ function App() {
         setApiKeyMissing(true);
     }
   }, []);
+
+  const handleReset = () => {
+    if (window.confirm('Создать новый счет? Текущие данные будут сброшены.')) {
+        const freshData: InvoiceData = {
+            ...INITIAL_INVOICE,
+            date: new Date().toISOString().split('T')[0],
+            items: INITIAL_INVOICE.items.map(item => ({ ...item, id: Math.random().toString() }))
+        };
+        setData(freshData);
+    }
+  };
 
   const handleSellerTypeChange = (type: SellerType) => {
     setData(prev => ({
@@ -140,7 +168,16 @@ function App() {
       <div className="w-full md:w-1/3 bg-white border-r border-gray-200 h-screen overflow-y-auto sticky top-0 shadow-xl z-10">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-slate-800">Редактор Счета</h2>
+            <div className="flex items-center gap-2">
+                <h2 className="text-xl font-bold text-slate-800">Редактор</h2>
+                <button 
+                    onClick={handleReset} 
+                    className="text-slate-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-slate-100"
+                    title="Новый счет (сбросить)"
+                >
+                    <RotateCcw size={16} />
+                </button>
+            </div>
             <button 
               onClick={() => setShowAiModal(true)}
               className="flex items-center gap-2 text-xs bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full hover:bg-purple-200 transition-colors font-medium"
