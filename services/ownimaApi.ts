@@ -6,19 +6,44 @@ const API_BASE_URL = 'https://stage.ownima.com/api/v1/reservation';
 const mapResponseToLeaseData = (json: any): Partial<LeaseData> => {
     try {
         const r = json.reservation;
-        const v = r.vehicle;
-        const i = r.invoice;
-        const p = r.pick_up;
-        const d = r.drop_off;
-        const rider = r.rider;
+        if (!r) return {};
+
+        const v = r.vehicle || {};
+        const i = r.invoice || {};
+        const p = r.pick_up || {};
+        const d = r.drop_off || {};
+        const rider = r.rider || {};
 
         // Construct vehicle details
-        const brand = v.general_info?.brand || '';
-        const model = v.general_info?.model || '';
-        const year = v.general_info?.year || '';
-        const body = v.general_info?.body_type || '';
-        const trans = v.specification_info?.transmission || '';
-        const color = v.general_info?.color || '';
+        const info = v.general_info || {};
+        const specs = v.specification_info || {};
+        
+        const brand = info.brand || '';
+        const model = info.model || '';
+        const year = info.year || '';
+        const body = info.body_type || '';
+        const trans = specs.transmission || '';
+        const color = info.color || '';
+
+        // Time Formatting with Highlighting
+        const formatTime = (timeObj: any, early: boolean, late: boolean) => {
+            if (!timeObj || !timeObj.start || !timeObj.end) return '';
+            let t = `${timeObj.start} - ${timeObj.end}`;
+            if (early) t += ' (Early)';
+            if (late) t += ' (Late)';
+            return t;
+        };
+
+        const pickupTime = formatTime(p.collect_time, p.asked_early_pickup, p.asked_late_pickup);
+        const dropoffTime = formatTime(d.return_time, d.asked_early_return, d.asked_late_return);
+
+        // Extra Options Parsing
+        // The API returns selected_extra_options as an array of objects wrapping the actual option and calculation
+        const rawOptions = r.selected_extra_options || [];
+        const extraOptions = rawOptions.map((item: any) => ({
+            name: item.extra_option?.name || 'Option',
+            price: item.calculated_price ?? 0
+        }));
 
         return {
             reservationId: r.id,
@@ -27,31 +52,31 @@ const mapResponseToLeaseData = (json: any): Partial<LeaseData> => {
             vehicle: {
                 name: `${brand} ${model}, ${year}`.trim(),
                 details: [body, trans, color].filter(Boolean).join(' • '),
-                plate: v.general_info?.reg_number || ''
+                plate: info.reg_number || ''
             },
             pickup: {
                 date: r.date_from ? r.date_from.split('T')[0] : '',
-                time: p.collect_time ? `${p.collect_time.start} - ${p.collect_time.end}` : ''
+                time: pickupTime
             },
             dropoff: {
                 date: r.date_to ? r.date_to.split('T')[0] : '',
-                time: d.return_time ? `${d.return_time.start} - ${d.return_time.end}` : ''
+                time: dropoffTime
             },
             pricing: {
                 daysRegular: i.prices?.regular_price_days || 0,
                 priceRegular: i.prices?.regular_price_total || 0,
                 daysSeason: i.prices?.season_price_days || 0,
                 priceSeason: i.prices?.season_price_total || 0,
-                // Use template deposit as fallback if reservation deposit is 0 (common in some API states)
+                // Use template deposit as fallback if reservation deposit is 0
                 deposit: v.price_templates?.deposit_amount || 0,
                 total: i.total_price || r.total_price || 0
             },
+            extraOptions: extraOptions,
             renter: {
                 surname: rider.name || '',
                 contact: [rider.phone, rider.email].filter(Boolean).join(' • '),
-                passport: '' // Not provided in this API endpoint usually
+                passport: '' 
             },
-            // Reset owner to default or keep empty as it's not strictly in this JSON
             owner: {
                 surname: 'Your Surname',
                 contact: '+000000000',
