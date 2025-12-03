@@ -1,6 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { LeaseData, INITIAL_LEASE } from '../types';
 import QRCode from 'qrcode';
+import { fetchReservation } from '../services/ownimaApi';
 
 export const useLease = () => {
   const [data, setData] = useState<LeaseData>(() => {
@@ -10,6 +12,8 @@ export const useLease = () => {
     } catch (e) {}
     return INITIAL_LEASE;
   });
+
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
       localStorage.setItem('lease_data', JSON.stringify(data));
@@ -66,11 +70,37 @@ export const useLease = () => {
       }));
   };
 
+  const loadFromApi = async () => {
+      if (!data.reservationId) return;
+      setIsLoading(true);
+      try {
+          const apiData = await fetchReservation(data.reservationId);
+          if (apiData) {
+              setData(prev => ({
+                  ...prev,
+                  ...apiData,
+                  vehicle: { ...prev.vehicle, ...apiData.vehicle },
+                  pickup: { ...prev.pickup, ...apiData.pickup },
+                  dropoff: { ...prev.dropoff, ...apiData.dropoff },
+                  pricing: { ...prev.pricing, ...apiData.pricing },
+                  renter: { ...prev.renter, ...apiData.renter },
+                  // Merge extra options if needed, but for now replace if API returns them (currently API map doesn't return extras)
+              }));
+          }
+      } catch (error) {
+          alert("Failed to load reservation data");
+      } finally {
+          setIsLoading(false);
+      }
+  };
+
   return {
       data,
+      isLoading,
       updateLease,
       addExtraOption,
       updateExtraOption,
-      removeExtraOption
+      removeExtraOption,
+      loadFromApi
   };
 };

@@ -2,7 +2,7 @@
 import React from 'react';
 import { LeaseData } from '../../types';
 import InputGroup from '../ui/InputGroup';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, CloudDownload, Loader2 } from 'lucide-react';
 import { WizardContainer } from '../ui/WizardContainer';
 
 interface LeaseFormProps {
@@ -12,17 +12,28 @@ interface LeaseFormProps {
       addExtraOption: () => void;
       updateExtraOption: (index: number, field: 'name' | 'price', value: any) => void;
       removeExtraOption: (index: number) => void;
+      loadFromApi: () => void;
+      isLoading: boolean;
   }
 }
 
 const LeaseForm: React.FC<LeaseFormProps> = ({ data, handlers }) => {
-  const { updateLease, addExtraOption, updateExtraOption, removeExtraOption } = handlers;
+  const { updateLease, addExtraOption, updateExtraOption, removeExtraOption, loadFromApi, isLoading } = handlers;
 
   // Step 1: Info & Vehicle
   const VehicleStep = (
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-           <InputGroup label="Res ID" value={data.reservationId} onChange={(v) => updateLease(null, 'reservationId', v)} />
+           <InputGroup label="Res ID" value={data.reservationId} onChange={(v) => updateLease(null, 'reservationId', v)}>
+               <button 
+                  onClick={loadFromApi}
+                  disabled={isLoading}
+                  className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  title="Load from Ownima"
+               >
+                   {isLoading ? <Loader2 size={16} className="animate-spin" /> : <CloudDownload size={16} />}
+               </button>
+           </InputGroup>
            <InputGroup label="Source" value={data.source} onChange={(v) => updateLease(null, 'source', v)} />
         </div>
         <InputGroup label="Created On" value={data.createdDate} onChange={(v) => updateLease(null, 'createdDate', v)} />

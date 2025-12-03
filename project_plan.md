@@ -40,6 +40,13 @@ The application now features a robust, unified styling system for PDFs, ensuring
 
 ---
 
+## 🚧 Phase 5: External API Integration (In Progress)
+- [ ] **API Service**: Create `services/ownimaApi.ts` to fetch and map data.
+- [ ] **Hook Update**: Add loading state and fetch logic to `useLease`.
+- [ ] **UI Update**: Add "Load" button to Lease Form.
+
+---
+
 ## 💡 Future Ideas (Backlog)
 ### 1. 🧠 AI "God Mode"
 *   **Idea:** A single "Magic Paste" button that detects if the text is an Invoice or a Lease and routes it to the correct parser automatically.
