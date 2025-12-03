@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { InvoiceData, INITIAL_INVOICE, VAT_RATES, InvoiceItem, SellerType } from './types';
 import InvoicePreview from './components/InvoicePreview';
 import { InvoicePdf } from './components/PdfDocument';
@@ -284,7 +284,7 @@ function App() {
                  </button>
               </div>
               <div className="space-y-4">
-                {data.items.map((item, index) => (
+                {data.items.map((item) => (
                   <div key={item.id} className="bg-white p-3 rounded shadow-sm border border-gray-100 relative group">
                     <button 
                         onClick={() => removeItem(item.id)}
