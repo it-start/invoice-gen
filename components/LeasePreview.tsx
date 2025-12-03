@@ -13,7 +13,7 @@ const LeasePreview: React.FC<LeasePreviewProps> = ({ data }) => {
       if (isNonDefaultTime(time)) {
           return "bg-amber-100 text-amber-800 px-2 py-1 rounded font-bold text-xs shadow-sm border border-amber-200";
       }
-      return "text-gray-600";
+      return "text-gray-600 text-lg";
   };
 
   return (
