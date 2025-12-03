@@ -9,28 +9,12 @@ registerFonts();
 
 const styles = StyleSheet.create({
   ...pdfStyles, // Inherit shared styles
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
+  
+  // Custom styles for Lease specific elements
   metaRow: {
     flexDirection: 'row',
     gap: 30,
-  },
-  metaLabel: {
-    fontSize: 8,
-    color: '#666',
-    marginBottom: 2,
-    textTransform: 'uppercase',
-  },
-  metaValue: {
-    fontSize: 10,
+    marginTop: 5,
   },
   qrPlaceholder: {
     width: 60,
@@ -41,33 +25,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 2,
   },
-  qrText: {
-    fontSize: 8,
-    color: '#ccc',
-  },
-  vehicleSection: {
-    marginBottom: 15,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 15,
-  },
-  vehicleName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  vehicleDetails: {
-    fontSize: 8,
-    color: '#666',
-    textTransform: 'uppercase',
-  },
-  dateContainer: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    marginBottom: 20,
-  },
   dateBox: {
     flex: 1,
     padding: 10,
@@ -77,49 +34,6 @@ const styles = StyleSheet.create({
     borderLeftColor: '#ddd',
     backgroundColor: '#f9f9f9',
   },
-  dateLabelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 5,
-  },
-  dateLabel: {
-    fontSize: 8,
-    fontWeight: 'bold',
-    color: '#666',
-    textTransform: 'uppercase',
-  },
-  dateSubLabel: {
-    fontSize: 8,
-    color: '#999',
-  },
-  dateValueRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-  },
-  dateValueBig: {
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  dateValueSmall: {
-    fontSize: 10,
-    color: '#444',
-  },
-  pricingContainer: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    gap: 20,
-  },
-  pricingCol: {
-    flex: 1,
-  },
-  pricingTitle: {
-    fontSize: 8,
-    color: '#999',
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    marginBottom: 5,
-  },
   pricingRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -127,78 +41,6 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
     paddingVertical: 2,
   },
-  totalBlocks: {
-    flexDirection: 'row',
-    gap: 15,
-    marginBottom: 20,
-  },
-  totalBox: {
-    flex: 1,
-    padding: 10,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  totalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    marginBottom: 4,
-  },
-  totalTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  totalAmount: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  totalNote: {
-    fontSize: 8,
-    color: '#666',
-  },
-  termsContainer: {
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#ddd',
-    paddingVertical: 10,
-    marginBottom: 20,
-  },
-  termsText: {
-    fontSize: 7,
-    color: '#444',
-    lineHeight: 1.5,
-  },
-  signaturesContainer: {
-    flexDirection: 'row',
-    gap: 40,
-  },
-  sigCol: {
-    flex: 1,
-  },
-  sigName: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginBottom: 2,
-  },
-  sigDetail: {
-    fontSize: 8,
-    color: '#666',
-    marginBottom: 1,
-  },
-  sigBlock: {
-    marginTop: 20,
-  },
-  sigLine: {
-    marginTop: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    marginBottom: 2,
-  },
-  sigDate: {
-    fontSize: 8,
-    color: '#999',
-  }
 });
 
 interface LeasePdfProps {
@@ -211,21 +53,21 @@ export const LeasePdf: React.FC<LeasePdfProps> = ({ data }) => {
       <Page size="A4" style={styles.page}>
         
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.row, styles.justifyBetween, styles.mb20]}>
             <View>
                 <Text style={styles.title}>Lease agreement</Text>
                 <View style={styles.metaRow}>
                     <View>
-                        <Text style={styles.metaLabel}>Reservation ID</Text>
-                        <Text style={styles.metaValue}>{data.reservationId}</Text>
+                        <Text style={styles.label}>Reservation ID</Text>
+                        <Text style={styles.text}>{data.reservationId}</Text>
                     </View>
                     <View>
-                        <Text style={styles.metaLabel}>Source</Text>
-                        <Text style={styles.metaValue}>{data.source}</Text>
+                        <Text style={styles.label}>Source</Text>
+                        <Text style={styles.text}>{data.source}</Text>
                     </View>
                     <View>
-                        <Text style={styles.metaLabel}>Created on</Text>
-                        <Text style={styles.metaValue}>{data.createdDate}</Text>
+                        <Text style={styles.label}>Created on</Text>
+                        <Text style={styles.text}>{data.createdDate}</Text>
                     </View>
                 </View>
             </View>
@@ -233,110 +75,110 @@ export const LeasePdf: React.FC<LeasePdfProps> = ({ data }) => {
                 {data.qrCodeUrl ? (
                     <Image src={data.qrCodeUrl} style={{ width: '100%', height: '100%' }} />
                 ) : (
-                    <Text style={styles.qrText}>[QR]</Text>
+                    <Text style={{ fontSize: 8, color: '#ccc' }}>[QR]</Text>
                 )}
             </View>
         </View>
 
         {/* Vehicle */}
-        <View style={styles.vehicleSection}>
-            <Text style={styles.vehicleName}>{data.vehicle.name}</Text>
-            <Text style={styles.vehicleDetails}>{data.vehicle.details} • {data.vehicle.plate}</Text>
+        <View style={[styles.mb20, { borderTopWidth: 1, borderTopColor: '#eee', paddingTop: 15 }]}>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 4 }}>{data.vehicle.name}</Text>
+            <Text style={styles.label}>{data.vehicle.details} • {data.vehicle.plate}</Text>
         </View>
 
         {/* Dates */}
-        <View style={styles.dateContainer}>
+        <View style={[styles.box, styles.row, styles.mb20]}>
             <View style={styles.dateBox}>
-                <View style={styles.dateLabelRow}>
-                    <Text style={styles.dateLabel}>Pick-up</Text>
-                    <Text style={styles.dateSubLabel}>Default pick-up</Text>
+                <View style={[styles.row, styles.justifyBetween, styles.mb4]}>
+                    <Text style={styles.label}>Pick-up</Text>
+                    <Text style={[styles.small, { color: '#999' }]}>Default pick-up</Text>
                 </View>
-                <View style={styles.dateValueRow}>
-                    <Text style={styles.dateValueBig}>{data.pickup.date}</Text>
-                    <Text style={styles.dateValueSmall}>{data.pickup.time}</Text>
+                <View style={[styles.row, styles.justifyBetween, styles.alignEnd]}>
+                    <Text style={styles.h3}>{data.pickup.date}</Text>
+                    <Text style={styles.text}>{data.pickup.time}</Text>
                 </View>
             </View>
             <View style={[styles.dateBox, styles.dateBoxRight]}>
-                <View style={styles.dateLabelRow}>
-                    <Text style={styles.dateLabel}>Return</Text>
-                    <Text style={styles.dateSubLabel}>Default return</Text>
+                 <View style={[styles.row, styles.justifyBetween, styles.mb4]}>
+                    <Text style={styles.label}>Return</Text>
+                    <Text style={[styles.small, { color: '#999' }]}>Default return</Text>
                 </View>
-                <View style={styles.dateValueRow}>
-                     <Text style={styles.dateValueBig}>{data.dropoff.date}</Text>
-                     <Text style={styles.dateValueSmall}>{data.dropoff.time}</Text>
+                <View style={[styles.row, styles.justifyBetween, styles.alignEnd]}>
+                     <Text style={styles.h3}>{data.dropoff.date}</Text>
+                     <Text style={styles.text}>{data.dropoff.time}</Text>
                 </View>
             </View>
         </View>
 
         {/* Pricing */}
-        <View style={styles.pricingContainer}>
-            <View style={styles.pricingCol}>
-                <Text style={styles.pricingTitle}>Rental Cost</Text>
+        <View style={[styles.row, styles.mb20, { gap: 20 }]}>
+            <View style={styles.flex1}>
+                <Text style={styles.label}>Rental Cost</Text>
                 <View style={styles.pricingRow}>
-                    <Text>Regular price ({data.pricing.daysRegular} days)</Text>
-                    <Text>{data.pricing.priceRegular} THB</Text>
+                    <Text style={styles.text}>Regular price ({data.pricing.daysRegular} days)</Text>
+                    <Text style={styles.text}>{data.pricing.priceRegular} THB</Text>
                 </View>
                 <View style={styles.pricingRow}>
-                    <Text>Season price ({data.pricing.daysSeason} days)</Text>
-                    <Text>{data.pricing.priceSeason} THB</Text>
+                    <Text style={styles.text}>Season price ({data.pricing.daysSeason} days)</Text>
+                    <Text style={styles.text}>{data.pricing.priceSeason} THB</Text>
                 </View>
             </View>
-             <View style={styles.pricingCol}>
-                <Text style={styles.pricingTitle}>Extra Options</Text>
+             <View style={styles.flex1}>
+                <Text style={styles.label}>Extra Options</Text>
                  {data.extraOptions.map((opt, i) => (
                     <View key={i} style={styles.pricingRow}>
-                        <Text>{opt.name}</Text>
-                        <Text>{opt.price} THB</Text>
+                        <Text style={styles.text}>{opt.name}</Text>
+                        <Text style={styles.text}>{opt.price} THB</Text>
                     </View>
                  ))}
             </View>
         </View>
 
         {/* Totals */}
-        <View style={styles.totalBlocks}>
-            <View style={[styles.totalBox, { backgroundColor: '#f9f9f9' }]}>
-                <View style={styles.totalHeader}>
-                    <Text style={styles.totalTitle}>Deposit</Text>
-                    <Text style={styles.totalAmount}>{data.pricing.deposit} THB</Text>
+        <View style={[styles.row, styles.mb20, { gap: 15 }]}>
+            <View style={[styles.box, styles.p10, styles.flex1, { backgroundColor: '#f9f9f9' }]}>
+                <View style={[styles.row, styles.justifyBetween, styles.alignBase, styles.mb4]}>
+                    <Text style={styles.h3}>Deposit</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{data.pricing.deposit} THB</Text>
                 </View>
-                <Text style={styles.totalNote}>Return at the end of the rental period</Text>
+                <Text style={[styles.small, { color: '#666' }]}>Return at the end of the rental period</Text>
             </View>
-            <View style={[styles.totalBox, { backgroundColor: '#eee' }]}>
-                 <View style={styles.totalHeader}>
-                    <Text style={styles.totalTitle}>Total price</Text>
-                    <Text style={styles.totalAmount}>{data.pricing.total} THB</Text>
+            <View style={[styles.box, styles.p10, styles.flex1, { backgroundColor: '#eee' }]}>
+                 <View style={[styles.row, styles.justifyBetween, styles.alignBase, styles.mb4]}>
+                    <Text style={styles.h3}>Total price</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{data.pricing.total} THB</Text>
                 </View>
-                <Text style={styles.totalNote}>Paid separately</Text>
+                <Text style={[styles.small, { color: '#666' }]}>Paid separately</Text>
             </View>
         </View>
 
         {/* Terms */}
-        <View style={styles.termsContainer}>
-             <Text style={styles.termsText}>{data.terms}</Text>
+        <View style={[styles.mb20, { borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#ddd', paddingVertical: 10 }]}>
+             <Text style={[styles.text, { fontSize: 7, lineHeight: 1.5, color: '#444' }]}>{data.terms}</Text>
         </View>
 
         {/* Signatures */}
-        <View style={styles.signaturesContainer}>
-            <View style={styles.sigCol}>
-                <Text style={styles.sigName}>{data.owner.surname}</Text>
-                <Text style={styles.sigDetail}>{data.owner.contact}</Text>
-                <Text style={styles.sigDetail}>{data.owner.address}</Text>
+        <View style={styles.signatureSection}>
+            <View style={styles.signatureBlock}>
+                <Text style={styles.h3}>{data.owner.surname}</Text>
+                <Text style={styles.label}>{data.owner.contact}</Text>
+                <Text style={styles.label}>{data.owner.address}</Text>
 
-                <View style={styles.sigBlock}>
-                    <Text style={[styles.sigName, {marginBottom: 10}]}>Owner (Lessor)</Text>
-                    <View style={styles.sigLine} />
-                    <Text style={styles.sigDate}>Date, signature</Text>
+                <View style={{ marginTop: 20 }}>
+                    <Text style={[styles.h3, styles.mb10]}>Owner (Lessor)</Text>
+                    <View style={styles.borderBottom} />
+                    <Text style={[styles.label, { marginTop: 4, textAlign: 'left' }]}>Date, signature</Text>
                 </View>
             </View>
-            <View style={styles.sigCol}>
-                <Text style={styles.sigName}>{data.renter.surname}</Text>
-                <Text style={styles.sigDetail}>{data.renter.contact}</Text>
-                <Text style={styles.sigDetail}>Passport: {data.renter.passport}</Text>
+            <View style={styles.signatureBlock}>
+                <Text style={styles.h3}>{data.renter.surname}</Text>
+                <Text style={styles.label}>{data.renter.contact}</Text>
+                <Text style={styles.label}>Passport: {data.renter.passport}</Text>
                 
-                 <View style={styles.sigBlock}>
-                    <Text style={[styles.sigName, {marginBottom: 10}]}>Rider (Tenant)</Text>
-                    <View style={styles.sigLine} />
-                    <Text style={styles.sigDate}>Date, signature</Text>
+                 <View style={{ marginTop: 20 }}>
+                    <Text style={[styles.h3, styles.mb10]}>Rider (Tenant)</Text>
+                    <View style={styles.borderBottom} />
+                    <Text style={[styles.label, { marginTop: 4, textAlign: 'left' }]}>Date, signature</Text>
                 </View>
             </View>
         </View>

@@ -7,38 +7,14 @@ import { registerFonts, pdfStyles } from '../styles/pdfStyles';
 // Register fonts globally
 registerFonts();
 
+// Specific overrides or complex unique styles for Invoice
 const styles = StyleSheet.create({
-  ...pdfStyles, // Inherit shared styles
-  topHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginBottom: 15,
-      alignItems: 'flex-start'
-  },
-  topHeaderLeft: {
-      width: '65%',
-  },
-  topHeaderRight: {
-      width: '35%',
-      alignItems: 'flex-end',
-  },
-  largeAmount: {
-      fontSize: 14,
-      fontWeight: 'bold',
-  },
+  ...pdfStyles, 
+  // Bank Table Specifics (Complex Grid)
   bankTable: {
     marginBottom: 20,
     borderWidth: 1,
     borderColor: '#000',
-  },
-  bankRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-  },
-  bankRowLast: {
-      flexDirection: 'row',
-      borderBottomWidth: 0,
   },
   cell: {
     padding: 4,
@@ -49,88 +25,6 @@ const styles = StyleSheet.create({
     padding: 4,
     borderRightWidth: 0,
   },
-  invoiceTitle: {
-      fontSize: 16,
-      fontWeight: 'bold',
-      marginBottom: 10,
-  },
-  partyRow: {
-      flexDirection: 'row',
-      marginBottom: 4,
-  },
-  partyLabel: {
-      width: 80,
-      fontSize: 10,
-  },
-  partyValue: {
-      flex: 1,
-      fontSize: 10,
-      fontWeight: 'bold',
-  },
-  table: {
-    width: '100%',
-    marginTop: 15,
-    marginBottom: 15,
-    borderTopWidth: 2,
-    borderTopColor: '#000',
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    paddingBottom: 4,
-    paddingTop: 4,
-  },
-  tableRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    paddingTop: 4,
-    paddingBottom: 4,
-  },
-  th: {
-      fontWeight: 'bold',
-      fontSize: 9,
-  },
-  totalsSection: {
-    marginTop: 10,
-    alignItems: 'flex-end',
-  },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginBottom: 4,
-    width: 300,
-  },
-  totalLabel: {
-    textAlign: 'right',
-    marginRight: 10,
-    fontWeight: 'bold',
-  },
-  totalValue: {
-    textAlign: 'right',
-    fontWeight: 'bold',
-    minWidth: 80,
-  },
-  signatureSection: {
-    marginTop: 30,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  signatureBlock: {
-    width: '45%',
-  },
-  signatureLine: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    marginTop: 15,
-    marginBottom: 2,
-  },
-  signatureSub: {
-      fontSize: 8,
-      color: '#555',
-      textAlign: 'center',
-  }
 });
 
 interface PdfDocumentProps {
@@ -164,20 +58,20 @@ export const InvoicePdf: React.FC<PdfDocumentProps> = ({ data }) => {
       <Page size="A4" style={styles.page}>
         
         {/* Top Header Section */}
-        <View style={styles.topHeader}>
-            <View style={styles.topHeaderLeft}>
+        <View style={[styles.row, styles.justifyBetween, styles.mb20]}>
+            <View style={{ width: '65%' }}>
                 <Text style={styles.bold}>{data.seller.name}</Text>
                 <Text style={styles.label}>Получатель</Text>
             </View>
-            <View style={styles.topHeaderRight}>
-                <Text style={styles.largeAmount}>{formatCurrency(total)}</Text>
+            <View style={{ width: '35%', alignItems: 'flex-end' }}>
+                <Text style={[styles.h2, { marginBottom: 2 }]}>{formatCurrency(total)}</Text>
                 <Text style={styles.label}>{data.vatRate === -1 ? 'Без НДС' : `В т.ч. НДС ${data.vatRate}%`}</Text>
             </View>
         </View>
 
-        {/* Bank Details Table */}
+        {/* Bank Details Table (Kept specific due to unique layout) */}
         <View style={styles.bankTable}>
-            <View style={[styles.bankRow, { height: 45 }]}>
+            <View style={[styles.row, styles.borderBottom, { height: 45 }]}>
                 <View style={[styles.cell, { width: '50%' }]}>
                     <Text style={styles.label}>Банк получателя</Text>
                     <Text style={styles.text}>{data.seller.bankName}</Text>
@@ -189,7 +83,7 @@ export const InvoicePdf: React.FC<PdfDocumentProps> = ({ data }) => {
                      <Text style={styles.text}>{data.seller.bik}</Text>
                 </View>
             </View>
-             <View style={[styles.bankRow, { height: 45 }]}>
+             <View style={[styles.row, styles.borderBottom, { height: 45 }]}>
                 <View style={[styles.cell, { width: '50%' }]}>
                     <Text style={styles.label}>Кор. Счёт</Text>
                 </View>
@@ -197,7 +91,7 @@ export const InvoicePdf: React.FC<PdfDocumentProps> = ({ data }) => {
                      <Text style={styles.text}>{data.seller.correspondentAccount}</Text>
                 </View>
             </View>
-             <View style={[styles.bankRowLast, { height: 45 }]}>
+             <View style={[styles.row, { height: 45 }]}>
                 <View style={[styles.cell, { width: '20%' }]}>
                      <Text style={styles.label}>ИНН</Text>
                      <Text style={styles.text}>{data.seller.inn}</Text>
@@ -213,8 +107,7 @@ export const InvoicePdf: React.FC<PdfDocumentProps> = ({ data }) => {
                     <Text style={styles.text}>{data.seller.accountNumber}</Text>
                 </View>
             </View>
-            {/* Split row manually because of complex colspan layout in PDF */}
-             <View style={[styles.bankRow, { borderTopWidth: 1, borderTopColor: '#000' }]}>
+             <View style={[styles.row, { borderTopWidth: 1, borderTopColor: '#000' }]}>
                 <View style={[styles.cellLast, { width: '100%' }]}>
                     <Text style={styles.label}>Получатель</Text>
                     <Text style={[styles.text, styles.bold]}>{data.seller.name}</Text>
@@ -223,19 +116,19 @@ export const InvoicePdf: React.FC<PdfDocumentProps> = ({ data }) => {
         </View>
 
         {/* Invoice Title */}
-        <Text style={styles.invoiceTitle}>Счёт № {data.number} от {formatDate(data.date)}</Text>
+        <Text style={[styles.h2, styles.mb10]}>Счёт № {data.number} от {formatDate(data.date)}</Text>
 
         {/* Parties Info */}
-        <View style={{ marginBottom: 15 }}>
-            <View style={styles.partyRow}>
-                <Text style={styles.partyLabel}>Поставщик:</Text>
-                <Text style={styles.partyValue}>
+        <View style={styles.mb20}>
+            <View style={[styles.row, styles.mb4]}>
+                <Text style={[styles.text, { width: 80 }]}>Поставщик:</Text>
+                <Text style={[styles.text, styles.bold, styles.flex1]}>
                     {data.seller.name}, ИНН {data.seller.inn}, {data.seller.address}
                 </Text>
             </View>
-             <View style={styles.partyRow}>
-                <Text style={styles.partyLabel}>Плательщик:</Text>
-                <Text style={styles.partyValue}>
+             <View style={styles.row}>
+                <Text style={[styles.text, { width: 80 }]}>Плательщик:</Text>
+                <Text style={[styles.text, styles.bold, styles.flex1]}>
                     {data.buyer.name}, ИНН {data.buyer.inn}, {data.buyer.address}
                 </Text>
             </View>
@@ -254,25 +147,25 @@ export const InvoicePdf: React.FC<PdfDocumentProps> = ({ data }) => {
 
             {data.items.map((item, index) => (
                 <View key={index} style={styles.tableRow}>
-                    <Text style={[styles.text, { width: '5%', textAlign: 'center' }]}>{index + 1}</Text>
-                    <Text style={[styles.text, { width: '45%' }]}>{item.name}</Text>
-                    <Text style={[styles.text, { width: '10%', textAlign: 'center' }]}>{item.quantity}</Text>
-                    <Text style={[styles.text, { width: '10%', textAlign: 'center' }]}>шт</Text>
-                    <Text style={[styles.text, { width: '15%', textAlign: 'right' }]}>{formatCurrency(item.price)}</Text>
-                    <Text style={[styles.text, styles.bold, { width: '15%', textAlign: 'right' }]}>{formatCurrency(item.price * item.quantity)}</Text>
+                    <Text style={[styles.td, { width: '5%', textAlign: 'center' }]}>{index + 1}</Text>
+                    <Text style={[styles.td, { width: '45%' }]}>{item.name}</Text>
+                    <Text style={[styles.td, { width: '10%', textAlign: 'center' }]}>{item.quantity}</Text>
+                    <Text style={[styles.td, { width: '10%', textAlign: 'center' }]}>шт</Text>
+                    <Text style={[styles.td, { width: '15%', textAlign: 'right' }]}>{formatCurrency(item.price)}</Text>
+                    <Text style={[styles.td, styles.bold, { width: '15%', textAlign: 'right' }]}>{formatCurrency(item.price * item.quantity)}</Text>
                 </View>
             ))}
         </View>
 
         {/* Totals */}
-        <View style={{ marginBottom: 20 }}>
-            <Text style={{ marginBottom: 5 }}>Всего наименований {data.items.length}, на сумму {formatCurrency(total)}</Text>
-            <View style={styles.totalsSection}>
-                <View style={styles.totalRow}>
-                    <Text style={[styles.totalLabel, { fontSize: 12 }]}>Итог к оплате:</Text>
-                    <Text style={[styles.totalValue, { fontSize: 12 }]}>{formatCurrency(total)}</Text>
+        <View style={{ marginTop: 20 }}>
+            <Text style={styles.mb4}>Всего наименований {data.items.length}, на сумму {formatCurrency(total)}</Text>
+            <View style={styles.alignEnd}>
+                <View style={[styles.row, styles.mb4, { width: 300, justifyContent: 'flex-end' }]}>
+                    <Text style={[styles.bold, { marginRight: 10, fontSize: 12 }]}>Итог к оплате:</Text>
+                    <Text style={[styles.bold, { minWidth: 80, textAlign: 'right', fontSize: 12 }]}>{formatCurrency(total)}</Text>
                 </View>
-                <View style={styles.totalRow}>
+                <View style={[styles.row, { width: 300, justifyContent: 'flex-end' }]}>
                      <Text style={styles.label}>{data.vatRate === -1 ? 'Без НДС' : `В т.ч. НДС ${formatCurrency(vatAmount)}`}</Text>
                 </View>
             </View>
@@ -285,7 +178,7 @@ export const InvoicePdf: React.FC<PdfDocumentProps> = ({ data }) => {
                     <View style={styles.signatureBlock}>
                         <Text style={styles.bold}>Получатель:</Text>
                         <View style={styles.signatureLine} />
-                        <Text style={styles.signatureSub}>Индивидуальный предприниматель {data.seller.name}</Text>
+                        <Text style={styles.signatureLabel}>Индивидуальный предприниматель {data.seller.name}</Text>
                     </View>
                     <View style={styles.signatureBlock}>
                         <Text style={styles.bold}>Плательщик:</Text>
@@ -297,12 +190,12 @@ export const InvoicePdf: React.FC<PdfDocumentProps> = ({ data }) => {
                     <View style={styles.signatureBlock}>
                         <Text style={styles.bold}>Руководитель</Text>
                         <View style={styles.signatureLine} />
-                        <Text style={{ fontSize: 9, textAlign: 'center' }}>{data.director}</Text>
+                        <Text style={styles.signatureLabel}>{data.director}</Text>
                     </View>
                     <View style={styles.signatureBlock}>
                         <Text style={styles.bold}>Бухгалтер</Text>
                         <View style={styles.signatureLine} />
-                        <Text style={{ fontSize: 9, textAlign: 'center' }}>{data.accountant}</Text>
+                        <Text style={styles.signatureLabel}>{data.accountant}</Text>
                     </View>
                 </>
             )}

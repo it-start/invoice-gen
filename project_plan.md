@@ -2,14 +2,14 @@
 # 🚀 InvoiceGen Pro: Architecture & Roadmap
 
 ## 🧐 Current Status Review (Updated)
-**Phase 1, 2, and 3 are Complete.**
-The application is now a fully functional, mobile-responsive PWA-ready Invoice & Lease generator.
+**Phase 1, 2, 3, and 4 are Complete.**
+The application now features a robust, unified styling system for PDFs, ensuring consistency across different document types.
 
 **Achievements:**
 *   **Modular Architecture:** Hooks (`useInvoice`, `useLease`), Forms (`InvoiceForm`, `LeaseForm`), and UI (`WizardContainer`) are well separated.
 *   **Mobile-First UX:** The new `WizardContainer` automatically transforms long forms into a step-by-step wizard on small screens.
 *   **AI Integration:** Gemini parsing works for both document types.
-*   **PDF Engine:** Robust rendering with React-PDF.
+*   **Unified Design System:** `pdfStyles.ts` provides a single source of truth for PDF typography and layout primitives.
 
 ---
 
@@ -21,22 +21,22 @@ The application is now a fully functional, mobile-responsive PWA-ready Invoice &
 ---
 
 ## ✅ Phase 2: Consolidation & Polish (Completed)
-- [x] **PDF Architecture**: Centralized styles (though `pdfStyles.ts` needs full adoption in next cycle).
-- [x] **Localization**: Added `i18n.ts` for EN/RU switching.
+- [x] **PDF Architecture**: Centralized styles and fonts.
+- [x] **Localization**: Added `i18n.ts`.
 - [x] **AI Expansion**: Added Lease parsing schema.
 
 ---
 
 ## ✅ Phase 3: Mobile Wizard Mode (Completed)
 - [x] **Mobile Detection**: Created `useIsMobile` hook.
-- [x] **Wizard UI**: Implemented `WizardContainer` with step navigation.
-- [x] **Form Integration**: Refactored `InvoiceForm` and `LeaseForm` to use the Wizard steps.
+- [x] **Wizard UI**: Implemented `WizardContainer`.
+- [x] **Form Integration**: Refactored forms to use Wizard.
 
 ---
 
-## 🛠 Phase 4: Styling Unification (Next Step)
-*Objective: Ensure consistent code style for PDFs.*
-*   **Task:** Fully migrate `InvoicePdf` and `LeasePdf` to use `styles/pdfStyles.ts` exclusively. currently they still have some local styles.
+## ✅ Phase 4: Styling Unification (Completed)
+- [x] **Design System**: Expanded `pdfStyles.ts` with grid, typography, and component primitives.
+- [x] **Refactoring**: Migrated `InvoicePdf` and `LeasePdf` to use shared styles.
 
 ---
 
