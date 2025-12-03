@@ -1,24 +1,14 @@
 
 import React from 'react';
-import { Page, Text, View, Document, StyleSheet, Font, Image } from '@react-pdf/renderer';
+import { Page, Text, View, Document, StyleSheet, Image } from '@react-pdf/renderer';
 import { LeaseData } from '../types';
+import { registerFonts, pdfStyles } from '../styles/pdfStyles';
 
-// Use same font registration as InvoicePdf
-Font.register({
-  family: 'Roboto',
-  fonts: [
-    { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf', fontWeight: 400 },
-    { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-bold-webfont.ttf', fontWeight: 700 },
-  ],
-});
+// Use shared font registration
+registerFonts();
 
 const styles = StyleSheet.create({
-  page: {
-    padding: 30,
-    fontFamily: 'Roboto',
-    fontSize: 10,
-    color: '#111',
-  },
+  ...pdfStyles, // Inherit shared styles
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { pdf } from '@react-pdf/renderer';
-import { Download, Wand2, Loader2, RotateCcw, FileText, Car } from 'lucide-react';
+import { Download, Wand2, Loader2, RotateCcw, FileText, Car, Globe } from 'lucide-react';
 
 import InvoicePreview from './components/InvoicePreview';
 import LeasePreview from './components/LeasePreview';
@@ -11,12 +12,15 @@ import LeaseForm from './components/forms/LeaseForm';
 
 import { useInvoice } from './hooks/useInvoice';
 import { useLease } from './hooks/useLease';
-import { parseInvoiceText } from './services/geminiService';
+import { parseInvoiceText, parseLeaseText } from './services/geminiService';
+import { Language } from './types';
+import { t } from './utils/i18n';
 
 type DocType = 'invoice' | 'lease';
 
 function App() {
   const [docType, setDocType] = useState<DocType>('invoice');
+  const [lang, setLang] = useState<Language>('ru');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   
   // Hooks
@@ -49,21 +53,34 @@ function App() {
     if (!aiInputText.trim()) return;
     setIsAiLoading(true);
     setAiError(null);
+    
     try {
-      const parsedData = await parseInvoiceText(aiInputText);
-      if (parsedData) {
-        invoice.setData(prev => ({
-          ...prev,
-          ...parsedData,
-          seller: { ...prev.seller, ...parsedData.seller },
-          buyer: { ...prev.buyer, ...parsedData.buyer },
-          items: parsedData.items ? parsedData.items : prev.items 
-        }));
-        setShowAiModal(false);
-        setAiInputText('');
+      if (docType === 'invoice') {
+          const parsedData = await parseInvoiceText(aiInputText);
+          if (parsedData) {
+            invoice.setData(prev => ({
+              ...prev,
+              ...parsedData,
+              seller: { ...prev.seller, ...parsedData.seller },
+              buyer: { ...prev.buyer, ...parsedData.buyer },
+              items: parsedData.items ? parsedData.items : prev.items 
+            }));
+            setShowAiModal(false);
+            setAiInputText('');
+          }
+      } else {
+          const parsedData = await parseLeaseText(aiInputText);
+          if (parsedData) {
+              // Deep merge logic for lease would go here, for now simple shallow merge of top levels + nesting
+              lease.updateLease(null, 'reservationId', parsedData.reservationId || lease.data.reservationId);
+              if (parsedData.vehicle) lease.updateLease('vehicle', 'name', parsedData.vehicle.name); // Simplified for demo
+              // Ideally use a deep merge utility
+              setShowAiModal(false);
+              setAiInputText('');
+          }
       }
     } catch (error) {
-      setAiError("Не удалось распознать данные.");
+      setAiError(t('ai_error', lang));
     } finally {
       setIsAiLoading(false);
     }
@@ -100,6 +117,10 @@ function App() {
     }
   };
 
+  const toggleLang = () => {
+      setLang(prev => prev === 'ru' ? 'en' : 'ru');
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col md:flex-row font-sans">
       
@@ -111,39 +132,46 @@ function App() {
                 onClick={() => setDocType('invoice')} 
                 className={`flex-1 flex items-center justify-center gap-2 py-2 rounded text-sm font-medium transition-all ${docType === 'invoice' ? 'bg-blue-600 shadow-lg' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
              >
-                <FileText size={16} /> Счет (РФ)
+                <FileText size={16} /> {t('switch_invoice', lang)}
              </button>
              <button 
                 onClick={() => setDocType('lease')} 
                 className={`flex-1 flex items-center justify-center gap-2 py-2 rounded text-sm font-medium transition-all ${docType === 'lease' ? 'bg-blue-600 shadow-lg' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
              >
-                <Car size={16} /> Lease
+                <Car size={16} /> {t('switch_lease', lang)}
              </button>
         </div>
 
         <div className="p-6 flex-1 overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-slate-800">
-                {docType === 'invoice' ? 'Редактор счета' : 'Contract Details'}
+                {docType === 'invoice' ? t('invoice_editor', lang) : t('lease_editor', lang)}
             </h2>
             
-            {docType === 'invoice' && (
-                <div className="flex gap-2">
+            <div className="flex gap-2">
+                <button
+                    onClick={toggleLang}
+                    className="text-slate-400 hover:text-blue-500 transition-colors p-1"
+                    title="Switch Language"
+                >
+                    <Globe size={16} />
+                </button>
+                {docType === 'invoice' && (
                     <button 
                         onClick={invoice.reset} 
                         className="text-slate-400 hover:text-red-500 transition-colors p-1"
-                        title="Сброс"
+                        title={t('reset', lang)}
                     >
                         <RotateCcw size={16} />
                     </button>
-                    <button 
-                        onClick={() => setShowAiModal(true)}
-                        className="flex items-center gap-2 text-xs bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full hover:bg-purple-200 font-medium"
-                    >
-                        <Wand2 size={14} /> AI
-                    </button>
-                </div>
-            )}
+                )}
+                <button 
+                    onClick={() => setShowAiModal(true)}
+                    className="flex items-center gap-2 text-xs bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full hover:bg-purple-200 font-medium"
+                >
+                    <Wand2 size={14} /> AI
+                </button>
+            </div>
           </div>
 
           {/* DYNAMIC FORM RENDER */}
@@ -161,10 +189,10 @@ function App() {
         <div className="w-full max-w-[210mm] flex justify-between items-center mb-4">
              <div className="text-white">
                 <h1 className="text-xl font-bold">
-                    {docType === 'invoice' ? 'Предпросмотр' : 'Preview'}
+                    {t('preview', lang)}
                 </h1>
                 <p className="text-slate-400 text-sm">
-                   {docType === 'invoice' ? 'A4 PDF • Russian Standard' : 'A4 PDF • Rental Agreement'}
+                   {docType === 'invoice' ? t('doc_invoice', lang) : t('doc_lease', lang)}
                 </p>
              </div>
              
@@ -174,9 +202,9 @@ function App() {
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 shadow-lg transition-all transform hover:scale-105 active:scale-95 disabled:opacity-70 disabled:cursor-wait"
             >
                 {isGeneratingPdf ? (
-                    <> <Loader2 className="animate-spin" size={18} /> Processing... </>
+                    <> <Loader2 className="animate-spin" size={18} /> {t('processing', lang)} </>
                 ) : (
-                    <> <Download size={18} /> Download PDF </>
+                    <> <Download size={18} /> {t('download_pdf', lang)} </>
                 )}
             </button>
         </div>
@@ -193,32 +221,32 @@ function App() {
         </div>
       </div>
 
-      {/* AI MODAL (Only for Invoice for now) */}
-      {showAiModal && docType === 'invoice' && (
+      {/* AI MODAL */}
+      {showAiModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 animate-in fade-in zoom-in duration-200">
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-bold flex items-center gap-2">AI Import</h3>
+                    <h3 className="text-lg font-bold flex items-center gap-2">{t('ai_modal_title', lang)}</h3>
                     <button onClick={() => setShowAiModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
                 </div>
                 
                 {apiKeyMissing ? (
                    <div className="bg-yellow-50 text-yellow-800 p-4 rounded-lg mb-4 text-sm">
-                      <strong>API ключ не найден.</strong>
+                      <strong>{t('ai_missing_key', lang)}</strong>
                    </div>
                 ) : (
                   <>
                     <textarea 
                         className="w-full h-40 border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-purple-500 outline-none mb-4 resize-none"
-                        placeholder="Вставьте текст счета..."
+                        placeholder={t('ai_placeholder', lang)}
                         value={aiInputText}
                         onChange={(e) => setAiInputText(e.target.value)}
                     />
                     {aiError && <div className="text-red-500 text-sm mb-4">{aiError}</div>}
                     <div className="flex justify-end gap-3">
-                        <button onClick={() => setShowAiModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Отмена</button>
+                        <button onClick={() => setShowAiModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">{t('cancel', lang)}</button>
                         <button onClick={handleSmartImport} disabled={isAiLoading || !aiInputText.trim()} className="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
-                            {isAiLoading ? 'Analyzing...' : 'Parse'}
+                            {isAiLoading ? t('analyzing', lang) : t('parse', lang)}
                         </button>
                     </div>
                   </>

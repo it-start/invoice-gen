@@ -19,6 +19,7 @@ export interface Party {
 }
 
 export type SellerType = 'company' | 'person';
+export type Language = 'ru' | 'en';
 
 export interface InvoiceData {
   number: string;

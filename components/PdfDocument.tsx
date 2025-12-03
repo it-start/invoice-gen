@@ -1,23 +1,14 @@
-import React from 'react';
-import { Page, Text, View, Document, StyleSheet, Font } from '@react-pdf/renderer';
-import { InvoiceData } from '../types';
 
-// Register fonts
-Font.register({
-  family: 'Roboto',
-  fonts: [
-    { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf', fontWeight: 400 },
-    { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-bold-webfont.ttf', fontWeight: 700 },
-  ],
-});
+import React from 'react';
+import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
+import { InvoiceData } from '../types';
+import { registerFonts, pdfStyles } from '../styles/pdfStyles';
+
+// Register fonts globally
+registerFonts();
 
 const styles = StyleSheet.create({
-  page: {
-    padding: 30,
-    fontFamily: 'Roboto',
-    fontSize: 10,
-    lineHeight: 1.4,
-  },
+  ...pdfStyles, // Inherit shared styles
   topHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -57,17 +48,6 @@ const styles = StyleSheet.create({
   cellLast: {
     padding: 4,
     borderRightWidth: 0,
-  },
-  label: {
-    fontSize: 8,
-    color: '#555',
-    marginBottom: 2,
-  },
-  text: {
-    fontSize: 10,
-  },
-  bold: {
-    fontWeight: 'bold',
   },
   invoiceTitle: {
       fontSize: 16,
