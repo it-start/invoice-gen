@@ -42,7 +42,7 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({ steps }) => {
     const isFirst = currentStep === 0;
 
     return (
-        <div className="flex flex-col h-full relative">
+        <div className="flex flex-col md:h-full relative">
             {/* Mobile Step Header */}
             <div className="flex items-center justify-between mb-2 px-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -60,8 +60,8 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({ steps }) => {
             
             <h2 className="text-lg font-bold text-slate-800 mb-4 px-1">{steps[currentStep].title}</h2>
 
-            {/* Content Area */}
-            <div className="flex-1 overflow-y-auto p-1 pb-24 custom-scrollbar">
+            {/* Content Area - Auto height on mobile, scroll on desktop if needed */}
+            <div className="md:flex-1 md:overflow-y-auto p-1 pb-24 custom-scrollbar">
                  <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 shadow-sm">
                     {steps[currentStep].content}
                  </div>

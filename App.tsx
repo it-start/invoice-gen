@@ -124,10 +124,10 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col md:flex-row font-sans">
       
-      {/* SIDEBAR */}
-      <div className="w-full md:w-1/3 bg-white border-r border-gray-200 h-screen overflow-y-auto sticky top-0 shadow-xl z-10 flex flex-col">
+      {/* SIDEBAR: Sticky/Scroll on Desktop, Auto-height on Mobile */}
+      <div className="w-full md:w-1/3 bg-white border-r border-gray-200 h-auto md:h-screen md:overflow-y-auto md:sticky md:top-0 shadow-xl z-10 flex flex-col">
         {/* DOCUMENT TYPE SWITCHER */}
-        <div className="p-4 bg-slate-800 text-white flex gap-2 shadow-inner">
+        <div className="p-4 bg-slate-800 text-white flex gap-2 shadow-inner sticky top-0 z-20 md:static">
              <button 
                 onClick={() => setDocType('invoice')} 
                 className={`flex-1 flex items-center justify-center gap-2 py-2 rounded text-sm font-medium transition-all ${docType === 'invoice' ? 'bg-blue-600 shadow-lg' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
@@ -142,7 +142,8 @@ function App() {
              </button>
         </div>
 
-        <div className="p-6 flex-1 overflow-y-auto">
+        {/* Editor Content */}
+        <div className="p-6 flex-1 md:overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-slate-800">
                 {docType === 'invoice' ? t('invoice_editor', lang) : t('lease_editor', lang)}
@@ -184,8 +185,8 @@ function App() {
         </div>
       </div>
 
-      {/* PREVIEW AREA */}
-      <div className="w-full md:w-2/3 bg-slate-800 p-4 md:p-8 flex flex-col items-center overflow-hidden h-screen relative">
+      {/* PREVIEW AREA: Scroll on Desktop, Auto on Mobile */}
+      <div className="w-full md:w-2/3 bg-slate-800 p-4 md:p-8 flex flex-col items-center md:h-screen md:overflow-hidden relative min-h-[50vh]">
         <div className="w-full max-w-[210mm] flex justify-between items-center mb-4">
              <div className="text-white">
                 <h1 className="text-xl font-bold">
@@ -209,7 +210,7 @@ function App() {
             </button>
         </div>
 
-        <div className="flex-1 w-full overflow-y-auto custom-scrollbar pb-20">
+        <div className="flex-1 w-full md:overflow-y-auto custom-scrollbar pb-20">
              <div className="transform scale-[0.6] md:scale-[0.85] lg:scale-[0.9] origin-top transition-transform duration-300">
                 {/* DYNAMIC PREVIEW RENDER */}
                 {docType === 'invoice' ? (
