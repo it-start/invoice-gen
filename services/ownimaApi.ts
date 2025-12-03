@@ -1,7 +1,8 @@
 
 import { LeaseData } from "../types";
 
-const API_BASE_URL = 'https://stage.ownima.com/api/v1/reservation';
+// @ts-ignore
+const API_BASE_URL = process.env.OWNIMA_API_URL;
 
 const mapResponseToLeaseData = (json: any): Partial<LeaseData> => {
     try {

@@ -1,21 +1,22 @@
 
 # 🚀 InvoiceGen Pro: Architecture & Roadmap
 
-## 🧐 Current Status Review (Updated)
-**Phase 1, 2, 3, and 4 are Complete.**
-The application now features a robust, unified styling system for PDFs, ensuring consistency across different document types.
+## 🧐 Current Status Review
+**All Phases (1-5) are now Complete.**
+The application has evolved into a fully connected, AI-powered document generator for both Russian Invoices and Vehicle Lease Agreements.
 
-**Achievements:**
-*   **Modular Architecture:** Hooks (`useInvoice`, `useLease`), Forms (`InvoiceForm`, `LeaseForm`), and UI (`WizardContainer`) are well separated.
-*   **Mobile-First UX:** The new `WizardContainer` automatically transforms long forms into a step-by-step wizard on small screens.
-*   **AI Integration:** Gemini parsing works for both document types.
-*   **Unified Design System:** `pdfStyles.ts` provides a single source of truth for PDF typography and layout primitives.
+**Key Achievements:**
+*   **Modular Architecture:** Clean separation of concerns with Hooks, Services, and UI Components.
+*   **Mobile Wizard:** Optimized UX for small screens.
+*   **AI Integration:** Gemini parsing for unstructured text input.
+*   **External API:** Direct integration with Ownima API for fetching reservation data.
+*   **Unified Styling:** Robust PDF engine with shared design primitives.
 
 ---
 
 ## ✅ Phase 1: Refactoring (Completed)
 - [x] **Component Decomposition**: Split `App.tsx` into specialized components.
-- [x] **Custom Hooks**: Encapsulated state logic.
+- [x] **Custom Hooks**: Encapsulated state logic (`useInvoice`, `useLease`).
 - [x] **Reusable UI**: Created `InputGroup`.
 
 ---
@@ -40,10 +41,11 @@ The application now features a robust, unified styling system for PDFs, ensuring
 
 ---
 
-## 🚧 Phase 5: External API Integration (In Progress)
-- [ ] **API Service**: Create `services/ownimaApi.ts` to fetch and map data.
-- [ ] **Hook Update**: Add loading state and fetch logic to `useLease`.
-- [ ] **UI Update**: Add "Load" button to Lease Form.
+## ✅ Phase 5: External API Integration (Completed)
+- [x] **API Service**: Created `services/ownimaApi.ts` to fetch and map data.
+- [x] **Configuration**: Externalized `API_BASE_URL` to environment variables.
+- [x] **Visual Logic**: Implemented "Early/Late" time highlighting in UI and PDF.
+- [x] **Hook & UI**: Integrated loading states and "Cloud Download" button.
 
 ---
 
@@ -51,8 +53,11 @@ The application now features a robust, unified styling system for PDFs, ensuring
 ### 1. 🧠 AI "God Mode"
 *   **Idea:** A single "Magic Paste" button that detects if the text is an Invoice or a Lease and routes it to the correct parser automatically.
 
-### 2. ☁️ Cloud Sync
-*   **Idea:** Allow saving templates to `localStorage` slots (e.g., "Save as Template A").
+### 2. ☁️ Cloud Sync & Templates
+*   **Idea:** Allow saving templates to `localStorage` slots (e.g., "Save as Template A") or a remote DB.
+
+### 3. 🛡️ Data Validation
+*   **Idea:** Add Zod schemas to validate forms before PDF generation (e.g., checking for valid dates or required fields).
 
 ---
 

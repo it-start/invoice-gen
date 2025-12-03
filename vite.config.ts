@@ -1,3 +1,4 @@
+
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -10,7 +11,8 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: {
       // This ensures process.env.API_KEY is replaced by the string value during build
-      'process.env.API_KEY': JSON.stringify(env.API_KEY)
+      'process.env.API_KEY': JSON.stringify(env.API_KEY),
+      'process.env.OWNIMA_API_URL': JSON.stringify(env.OWNIMA_API_URL || 'https://stage.ownima.com/api/v1/reservation')
     }
   };
 });
