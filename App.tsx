@@ -1,12 +1,12 @@
 
 import { useState, useEffect } from 'react';
-import { InvoiceData, INITIAL_INVOICE, VAT_RATES, InvoiceItem, SellerType, LeaseData, INITIAL_LEASE } from './types';
+import { InvoiceData, INITIAL_INVOICE, VAT_RATES, SellerType, LeaseData, INITIAL_LEASE } from './types';
 import InvoicePreview from './components/InvoicePreview';
 import LeasePreview from './components/LeasePreview';
 import { InvoicePdf } from './components/PdfDocument';
 import { LeasePdf } from './components/LeasePdf';
 import { pdf } from '@react-pdf/renderer';
-import { Plus, Trash2, Download, Wand2, Loader2, AlertCircle, Building2, User, RotateCcw, FileText, Car } from 'lucide-react';
+import { Plus, Trash2, Download, Wand2, Loader2, Building2, User, RotateCcw, FileText, Car } from 'lucide-react';
 import { parseInvoiceText } from './services/geminiService';
 
 // Reusable Input Component
