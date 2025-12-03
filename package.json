@@ -12,10 +12,12 @@
     "@google/genai": "latest",
     "@react-pdf/renderer": "^3.4.4",
     "lucide-react": "^0.378.0",
+    "qrcode": "^1.5.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/qrcode": "^1.5.5",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.2.1",

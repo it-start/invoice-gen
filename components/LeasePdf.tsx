@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Page, Text, View, Document, StyleSheet, Font } from '@react-pdf/renderer';
+import { Page, Text, View, Document, StyleSheet, Font, Image } from '@react-pdf/renderer';
 import { LeaseData } from '../types';
 
 // Use same font registration as InvoicePdf
@@ -49,6 +49,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 2,
   },
   qrText: {
     fontSize: 8,
@@ -239,7 +240,11 @@ export const LeasePdf: React.FC<LeasePdfProps> = ({ data }) => {
                 </View>
             </View>
             <View style={styles.qrPlaceholder}>
-                <Text style={styles.qrText}>[QR]</Text>
+                {data.qrCodeUrl ? (
+                    <Image src={data.qrCodeUrl} style={{ width: '100%', height: '100%' }} />
+                ) : (
+                    <Text style={styles.qrText}>[QR]</Text>
+                )}
             </View>
         </View>
 

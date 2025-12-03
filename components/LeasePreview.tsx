@@ -29,8 +29,12 @@ const LeasePreview: React.FC<LeasePreviewProps> = ({ data }) => {
             </div>
           </div>
         </div>
-        <div className="w-24 h-24 border border-gray-200 flex items-center justify-center text-gray-300 text-xs text-center">
-            [QR Code]
+        <div className="w-24 h-24 border border-gray-200 flex items-center justify-center text-gray-300 text-xs text-center p-1">
+            {data.qrCodeUrl ? (
+                <img src={data.qrCodeUrl} alt="QR Code" className="w-full h-full object-contain" />
+            ) : (
+                <span>[QR Code]</span>
+            )}
         </div>
       </div>
 

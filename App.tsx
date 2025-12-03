@@ -8,6 +8,7 @@ import { LeasePdf } from './components/LeasePdf';
 import { pdf } from '@react-pdf/renderer';
 import { Plus, Trash2, Download, Wand2, Loader2, Building2, User, RotateCcw, FileText, Car } from 'lucide-react';
 import { parseInvoiceText } from './services/geminiService';
+import QRCode from 'qrcode';
 
 // Reusable Input Component
 const InputGroup = ({ label, value, onChange, placeholder, type = "text", className = "" }: any) => (
@@ -61,6 +62,26 @@ function App() {
   useEffect(() => {
       localStorage.setItem('lease_data', JSON.stringify(leaseData));
   }, [leaseData]);
+
+  // QR Code Generation
+  useEffect(() => {
+    const generateQr = async () => {
+        try {
+            const url = `https://stage.ownima.com/qr/${leaseData.reservationId}`;
+            const dataUrl = await QRCode.toDataURL(url, { margin: 1, width: 200 });
+            setLeaseData(prev => {
+                // Only update if changed to avoid loop (though useEffect dep prevents it)
+                if (prev.qrCodeUrl === dataUrl) return prev;
+                return { ...prev, qrCodeUrl: dataUrl };
+            });
+        } catch (err) {
+            console.error("QR Generation Error", err);
+        }
+    };
+    if (leaseData.reservationId) {
+        generateQr();
+    }
+  }, [leaseData.reservationId]);
 
   useEffect(() => {
     // Safe check for API Key

@@ -72,6 +72,7 @@ export interface LeaseData {
     contact: string;
     passport: string;
   };
+  qrCodeUrl?: string;
 }
 
 export const VAT_RATES = [
