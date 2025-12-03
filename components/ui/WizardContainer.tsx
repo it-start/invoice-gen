@@ -61,14 +61,14 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({ steps }) => {
             <h2 className="text-lg font-bold text-slate-800 mb-4 px-1">{steps[currentStep].title}</h2>
 
             {/* Content Area - Auto height on mobile, scroll on desktop if needed */}
-            <div className="md:flex-1 md:overflow-y-auto p-1 pb-24 custom-scrollbar">
+            <div className="md:flex-1 md:overflow-y-auto p-1 pb-32 custom-scrollbar">
                  <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 shadow-sm">
                     {steps[currentStep].content}
                  </div>
             </div>
 
             {/* Navigation Bottom Bar */}
-            <div className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 p-4 flex gap-3 z-50 md:hidden shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+            <div className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] flex gap-3 z-[60] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
                 <button
                     onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
                     disabled={isFirst}
