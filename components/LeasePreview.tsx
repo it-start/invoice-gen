@@ -7,6 +7,15 @@ interface LeasePreviewProps {
 }
 
 const LeasePreview: React.FC<LeasePreviewProps> = ({ data }) => {
+  const isNonDefaultTime = (time: string) => time.includes('(Early)') || time.includes('(Late)');
+
+  const getTimeClasses = (time: string) => {
+      if (isNonDefaultTime(time)) {
+          return "bg-amber-100 text-amber-800 px-2 py-1 rounded font-bold text-xs shadow-sm border border-amber-200";
+      }
+      return "text-gray-600";
+  };
+
   return (
     <div className="bg-white shadow-lg p-8 max-w-[210mm] mx-auto min-h-[297mm] text-sm font-sans text-slate-900">
       
@@ -57,7 +66,7 @@ const LeasePreview: React.FC<LeasePreviewProps> = ({ data }) => {
             </div>
             <div className="flex justify-between items-end">
                 <div className="font-bold text-lg">{data.pickup.date}</div>
-                <div className="text-gray-600">{data.pickup.time}</div>
+                <div className={getTimeClasses(data.pickup.time)}>{data.pickup.time}</div>
             </div>
         </div>
         <div className="w-1/2 p-4 bg-gray-50">
@@ -67,7 +76,7 @@ const LeasePreview: React.FC<LeasePreviewProps> = ({ data }) => {
             </div>
              <div className="flex justify-between items-end">
                 <div className="font-bold text-lg">{data.dropoff.date}</div>
-                <div className="text-gray-600">{data.dropoff.time}</div>
+                <div className={getTimeClasses(data.dropoff.time)}>{data.dropoff.time}</div>
             </div>
         </div>
       </div>
