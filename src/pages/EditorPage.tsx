@@ -1,23 +1,24 @@
 import { useState, useEffect } from 'react';
 import { pdf } from '@react-pdf/renderer';
-import { Download, Wand2, Loader2, RotateCcw, FileText, Car, Globe } from 'lucide-react';
+import { Download, Wand2, Loader2, RotateCcw, FileText, Car, Globe, Share2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-import InvoicePreview from './components/InvoicePreview';
-import LeasePreview from './components/LeasePreview';
-import { InvoicePdf } from './components/PdfDocument';
-import { LeasePdf } from './components/LeasePdf';
-import InvoiceForm from './components/forms/InvoiceForm';
-import LeaseForm from './components/forms/LeaseForm';
+import InvoicePreview from '../components/InvoicePreview';
+import LeasePreview from '../components/LeasePreview';
+import { InvoicePdf } from '../components/PdfDocument';
+import { LeasePdf } from '../components/LeasePdf';
+import InvoiceForm from '../components/forms/InvoiceForm';
+import LeaseForm from '../components/forms/LeaseForm';
 
-import { useInvoice } from './hooks/useInvoice';
-import { useLease } from './hooks/useLease';
-import { parseInvoiceText, parseLeaseText } from './services/geminiService';
-import { Language } from './types';
-import { t } from './utils/i18n';
+import { useInvoice } from '../hooks/useInvoice';
+import { useLease } from '../hooks/useLease';
+import { parseInvoiceText, parseLeaseText } from '../services/geminiService';
+import { Language } from '../types';
+import { t } from '../utils/i18n';
 
 type DocType = 'invoice' | 'lease';
 
-function App() {
+export default function EditorPage() {
   const [docType, setDocType] = useState<DocType>('invoice');
   const [lang, setLang] = useState<Language>('ru');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -195,6 +196,17 @@ function App() {
              </div>
              
              <div className="flex gap-2">
+                {docType === 'lease' && lease.data.reservationId && (
+                     <Link 
+                        to={`/preview/lease/${lease.data.reservationId}`}
+                        target="_blank"
+                        className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow transition-all"
+                        title="Open Shareable Link"
+                    >
+                        <Share2 size={18} />
+                    </Link>
+                )}
+
                 <button 
                     onClick={handleDownloadPdf}
                     disabled={isGeneratingPdf}
@@ -258,5 +270,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
