@@ -17,6 +17,7 @@ import { useLease } from '../hooks/useLease';
 import { parseInvoiceText, parseLeaseText } from '../services/geminiService';
 import { Language } from '../types';
 import { t } from '../utils/i18n';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 type DocType = 'invoice' | 'lease';
 
@@ -25,6 +26,10 @@ export default function EditorPage() {
   const [lang, setLang] = useState<Language>('ru');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  
+  // Mobile UI State
+  const isMobile = useIsMobile();
+  const [mobileTab, setMobileTab] = useState<'edit' | 'preview'>('edit');
   
   // Hooks
   const invoice = useInvoice();
@@ -137,8 +142,26 @@ export default function EditorPage() {
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col md:flex-row font-sans">
       
+      {/* MOBILE TABS */}
+      {isMobile && (
+        <div className="sticky top-0 z-50 bg-slate-900 text-white flex shadow-lg border-b border-slate-700">
+            <button 
+                onClick={() => setMobileTab('edit')}
+                className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider transition-colors border-b-2 ${mobileTab === 'edit' ? 'border-blue-500 bg-slate-800 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+            >
+                {lang === 'ru' ? 'Редактор' : 'Editor'}
+            </button>
+             <button 
+                onClick={() => setMobileTab('preview')}
+                className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider transition-colors border-b-2 ${mobileTab === 'preview' ? 'border-blue-500 bg-slate-800 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+            >
+                {t('preview', lang)}
+            </button>
+        </div>
+      )}
+
       {/* SIDEBAR: Sticky/Scroll on Desktop, Auto-height on Mobile */}
-      <div className="w-full md:w-1/3 bg-white border-r border-gray-200 h-auto md:h-screen md:overflow-y-auto md:sticky md:top-0 shadow-xl z-10 flex flex-col">
+      <div className={`w-full md:w-1/3 bg-white border-r border-gray-200 h-auto md:h-screen md:overflow-y-auto md:sticky md:top-0 shadow-xl z-10 flex-col ${isMobile && mobileTab !== 'edit' ? 'hidden' : 'flex'}`}>
         {/* DOCUMENT TYPE SWITCHER */}
         <div className="p-4 bg-slate-800 text-white flex gap-2 shadow-inner sticky top-0 z-20 md:static">
              <button 
@@ -205,7 +228,7 @@ export default function EditorPage() {
       </div>
 
       {/* PREVIEW AREA: Scroll on Desktop, Auto on Mobile */}
-      <div className="w-full md:w-2/3 bg-slate-800 p-4 md:p-8 flex flex-col items-center md:h-screen md:overflow-hidden relative min-h-[50vh]">
+      <div className={`w-full md:w-2/3 bg-slate-800 p-4 md:p-8 flex-col items-center md:h-screen md:overflow-hidden relative min-h-[50vh] ${isMobile && mobileTab !== 'preview' ? 'hidden' : 'flex'}`}>
         <div className="w-full max-w-[210mm] flex justify-between items-center mb-4">
              <div className="text-white">
                 <h1 className="text-xl font-bold">
@@ -243,7 +266,8 @@ export default function EditorPage() {
         </div>
 
         <div className="flex-1 w-full md:overflow-y-auto custom-scrollbar pb-20">
-             <div className="transform scale-[0.6] md:scale-[0.85] lg:scale-[0.9] origin-top transition-transform duration-300">
+             {/* Adjusted scaling for mobile: 0.42 fits 210mm (~793px) into ~333px, safe for 360px+ screens */}
+             <div className="transform scale-[0.42] sm:scale-[0.6] md:scale-[0.85] lg:scale-[0.9] origin-top transition-transform duration-300">
                 {/* DYNAMIC PREVIEW RENDER */}
                 {docType === 'invoice' ? (
                     <InvoicePreview data={invoice.data} />

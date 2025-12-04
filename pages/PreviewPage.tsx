@@ -1,9 +1,10 @@
 
 import { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { PDFViewer } from '@react-pdf/renderer';
 import { Loader2, AlertCircle, Lock } from 'lucide-react';
 import { fetchReservation } from '../services/ownimaApi';
+import { authService } from '../services/authService';
 import { LeasePdf } from '../components/LeasePdf';
 import { LoginModal } from '../components/modals/LoginModal';
 import { LeaseData, INITIAL_LEASE } from '../types';
@@ -11,6 +12,7 @@ import QRCode from 'qrcode';
 
 export default function PreviewPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const [data, setData] = useState<LeaseData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,6 +20,12 @@ export default function PreviewPage() {
 
   const loadData = useCallback(async () => {
     if (!id) return;
+    
+    // Check for token in URL parameters and inject it if present
+    const urlToken = searchParams.get('token');
+    if (urlToken) {
+        authService.setToken(urlToken);
+    }
     
     try {
       setLoading(true);
@@ -66,7 +74,7 @@ export default function PreviewPage() {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, searchParams]);
 
   useEffect(() => {
     loadData();
