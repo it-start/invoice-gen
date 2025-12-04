@@ -2,62 +2,70 @@
 # 🚀 InvoiceGen Pro: Architecture & Roadmap
 
 ## 🧐 Current Status Review
-**All Phases (1-5) are now Complete.**
-The application has evolved into a fully connected, AI-powered document generator for both Russian Invoices and Vehicle Lease Agreements.
+**Phases 1-5 Complete.**
+The application is a fully functional, AI-powered, API-connected document generator.
 
-**Key Achievements:**
-*   **Modular Architecture:** Clean separation of concerns with Hooks, Services, and UI Components.
-*   **Mobile Wizard:** Optimized UX for small screens.
-*   **AI Integration:** Gemini parsing for unstructured text input.
-*   **External API:** Direct integration with Ownima API for fetching reservation data.
-*   **Unified Styling:** Robust PDF engine with shared design primitives.
-
----
-
-## ✅ Phase 1: Refactoring (Completed)
-- [x] **Component Decomposition**: Split `App.tsx` into specialized components.
-- [x] **Custom Hooks**: Encapsulated state logic (`useInvoice`, `useLease`).
-- [x] **Reusable UI**: Created `InputGroup`.
+**Core Strengths:**
+*   **Dual Engine:** Seamlessly handles structured Invoices and complex Lease Agreements.
+*   **Connected:** Fetches real-time reservation data from Ownima.
+*   **Mobile-First:** "Wizard Mode" makes complex data entry easy on phones.
+*   **Visuals:** High-fidelity PDF generation with auto-highlighting of critical data (Early/Late times).
 
 ---
 
-## ✅ Phase 2: Consolidation & Polish (Completed)
-- [x] **PDF Architecture**: Centralized styles and fonts.
-- [x] **Localization**: Added `i18n.ts`.
-- [x] **AI Expansion**: Added Lease parsing schema.
+## 📜 Completed Phases (History)
+
+### ✅ Phase 1: Refactoring
+*   Component Decomposition, Custom Hooks (`useInvoice`, `useLease`), Reusable UI.
+
+### ✅ Phase 2: Consolidation & Polish
+*   PDF Architecture (Shared Styles), Localization (i18n), AI Schema Expansion.
+
+### ✅ Phase 3: Mobile Wizard Mode
+*   Mobile Detection, Wizard UI Container, Form Refactoring.
+
+### ✅ Phase 4: Styling Unification
+*   Design System (`pdfStyles.ts`), Layout Primitives, Table/Grid standardization.
+
+### ✅ Phase 5: External API Integration
+*   `ownimaApi` Service, Environment Config, "Load from Cloud" UI, Data Mapping.
 
 ---
 
-## ✅ Phase 3: Mobile Wizard Mode (Completed)
-- [x] **Mobile Detection**: Created `useIsMobile` hook.
-- [x] **Wizard UI**: Implemented `WizardContainer`.
-- [x] **Form Integration**: Refactored forms to use Wizard.
+## 🔮 The Future: "Pro" Features Roadmap
+
+### 🚧 Phase 6: Digital Signatures (The "Paperless" Step)
+**Goal:** Allow users (Renters/Owners) to sign directly on the device screen.
+*   **Signature Pad:** Integrate `react-signature-canvas` into the `WizardContainer` (Step 5).
+*   **State Management:** Store signatures as Base64 data URIs in `LeaseData`.
+*   **PDF Integration:** Render the captured signature image into the PDF signature block, replacing the text placeholder.
+*   **Value:** True "Walk-in" experience—generate, sign, and email PDF without a printer.
+
+### 📅 Phase 7: Local Document History (The "Dashboard" Step)
+**Goal:** Persist generated documents so users don't lose work when starting new ones.
+*   **Storage Engine:** Implement `idb` (IndexedDB wrapper) to bypass `localStorage` size limits.
+*   **Dashboard UI:** Create a "History" sidebar tab listing past Invoices/Leases.
+*   **Actions:** Add "Clone", "Delete", and "Reprint" capabilities.
+*   **Search:** Filter history by Name, Date, or ID.
+
+### ⚡ Phase 8: PWA & Offline Capability (The "Field" Step)
+**Goal:** Make the app installable and functional without internet (except API fetching).
+*   **Manifest:** Add `manifest.json` for "Add to Home Screen".
+*   **Service Worker:** Cache app shell (JS/CSS) for instant loading.
+*   **Offline Mode:** Graceful handling of API errors when offline (allow manual entry fallback).
 
 ---
 
-## ✅ Phase 4: Styling Unification (Completed)
-- [x] **Design System**: Expanded `pdfStyles.ts` with grid, typography, and component primitives.
-- [x] **Refactoring**: Migrated `InvoicePdf` and `LeasePdf` to use shared styles.
+## 💡 Backlog & Experiments
 
----
-
-## ✅ Phase 5: External API Integration (Completed)
-- [x] **API Service**: Created `services/ownimaApi.ts` to fetch and map data.
-- [x] **Configuration**: Externalized `API_BASE_URL` to environment variables.
-- [x] **Visual Logic**: Implemented "Early/Late" time highlighting in UI and PDF.
-- [x] **Hook & UI**: Integrated loading states and "Cloud Download" button.
-
----
-
-## 💡 Future Ideas (Backlog)
 ### 1. 🧠 AI "God Mode"
-*   **Idea:** A single "Magic Paste" button that detects if the text is an Invoice or a Lease and routes it to the correct parser automatically.
+*   **Idea:** A single text area entry point. The AI analyzes the text and auto-routes to `InvoiceForm` or `LeaseForm` with pre-filled data.
 
-### 2. ☁️ Cloud Sync & Templates
-*   **Idea:** Allow saving templates to `localStorage` slots (e.g., "Save as Template A") or a remote DB.
+### 2. 📤 One-Click Share
+*   **Idea:** Instead of just downloading, use the Web Share API to send the PDF directly to WhatsApp/Telegram/Email on mobile devices.
 
-### 3. 🛡️ Data Validation
-*   **Idea:** Add Zod schemas to validate forms before PDF generation (e.g., checking for valid dates or required fields).
+### 3. 🎨 Theme Engine
+*   **Idea:** Allow users to upload a logo and select a primary color (Brand Identity) that propagates to the PDF styles.
 
 ---
 
@@ -65,3 +73,4 @@ The application has evolved into a fully connected, AI-powered document generato
 1.  **Bible:** `types.ts` is the law.
 2.  **KISS:** Keep components small.
 3.  **DRY:** Reuse styles and utilities.
+4.  **UX:** Mobile users are first-class citizens.
