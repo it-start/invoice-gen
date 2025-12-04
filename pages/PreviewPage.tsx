@@ -1,13 +1,16 @@
+
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { PDFViewer } from '@react-pdf/renderer';
-import { Loader2, AlertCircle, Lock } from 'lucide-react';
+import { PDFViewer, pdf } from '@react-pdf/renderer';
+import { Loader2, AlertCircle, Lock, Download } from 'lucide-react';
 import { fetchReservation } from '../services/ownimaApi';
 import { authService } from '../services/authService';
 import { LeasePdf } from '../components/LeasePdf';
+import LeasePreview from '../components/LeasePreview';
 import { LoginModal } from '../components/modals/LoginModal';
 import { LeaseData, INITIAL_LEASE } from '../types';
 import QRCode from 'qrcode';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function PreviewPage() {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +19,9 @@ export default function PreviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  
+  const isMobile = useIsMobile();
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -105,6 +111,28 @@ export default function PreviewPage() {
       loadData();
   };
 
+  const handleDownload = async () => {
+    if (!data) return;
+    setIsDownloading(true);
+    try {
+      const doc = <LeasePdf data={data} />;
+      const blob = await pdf(doc).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `lease_${data.reservationId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Download Error", e);
+      alert("Failed to generate PDF");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-100 text-slate-500">
@@ -148,6 +176,45 @@ export default function PreviewPage() {
 
   if (!data) return null;
 
+  // --- MOBILE VIEW ---
+  // PDFViewer relies on iframes which are broken on many mobile browsers.
+  // We render the HTML preview instead and offer a download button.
+  if (isMobile) {
+      return (
+        <div className="min-h-screen bg-slate-100 flex flex-col relative">
+            {/* Mobile Header */}
+            <div className="bg-slate-900 p-4 text-white shadow-md sticky top-0 z-20 flex justify-between items-center">
+                <div>
+                    <h1 className="font-bold text-lg">Lease Preview</h1>
+                    <p className="text-xs text-slate-400">ID: {id}</p>
+                </div>
+            </div>
+
+            {/* Scrollable Content Area */}
+            <div className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-200 p-4 custom-scrollbar">
+                {/* Scale wrapper to fit 210mm (~794px) content onto small mobile screens */}
+                {/* scale-45 fits ~360px width screens */}
+                <div className="w-full flex justify-center pb-24">
+                     <div className="origin-top transform scale-[0.45] sm:scale-[0.6] bg-white shadow-2xl">
+                        <LeasePreview data={data} />
+                     </div>
+                </div>
+            </div>
+
+            {/* FAB Download Button */}
+            <button 
+                onClick={handleDownload}
+                disabled={isDownloading}
+                className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6 py-4 shadow-xl z-30 transition-all active:scale-95 disabled:opacity-70 flex items-center gap-3 font-bold"
+            >
+                {isDownloading ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
+                Download PDF
+            </button>
+        </div>
+      );
+  }
+
+  // --- DESKTOP VIEW ---
   return (
     <div className="h-screen w-full bg-slate-800 flex flex-col">
        <div className="bg-slate-900 p-4 text-white flex justify-between items-center shadow-md">
@@ -155,6 +222,12 @@ export default function PreviewPage() {
                 <h1 className="font-bold text-lg">Lease Agreement Preview</h1>
                 <p className="text-xs text-slate-400">ID: {id}</p>
             </div>
+            <button 
+                onClick={handleDownload}
+                className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-1.5 rounded text-sm flex items-center gap-2 transition-colors"
+            >
+                <Download size={14} /> Download File
+            </button>
        </div>
        <div className="flex-1 w-full">
           <PDFViewer width="100%" height="100%" className="border-none">
