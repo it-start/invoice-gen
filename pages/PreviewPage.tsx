@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { PDFViewer } from '@react-pdf/renderer';
@@ -30,6 +29,7 @@ export default function PreviewPage() {
     try {
       setLoading(true);
       setError(null);
+      setShowLoginModal(false); // Reset modal state when retrying
       
       // 1. Fetch data from API
       const apiData = await fetchReservation(id);
@@ -79,6 +79,26 @@ export default function PreviewPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Integration: Listen for Auth Token from parent window (Iframe support)
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+        if (event.data?.type === 'AUTH_TOKEN' && event.data?.token) {
+            console.debug("Received AUTH_TOKEN from parent");
+            authService.setToken(event.data.token);
+            loadData();
+        }
+    };
+
+    window.addEventListener('message', handleMessage);
+    
+    // Notify parent that Preview is ready to receive token
+    if (window.parent !== window) {
+        window.parent.postMessage({ type: 'PREVIEW_READY', reservationId: id }, '*');
+    }
+
+    return () => window.removeEventListener('message', handleMessage);
+  }, [loadData, id]);
 
   const handleLoginSuccess = () => {
       // Retry loading data after successful login
