@@ -13,6 +13,26 @@ The application is a fully functional, AI-powered, API-connected document genera
 
 ---
 
+## 🚧 Current Focus: Phase 1.5 - Architecture Refactor
+
+Before moving to Digital Signatures, we must clean up technical debt to prevent bugs.
+
+### 1. ♻️ Unify Data Loading (DRY)
+*   **Problem:** `PreviewPage.tsx` and `useLease.ts` duplicate the logic for Fetching API -> Generating QR -> Merging Defaults.
+*   **Solution:** Extract this pipeline into `services/leaseLoader.ts`. Both the Editor (Import button) and Preview Page (On Load) will use this single function.
+
+### 2. 🧩 Decompose EditorPage
+*   **Problem:** `EditorPage.tsx` is too large (AI logic, Modal UI, PDF handlers).
+*   **Solution:**
+    *   Extract `AiModal` to `components/modals/AiModal.tsx`.
+    *   Extract AI state logic to `hooks/useAiAssistant.ts`.
+
+### 3. 📂 Standardize Structure
+*   **Problem:** Inconsistent folder nesting (`src/pages` vs `pages`).
+*   **Solution:** Move all pages to root `pages/`.
+
+---
+
 ## 📜 Completed Phases (History)
 
 ### ✅ Phase 1: Refactoring
@@ -34,7 +54,7 @@ The application is a fully functional, AI-powered, API-connected document genera
 
 ## 🔮 The Future: "Pro" Features Roadmap
 
-### 🚧 Phase 6: Digital Signatures (The "Paperless" Step)
+### 📅 Phase 6: Digital Signatures (The "Paperless" Step)
 **Goal:** Allow users (Renters/Owners) to sign directly on the device screen.
 *   **Signature Pad:** Integrate `react-signature-canvas` into the `WizardContainer` (Step 5).
 *   **State Management:** Store signatures as Base64 data URIs in `LeaseData`.
