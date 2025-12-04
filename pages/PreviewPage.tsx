@@ -23,6 +23,9 @@ export default function PreviewPage() {
   const isMobile = useIsMobile();
   const [isDownloading, setIsDownloading] = useState(false);
 
+  // Check output mode: 'blob' implies redirecting to raw pdf, undefined implies UI wrapper
+  const outputMode = searchParams.get('output');
+
   const loadData = useCallback(async () => {
     if (!id) return;
     
@@ -106,6 +109,31 @@ export default function PreviewPage() {
     return () => window.removeEventListener('message', handleMessage);
   }, [loadData, id]);
 
+  // Handle Blob Output Mode (Direct PDF View)
+  useEffect(() => {
+    if (!data || outputMode !== 'blob') return;
+
+    const generateAndRedirect = async () => {
+        try {
+            // Generate PDF Blob
+            const doc = <LeasePdf data={data} />;
+            const blob = await pdf(doc).toBlob();
+            
+            // Create Object URL
+            const url = URL.createObjectURL(blob);
+            
+            // Redirect current window/iframe to the blob URL
+            // This replaces the React App with the raw PDF file in the viewer
+            window.location.replace(url);
+        } catch (e) {
+            console.error("Blob generation failed", e);
+            setError("Failed to generate PDF blob");
+        }
+    };
+
+    generateAndRedirect();
+  }, [data, outputMode]);
+
   const handleLoginSuccess = () => {
       // Retry loading data after successful login
       loadData();
@@ -133,6 +161,7 @@ export default function PreviewPage() {
     }
   };
 
+  // --- LOADING STATE ---
   if (loading) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-100 text-slate-500">
@@ -142,7 +171,7 @@ export default function PreviewPage() {
     );
   }
 
-  // If we have an error (and it's not simply waiting for login), show error state
+  // --- ERROR STATE ---
   if (error && !showLoginModal) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-100 text-red-500">
@@ -152,7 +181,7 @@ export default function PreviewPage() {
     );
   }
 
-  // If we need to show login modal (Unauthorized), we can show a restricted access screen behind the modal
+  // --- LOGIN STATE ---
   if (showLoginModal) {
       return (
           <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-900 text-white">
@@ -176,9 +205,18 @@ export default function PreviewPage() {
 
   if (!data) return null;
 
-  // --- MOBILE VIEW ---
-  // PDFViewer relies on iframes which are broken on many mobile browsers.
-  // We render the HTML preview instead and offer a download button.
+  // --- RAW BLOB OUTPUT STATE ---
+  // If output=blob, we show a loader while the useEffect above handles the redirect
+  if (outputMode === 'blob') {
+      return (
+        <div className="h-screen w-full flex flex-col items-center justify-center bg-white">
+            <Loader2 className="animate-spin mb-4 text-blue-600" size={48} />
+            <p className="text-slate-500 font-medium">Generating PDF...</p>
+        </div>
+      );
+  }
+
+  // --- MOBILE VIEW (HTML Fallback) ---
   if (isMobile) {
       return (
         <div className="min-h-screen bg-slate-100 flex flex-col relative">
@@ -193,7 +231,6 @@ export default function PreviewPage() {
             {/* Scrollable Content Area */}
             <div className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-200 p-4 custom-scrollbar">
                 {/* Scale wrapper to fit 210mm (~794px) content onto small mobile screens */}
-                {/* scale-45 fits ~360px width screens */}
                 <div className="w-full flex justify-center pb-24">
                      <div className="origin-top transform scale-[0.45] sm:scale-[0.6] bg-white shadow-2xl">
                         <LeasePreview data={data} />
@@ -214,7 +251,7 @@ export default function PreviewPage() {
       );
   }
 
-  // --- DESKTOP VIEW ---
+  // --- DESKTOP VIEW (PDF Viewer) ---
   return (
     <div className="h-screen w-full bg-slate-800 flex flex-col">
        <div className="bg-slate-900 p-4 text-white flex justify-between items-center shadow-md">
