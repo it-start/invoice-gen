@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { PDFViewer } from '@react-pdf/renderer';
-import { Loader2, Download, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { fetchReservation } from '../services/ownimaApi';
 import { LeasePdf } from '../components/LeasePdf';
 import { LeaseData, INITIAL_LEASE } from '../types';
@@ -89,10 +89,6 @@ export default function PreviewPage() {
                 <h1 className="font-bold text-lg">Lease Agreement Preview</h1>
                 <p className="text-xs text-slate-400">ID: {id}</p>
             </div>
-            {/* 
-              Note: PDFViewer usually provides its own download button, 
-              but we can add custom actions here if needed.
-            */}
        </div>
        <div className="flex-1 w-full">
           <PDFViewer width="100%" height="100%" className="border-none">
