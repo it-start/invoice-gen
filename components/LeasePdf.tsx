@@ -41,11 +41,37 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
     paddingVertical: 2,
   },
+  // Time badge style
+  timeBadge: {
+    backgroundColor: '#000000',
+    borderRadius: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+  },
+  timeBadgeText: {
+    color: '#ffffff',
+    fontSize: 8,
+    fontWeight: 'bold',
+  }
 });
 
 interface LeasePdfProps {
   data: LeaseData;
 }
+
+const TimeDisplay = ({ time }: { time: string }) => {
+    const isSpecial = time && (time.includes('(Early)') || time.includes('(Late)'));
+    
+    if (isSpecial) {
+        return (
+            <View style={styles.timeBadge}>
+                <Text style={styles.timeBadgeText}>{time}</Text>
+            </View>
+        );
+    }
+    
+    return <Text style={styles.text}>{time}</Text>;
+};
 
 export const LeasePdf: React.FC<LeasePdfProps> = ({ data }) => {
   return (
@@ -93,9 +119,9 @@ export const LeasePdf: React.FC<LeasePdfProps> = ({ data }) => {
                     <Text style={styles.label}>Pick-up</Text>
                     <Text style={[styles.small, { color: '#999' }]}>Default pick-up</Text>
                 </View>
-                <View style={[styles.row, styles.justifyBetween, styles.alignEnd]}>
+                <View style={[styles.row, styles.justifyBetween, styles.alignCenter]}>
                     <Text style={styles.h3}>{data.pickup.date}</Text>
-                    <Text style={styles.text}>{data.pickup.time}</Text>
+                    <TimeDisplay time={data.pickup.time} />
                 </View>
             </View>
             <View style={[styles.dateBox, styles.dateBoxRight]}>
@@ -103,9 +129,9 @@ export const LeasePdf: React.FC<LeasePdfProps> = ({ data }) => {
                     <Text style={styles.label}>Return</Text>
                     <Text style={[styles.small, { color: '#999' }]}>Default return</Text>
                 </View>
-                <View style={[styles.row, styles.justifyBetween, styles.alignEnd]}>
+                <View style={[styles.row, styles.justifyBetween, styles.alignCenter]}>
                      <Text style={styles.h3}>{data.dropoff.date}</Text>
-                     <Text style={styles.text}>{data.dropoff.time}</Text>
+                     <TimeDisplay time={data.dropoff.time} />
                 </View>
             </View>
         </View>
@@ -172,6 +198,7 @@ export const LeasePdf: React.FC<LeasePdfProps> = ({ data }) => {
             </View>
             <View style={styles.signatureBlock}>
                 <Text style={styles.h3}>{data.renter.surname}</Text>
+                <Text style={styles.label}>{data.renter.contact}</Text>
                 <Text style={styles.label}>{data.renter.contact}</Text>
                 <Text style={styles.label}>Passport: {data.renter.passport}</Text>
                 
