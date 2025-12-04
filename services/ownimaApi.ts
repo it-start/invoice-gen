@@ -1,8 +1,9 @@
 
 import { LeaseData } from "../types";
+import { authService } from "./authService";
 
 // @ts-ignore
-const API_BASE_URL = process.env.OWNIMA_API_URL;
+const API_BASE_URL = process.env.OWNIMA_API_URL || 'https://stage.ownima.com/api/v1/reservation';
 
 const mapResponseToLeaseData = (json: any): Partial<LeaseData> => {
     try {
@@ -92,11 +93,22 @@ const mapResponseToLeaseData = (json: any): Partial<LeaseData> => {
 
 export const fetchReservation = async (id: string): Promise<Partial<LeaseData> | null> => {
     try {
+        const token = authService.getToken();
+        const headers: Record<string, string> = {
+            'accept': 'application/json'
+        };
+        
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_BASE_URL}/${id}`, {
-            headers: {
-                'accept': 'application/json'
-            }
+            headers
         });
+
+        if (response.status === 401) {
+            throw new Error("Unauthorized");
+        }
 
         if (!response.ok) {
             throw new Error(`API Error: ${response.status}`);

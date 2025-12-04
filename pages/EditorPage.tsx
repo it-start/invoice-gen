@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { pdf } from '@react-pdf/renderer';
-import { Download, Wand2, Loader2, RotateCcw, FileText, Car, Globe, Share2 } from 'lucide-react';
+import { Download, Wand2, Loader2, RotateCcw, FileText, Car, Globe, Share2, LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import InvoicePreview from '../components/InvoicePreview';
@@ -9,10 +10,12 @@ import { InvoicePdf } from '../components/PdfDocument';
 import { LeasePdf } from '../components/LeasePdf';
 import InvoiceForm from '../components/forms/InvoiceForm';
 import LeaseForm from '../components/forms/LeaseForm';
+import { LoginModal } from '../components/modals/LoginModal';
 
 import { useInvoice } from '../hooks/useInvoice';
 import { useLease } from '../hooks/useLease';
 import { parseInvoiceText, parseLeaseText } from '../services/geminiService';
+import { authService } from '../services/authService';
 import { Language } from '../types';
 import { t } from '../utils/i18n';
 
@@ -22,6 +25,7 @@ export default function EditorPage() {
   const [docType, setDocType] = useState<DocType>('invoice');
   const [lang, setLang] = useState<Language>('ru');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   
   // Hooks
   const invoice = useInvoice();
@@ -81,6 +85,18 @@ export default function EditorPage() {
       setAiError(t('ai_error', lang));
     } finally {
       setIsAiLoading(false);
+    }
+  };
+
+  const handleLeaseLoad = async () => {
+    try {
+      await lease.loadFromApi();
+    } catch (error: any) {
+      if (error.message === 'Unauthorized') {
+        setShowLoginModal(true);
+      } else {
+        alert("Failed to load reservation data");
+      }
     }
   };
 
@@ -177,7 +193,13 @@ export default function EditorPage() {
           {docType === 'invoice' ? (
               <InvoiceForm data={invoice.data} handlers={invoice} />
           ) : (
-              <LeaseForm data={lease.data} handlers={lease} />
+              <LeaseForm 
+                data={lease.data} 
+                handlers={{
+                    ...lease,
+                    loadFromApi: handleLeaseLoad // Intercept loadFromApi to handle auth errors
+                }} 
+              />
           )}
         
         </div>
@@ -232,6 +254,13 @@ export default function EditorPage() {
             </div>
         </div>
       </div>
+
+      {/* LOGIN MODAL */}
+      <LoginModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={() => handleLeaseLoad()} // Retry on success
+      />
 
       {/* AI MODAL */}
       {showAiModal && (

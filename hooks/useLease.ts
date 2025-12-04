@@ -84,11 +84,8 @@ export const useLease = () => {
                   dropoff: { ...prev.dropoff, ...apiData.dropoff },
                   pricing: { ...prev.pricing, ...apiData.pricing },
                   renter: { ...prev.renter, ...apiData.renter },
-                  // Merge extra options if needed, but for now replace if API returns them (currently API map doesn't return extras)
               }));
           }
-      } catch (error) {
-          alert("Failed to load reservation data");
       } finally {
           setIsLoading(false);
       }
