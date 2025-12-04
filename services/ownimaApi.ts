@@ -1,4 +1,3 @@
-
 import { LeaseData } from "../types";
 import { authService } from "./authService";
 

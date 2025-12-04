@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { pdf } from '@react-pdf/renderer';
-import { Download, Wand2, Loader2, RotateCcw, FileText, Car, Globe, Share2, LogIn } from 'lucide-react';
+import { Download, Wand2, Loader2, RotateCcw, FileText, Car, Globe, Share2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import InvoicePreview from '../components/InvoicePreview';
@@ -15,7 +15,6 @@ import { LoginModal } from '../components/modals/LoginModal';
 import { useInvoice } from '../hooks/useInvoice';
 import { useLease } from '../hooks/useLease';
 import { parseInvoiceText, parseLeaseText } from '../services/geminiService';
-import { authService } from '../services/authService';
 import { Language } from '../types';
 import { t } from '../utils/i18n';
 
