@@ -38,6 +38,7 @@ export interface InvoiceData {
 
 export interface LeaseData {
   reservationId: string;
+  contractTemplateId?: string; // New field for Server-Side Preview
   source: string;
   createdDate: string; // DateTime string
   vehicle: {
@@ -152,6 +153,7 @@ Both parties agree to the terms and conditions stated herein and confirm this wi
 
 export const INITIAL_LEASE: LeaseData = {
   reservationId: '9048',
+  contractTemplateId: '',
   source: 'OFFLINE_WALK_IN',
   createdDate: new Date().toISOString().slice(0, 16).replace('T', ' '),
   vehicle: {

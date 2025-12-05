@@ -34,9 +34,12 @@ const LeaseForm: React.FC<LeaseFormProps> = ({ data, handlers }) => {
                    {isLoading ? <Loader2 size={16} className="animate-spin" /> : <CloudDownload size={16} />}
                </button>
            </InputGroup>
-           <InputGroup label="Source" value={data.source} onChange={(v) => updateLease(null, 'source', v)} />
+           <InputGroup label="Template ID" value={data.contractTemplateId || ''} onChange={(v) => updateLease(null, 'contractTemplateId', v)} placeholder="Optional" />
         </div>
-        <InputGroup label="Created On" value={data.createdDate} onChange={(v) => updateLease(null, 'createdDate', v)} />
+        <div className="grid grid-cols-2 gap-3">
+            <InputGroup label="Source" value={data.source} onChange={(v) => updateLease(null, 'source', v)} />
+            <InputGroup label="Created On" value={data.createdDate} onChange={(v) => updateLease(null, 'createdDate', v)} />
+        </div>
         
         <div className="pt-4 border-t border-slate-200 mt-4">
              <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 bg-slate-100 p-1 pl-2 rounded">Vehicle Details</h4>

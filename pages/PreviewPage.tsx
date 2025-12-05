@@ -2,8 +2,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { PDFViewer, pdf } from '@react-pdf/renderer';
-import { Loader2, AlertCircle, Lock, Download } from 'lucide-react';
-import { fetchReservation } from '../services/ownimaApi';
+import { Loader2, AlertCircle, Lock, Download, Printer } from 'lucide-react';
+import { fetchReservation, fetchInvoiceHtml, fetchInvoicePdfBlob } from '../services/ownimaApi';
 import { authService } from '../services/authService';
 import { LeasePdf } from '../components/LeasePdf';
 import LeasePreview from '../components/LeasePreview';
@@ -19,6 +19,10 @@ export default function PreviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  
+  // Server Side Rendering State
+  const templateId = searchParams.get('template_id');
+  const [serverHtml, setServerHtml] = useState<string | null>(null);
   
   const isMobile = useIsMobile();
   const [isDownloading, setIsDownloading] = useState(false);
@@ -40,6 +44,15 @@ export default function PreviewPage() {
       setError(null);
       setShowLoginModal(false); // Reset modal state when retrying
       
+      // BRANCH: If template_id provided, fetch SERVER-SIDE HTML
+      if (templateId) {
+          const html = await fetchInvoiceHtml(id, templateId);
+          setServerHtml(html);
+          setLoading(false);
+          return;
+      }
+
+      // BRANCH: Normal CLIENT-SIDE logic
       // 1. Fetch data from API
       const apiData = await fetchReservation(id);
       
@@ -78,12 +91,12 @@ export default function PreviewPage() {
          setShowLoginModal(true);
       } else {
          console.error(err);
-         setError("Failed to load reservation data");
+         setError("Failed to load document");
       }
     } finally {
       setLoading(false);
     }
-  }, [id, searchParams]);
+  }, [id, templateId, searchParams]);
 
   useEffect(() => {
     loadData();
@@ -109,9 +122,9 @@ export default function PreviewPage() {
     return () => window.removeEventListener('message', handleMessage);
   }, [loadData, id]);
 
-  // Handle Blob Output Mode (Direct PDF View)
+  // Handle Blob Output Mode (Direct PDF View for CLIENT SIDE flow only)
   useEffect(() => {
-    if (!data || outputMode !== 'blob') return;
+    if (!data || outputMode !== 'blob' || templateId) return;
 
     const generateAndRedirect = async () => {
         try {
@@ -123,7 +136,6 @@ export default function PreviewPage() {
             const url = URL.createObjectURL(blob);
             
             // Redirect current window/iframe to the blob URL
-            // This replaces the React App with the raw PDF file in the viewer
             window.location.replace(url);
         } catch (e) {
             console.error("Blob generation failed", e);
@@ -132,14 +144,14 @@ export default function PreviewPage() {
     };
 
     generateAndRedirect();
-  }, [data, outputMode]);
+  }, [data, outputMode, templateId]);
 
   const handleLoginSuccess = () => {
       // Retry loading data after successful login
       loadData();
   };
 
-  const handleDownload = async () => {
+  const handleDownloadClientPdf = async () => {
     if (!data) return;
     setIsDownloading(true);
     try {
@@ -161,12 +173,33 @@ export default function PreviewPage() {
     }
   };
 
+  const handleDownloadServerPdf = async () => {
+      if (!id || !templateId) return;
+      setIsDownloading(true);
+      try {
+          const blob = await fetchInvoicePdfBlob(id, templateId);
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `invoice_${id}.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+      } catch (e) {
+          console.error("Server PDF Download Error", e);
+          alert("Failed to download PDF from server");
+      } finally {
+          setIsDownloading(false);
+      }
+  };
+
   // --- LOADING STATE ---
   if (loading) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-100 text-slate-500">
         <Loader2 className="animate-spin mb-4" size={48} />
-        <p>Loading Lease Document...</p>
+        <p>Loading Document...</p>
       </div>
     );
   }
@@ -203,10 +236,40 @@ export default function PreviewPage() {
       );
   }
 
+  // --- SERVER-SIDE PREVIEW (HTML) ---
+  if (serverHtml && templateId) {
+      return (
+        <div className="h-screen w-full bg-slate-800 flex flex-col">
+            <div className="bg-slate-900 p-4 text-white flex justify-between items-center shadow-md shrink-0">
+                <div>
+                    <h1 className="font-bold text-lg">Server Preview</h1>
+                    <p className="text-xs text-slate-400">ID: {id} • Template: {templateId}</p>
+                </div>
+                <button 
+                    onClick={handleDownloadServerPdf}
+                    disabled={isDownloading}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-medium flex items-center gap-2 shadow transition-all active:scale-95 disabled:opacity-70 disabled:cursor-wait"
+                >
+                    {isDownloading ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />} 
+                    Download PDF
+                </button>
+            </div>
+            <div className="flex-1 w-full bg-white overflow-hidden">
+                <iframe 
+                    title="Invoice Preview"
+                    srcDoc={serverHtml}
+                    className="w-full h-full border-0"
+                />
+            </div>
+        </div>
+      );
+  }
+
+  // --- CLIENT-SIDE PREVIEW FALLBACKS ---
+  
   if (!data) return null;
 
-  // --- RAW BLOB OUTPUT STATE ---
-  // If output=blob, we show a loader while the useEffect above handles the redirect
+  // Raw Blob Output
   if (outputMode === 'blob') {
       return (
         <div className="h-screen w-full flex flex-col items-center justify-center bg-white">
@@ -216,31 +279,25 @@ export default function PreviewPage() {
       );
   }
 
-  // --- MOBILE VIEW (HTML Fallback) ---
+  // Mobile View (HTML Fallback)
   if (isMobile) {
       return (
         <div className="min-h-screen bg-slate-100 flex flex-col relative">
-            {/* Mobile Header */}
             <div className="bg-slate-900 p-4 text-white shadow-md sticky top-0 z-20 flex justify-between items-center">
                 <div>
                     <h1 className="font-bold text-lg">Lease Preview</h1>
                     <p className="text-xs text-slate-400">ID: {id}</p>
                 </div>
             </div>
-
-            {/* Scrollable Content Area */}
             <div className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-200 p-4 custom-scrollbar">
-                {/* Scale wrapper to fit 210mm (~794px) content onto small mobile screens */}
                 <div className="w-full flex justify-center pb-24">
                      <div className="origin-top transform scale-[0.45] sm:scale-[0.6] bg-white shadow-2xl">
                         <LeasePreview data={data} />
                      </div>
                 </div>
             </div>
-
-            {/* FAB Download Button */}
             <button 
-                onClick={handleDownload}
+                onClick={handleDownloadClientPdf}
                 disabled={isDownloading}
                 className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6 py-4 shadow-xl z-30 transition-all active:scale-95 disabled:opacity-70 flex items-center gap-3 font-bold"
             >
@@ -251,7 +308,7 @@ export default function PreviewPage() {
       );
   }
 
-  // --- DESKTOP VIEW (PDF Viewer) ---
+  // Desktop View (PDF Viewer)
   return (
     <div className="h-screen w-full bg-slate-800 flex flex-col">
        <div className="bg-slate-900 p-4 text-white flex justify-between items-center shadow-md">
@@ -260,7 +317,7 @@ export default function PreviewPage() {
                 <p className="text-xs text-slate-400">ID: {id}</p>
             </div>
             <button 
-                onClick={handleDownload}
+                onClick={handleDownloadClientPdf}
                 className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-1.5 rounded text-sm flex items-center gap-2 transition-colors"
             >
                 <Download size={14} /> Download File

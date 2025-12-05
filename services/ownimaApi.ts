@@ -1,8 +1,13 @@
+
 import { LeaseData } from "../types";
 import { authService } from "./authService";
 
 // @ts-ignore
-const API_BASE_URL = process.env.OWNIMA_API_URL || 'https://stage.ownima.com/api/v1/reservation';
+const BASE_RESERVATION_URL = process.env.OWNIMA_API_URL || 'https://stage.ownima.com/api/v1/reservation';
+// Derive API V1 Root by removing /reservation
+const API_V1_ROOT = BASE_RESERVATION_URL.replace(/\/reservation\/?$/, '');
+
+const INVOICE_ENDPOINT = `${API_V1_ROOT}/finance/invoice`;
 
 const mapResponseToLeaseData = (json: any): Partial<LeaseData> => {
     try {
@@ -90,19 +95,21 @@ const mapResponseToLeaseData = (json: any): Partial<LeaseData> => {
     }
 };
 
+const getAuthHeaders = (): Record<string, string> => {
+    const token = authService.getToken();
+    const headers: Record<string, string> = {
+        'accept': 'application/json'
+    };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+};
+
 export const fetchReservation = async (id: string): Promise<Partial<LeaseData> | null> => {
     try {
-        const token = authService.getToken();
-        const headers: Record<string, string> = {
-            'accept': 'application/json'
-        };
-        
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const response = await fetch(`${API_BASE_URL}/${id}`, {
-            headers
+        const response = await fetch(`${BASE_RESERVATION_URL}/${id}`, {
+            headers: getAuthHeaders()
         });
 
         if (response.status === 401) {
@@ -118,6 +125,50 @@ export const fetchReservation = async (id: string): Promise<Partial<LeaseData> |
 
     } catch (error) {
         console.error("Fetch Reservation Error", error);
+        throw error;
+    }
+};
+
+export const fetchInvoiceHtml = async (reservationId: string, templateId: string): Promise<string> => {
+    try {
+        const url = `${INVOICE_ENDPOINT}/${reservationId}/${templateId}?output=html`;
+        const response = await fetch(url, {
+            headers: getAuthHeaders()
+        });
+
+        if (response.status === 401) {
+            throw new Error("Unauthorized");
+        }
+
+        if (!response.ok) {
+             throw new Error(`Invoice API Error: ${response.status}`);
+        }
+
+        return await response.text();
+    } catch (error) {
+        console.error("Fetch Invoice HTML Error", error);
+        throw error;
+    }
+};
+
+export const fetchInvoicePdfBlob = async (reservationId: string, templateId: string): Promise<Blob> => {
+    try {
+        const url = `${INVOICE_ENDPOINT}/${reservationId}/${templateId}?output=pdf`;
+        const response = await fetch(url, {
+            headers: getAuthHeaders()
+        });
+
+        if (response.status === 401) {
+            throw new Error("Unauthorized");
+        }
+
+        if (!response.ok) {
+             throw new Error(`Invoice API Error: ${response.status}`);
+        }
+
+        return await response.blob();
+    } catch (error) {
+        console.error("Fetch Invoice PDF Error", error);
         throw error;
     }
 };

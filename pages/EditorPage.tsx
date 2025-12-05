@@ -139,6 +139,14 @@ export default function EditorPage() {
       setLang(prev => prev === 'ru' ? 'en' : 'ru');
   };
 
+  const getLeasePreviewLink = () => {
+      let link = `/preview/lease/${lease.data.reservationId}`;
+      if (lease.data.contractTemplateId) {
+          link += `?template_id=${lease.data.contractTemplateId}`;
+      }
+      return link;
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col md:flex-row font-sans">
       
@@ -242,7 +250,7 @@ export default function EditorPage() {
              <div className="flex gap-2">
                 {docType === 'lease' && lease.data.reservationId && (
                      <Link 
-                        to={`/preview/lease/${lease.data.reservationId}`}
+                        to={getLeasePreviewLink()}
                         target="_blank"
                         className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow transition-all"
                         title="Open Shareable Link"
