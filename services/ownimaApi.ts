@@ -43,6 +43,12 @@ const mapResponseToLeaseData = (json: any): Partial<LeaseData> => {
         const pickupTime = formatTime(p.collect_time, p.asked_early_pickup, p.asked_late_pickup);
         const dropoffTime = formatTime(d.return_time, d.asked_early_return, d.asked_late_return);
 
+        // Determine Display ID (Humanized)
+        let reservationId = r.id;
+        if (r.humanized?.owner_id && r.humanized?.id) {
+            reservationId = `${r.humanized.owner_id}-${r.humanized.id}`;
+        }
+
         // Extra Options Parsing
         // The API returns selected_extra_options as an array of objects wrapping the actual option and calculation
         const rawOptions = r.selected_extra_options || [];
@@ -52,7 +58,7 @@ const mapResponseToLeaseData = (json: any): Partial<LeaseData> => {
         }));
 
         return {
-            reservationId: r.id,
+            reservationId: reservationId,
             source: r.humanized?.source || r.source,
             createdDate: r.created_date ? r.created_date.split('T').join(' ').slice(0, 16) : '',
             vehicle: {
