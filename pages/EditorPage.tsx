@@ -99,7 +99,7 @@ export default function EditorPage() {
       if (error.message === 'Unauthorized') {
         setShowLoginModal(true);
       } else {
-        alert("Failed to load reservation data");
+        alert(t('preview_not_found', lang));
       }
     }
   };
@@ -129,7 +129,7 @@ export default function EditorPage() {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error("PDF Error", error);
-      alert("Ошибка PDF");
+      alert("Error");
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -157,13 +157,13 @@ export default function EditorPage() {
                 onClick={() => setMobileTab('edit')}
                 className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider transition-colors border-b-2 ${mobileTab === 'edit' ? 'border-blue-500 bg-slate-800 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
             >
-                {lang === 'ru' ? 'Редактор' : 'Editor'}
+                {t('mobile_editor_tab', lang)}
             </button>
              <button 
                 onClick={() => setMobileTab('preview')}
                 className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider transition-colors border-b-2 ${mobileTab === 'preview' ? 'border-blue-500 bg-slate-800 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
             >
-                {t('preview', lang)}
+                {t('mobile_preview_tab', lang)}
             </button>
         </div>
       )}
@@ -225,7 +225,7 @@ export default function EditorPage() {
 
           {/* DYNAMIC FORM RENDER */}
           {docType === 'invoice' ? (
-              <InvoiceForm data={invoice.data} handlers={invoice} />
+              <InvoiceForm data={invoice.data} handlers={invoice} lang={lang} />
           ) : (
               <LeaseForm 
                 data={lease.data} 
@@ -233,6 +233,7 @@ export default function EditorPage() {
                     ...lease,
                     loadFromApi: handleLeaseLoad // Intercept loadFromApi to handle auth errors
                 }} 
+                lang={lang}
               />
           )}
         
@@ -257,7 +258,7 @@ export default function EditorPage() {
                         to={getLeasePreviewLink()}
                         target="_blank"
                         className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow transition-all"
-                        title="Open Shareable Link"
+                        title={t('open_shareable_link', lang)}
                     >
                         <Share2 size={18} />
                     </Link>
@@ -284,7 +285,7 @@ export default function EditorPage() {
                 {docType === 'invoice' ? (
                     <InvoicePreview data={invoice.data} />
                 ) : (
-                    <LeasePreview data={lease.data} />
+                    <LeasePreview data={lease.data} lang={lang} />
                 )}
             </div>
         </div>
@@ -295,6 +296,7 @@ export default function EditorPage() {
         isOpen={showLoginModal} 
         onClose={() => setShowLoginModal(false)}
         onSuccess={() => handleLeaseLoad()} // Retry on success
+        lang={lang}
       />
 
       {/* AI MODAL */}

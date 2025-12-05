@@ -1,15 +1,19 @@
+
 import React, { useState } from 'react';
 import { Loader2, Lock, X } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { BrandLogo } from '../ui/BrandLogo';
+import { Language } from '../../types';
+import { t } from '../../utils/i18n';
 
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  lang?: Language;
 }
 
-export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) => {
+export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess, lang = 'en' }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -41,9 +45,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
                 <BrandLogo className="text-white h-5 mb-1" />
                 <h3 className="text-lg font-bold flex items-center gap-2">
                     <Lock size={16} />
-                    Restricted Access
+                    {t('login_title', lang)}
                 </h3>
-                <p className="text-slate-400 text-xs">Please log in to view this document.</p>
+                <p className="text-slate-400 text-xs">{t('login_desc', lang)}</p>
             </div>
             <button onClick={onClose} className="text-slate-400 hover:text-white">
                 <X size={20} />
@@ -58,7 +62,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
           )}
           
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Username / Email</label>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('lbl_username', lang)}</label>
             <input 
               type="text" 
               className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
@@ -69,7 +73,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
           </div>
           
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Password</label>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('lbl_password', lang)}</label>
             <input 
               type="password" 
               className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
@@ -85,7 +89,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
                 disabled={isLoading}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded transition-colors flex justify-center items-center gap-2"
             >
-                {isLoading ? <Loader2 size={18} className="animate-spin" /> : 'Log In'}
+                {isLoading ? <Loader2 size={18} className="animate-spin" /> : t('btn_login', lang)}
             </button>
           </div>
         </form>

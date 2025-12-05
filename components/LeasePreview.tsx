@@ -1,12 +1,14 @@
 
 import React from 'react';
-import { LeaseData } from '../types';
+import { LeaseData, Language } from '../types';
+import { t } from '../utils/i18n';
 
 interface LeasePreviewProps {
   data: LeaseData;
+  lang?: Language;
 }
 
-const LeasePreview: React.FC<LeasePreviewProps> = ({ data }) => {
+const LeasePreview: React.FC<LeasePreviewProps> = ({ data, lang = 'en' }) => {
   const isNonDefaultTime = (time: string) => time.includes('(Early)') || time.includes('(Late)');
 
   const getTimeClasses = (time: string) => {
@@ -22,18 +24,18 @@ const LeasePreview: React.FC<LeasePreviewProps> = ({ data }) => {
       {/* Header */}
       <div className="flex justify-between items-start mb-6">
         <div>
-          <h1 className="text-3xl font-bold mb-4">Lease agreement</h1>
+          <h1 className="text-3xl font-bold mb-4">{t('lp_lease_agreement', lang)}</h1>
           <div className="flex gap-8 text-xs text-gray-500 uppercase tracking-wider">
             <div>
-              <div className="mb-1">Reservation ID</div>
+              <div className="mb-1">{t('lp_reservation_id', lang)}</div>
               <div className="text-black font-mono text-sm">{data.reservationId}</div>
             </div>
             <div>
-              <div className="mb-1">Source</div>
+              <div className="mb-1">{t('lp_source', lang)}</div>
               <div className="text-black font-medium">{data.source}</div>
             </div>
             <div>
-              <div className="mb-1">Created on</div>
+              <div className="mb-1">{t('lp_created_on', lang)}</div>
               <div className="text-black">{data.createdDate}</div>
             </div>
           </div>
@@ -61,8 +63,8 @@ const LeasePreview: React.FC<LeasePreviewProps> = ({ data }) => {
       <div className="flex border border-gray-200 rounded-lg overflow-hidden mb-6">
         <div className="w-1/2 p-4 border-r border-gray-200">
             <div className="flex justify-between items-baseline mb-1">
-                <span className="text-xs text-gray-500 font-bold uppercase">Pick-up</span>
-                <span className="text-[10px] text-gray-400">Default pick-up</span>
+                <span className="text-xs text-gray-500 font-bold uppercase">{t('lp_pickup', lang)}</span>
+                <span className="text-[10px] text-gray-400">{t('lp_default_pickup', lang)}</span>
             </div>
             <div className="flex justify-between items-center mt-2">
                 <div className="font-bold text-lg">{data.pickup.date}</div>
@@ -71,8 +73,8 @@ const LeasePreview: React.FC<LeasePreviewProps> = ({ data }) => {
         </div>
         <div className="w-1/2 p-4 bg-gray-50">
             <div className="flex justify-between items-baseline mb-1">
-                <span className="text-xs text-gray-500 font-bold uppercase">Return</span>
-                <span className="text-[10px] text-gray-400">Default return</span>
+                <span className="text-xs text-gray-500 font-bold uppercase">{t('lp_return', lang)}</span>
+                <span className="text-[10px] text-gray-400">{t('lp_default_return', lang)}</span>
             </div>
              <div className="flex justify-between items-center mt-2">
                 <div className="font-bold text-lg">{data.dropoff.date}</div>
@@ -84,19 +86,19 @@ const LeasePreview: React.FC<LeasePreviewProps> = ({ data }) => {
       {/* Pricing Breakdown */}
       <div className="grid grid-cols-2 gap-8 mb-8 text-sm">
         <div>
-            <div className="font-bold text-gray-400 uppercase text-xs mb-2">Rental Cost</div>
+            <div className="font-bold text-gray-400 uppercase text-xs mb-2">{t('lp_rental_cost', lang)}</div>
             <div className="flex justify-between border-b border-gray-100 py-1">
-                <span>Regular price ({data.pricing.daysRegular} days)</span>
+                <span>{t('lp_regular_price', lang)} ({data.pricing.daysRegular} {t('lp_days', lang)})</span>
                 <span className="font-mono">{data.pricing.priceRegular} THB</span>
             </div>
             <div className="flex justify-between border-b border-gray-100 py-1">
-                <span>Season price ({data.pricing.daysSeason} days)</span>
+                <span>{t('lp_season_price', lang)} ({data.pricing.daysSeason} {t('lp_days', lang)})</span>
                 <span className="font-mono">{data.pricing.priceSeason} THB</span>
             </div>
         </div>
         <div>
-            <div className="font-bold text-gray-400 uppercase text-xs mb-2">Extra options</div>
-             {data.extraOptions.length === 0 && <div className="text-gray-400 italic">None</div>}
+            <div className="font-bold text-gray-400 uppercase text-xs mb-2">{t('lp_extra_options', lang)}</div>
+             {data.extraOptions.length === 0 && <div className="text-gray-400 italic">{t('lp_none', lang)}</div>}
              {data.extraOptions.map((opt, i) => (
                 <div key={i} className="flex justify-between border-b border-gray-100 py-1">
                     <span>{opt.name}</span>
@@ -110,17 +112,17 @@ const LeasePreview: React.FC<LeasePreviewProps> = ({ data }) => {
       <div className="flex gap-6 mb-8">
         <div className="flex-1 bg-gray-50 p-4 rounded border border-gray-200">
             <div className="flex justify-between items-baseline mb-1">
-                 <h3 className="font-bold text-lg">Deposit</h3>
+                 <h3 className="font-bold text-lg">{t('lp_deposit', lang)}</h3>
                  <span className="text-2xl font-bold">{data.pricing.deposit} THB</span>
             </div>
-            <p className="text-[10px] text-gray-500">Return at the end of the rental period</p>
+            <p className="text-[10px] text-gray-500">{t('lp_return_at_end', lang)}</p>
         </div>
         <div className="flex-1 bg-gray-100 p-4 rounded border border-gray-200">
             <div className="flex justify-between items-baseline mb-1">
-                 <h3 className="font-bold text-lg">Total price</h3>
+                 <h3 className="font-bold text-lg">{t('lp_total_price', lang)}</h3>
                  <span className="text-2xl font-bold">{data.pricing.total} THB</span>
             </div>
-            <p className="text-[10px] text-gray-500">Paid separately</p>
+            <p className="text-[10px] text-gray-500">{t('lp_paid_separately', lang)}</p>
         </div>
       </div>
 
@@ -140,20 +142,20 @@ const LeasePreview: React.FC<LeasePreviewProps> = ({ data }) => {
             <div className="text-xs text-gray-500 mb-6">{data.owner.address}</div>
             
             <div className="mb-8">
-                <div className="font-bold mb-8">Owner <span className="font-normal text-gray-400 text-xs ml-2">Lessor</span></div>
+                <div className="font-bold mb-8">{t('lp_owner', lang)} <span className="font-normal text-gray-400 text-xs ml-2">{t('lp_lessor', lang)}</span></div>
                 <div className="border-b border-gray-300 mb-1"></div>
-                <div className="text-xs text-gray-400">Date, signature</div>
+                <div className="text-xs text-gray-400">{t('lp_date_signature', lang)}</div>
             </div>
         </div>
         <div>
             <h3 className="font-bold text-lg mb-1">{data.renter.surname}</h3>
             <div className="text-xs text-gray-500 mb-1">{data.renter.contact}</div>
-            <div className="text-xs text-gray-500 mb-6">Passport: {data.renter.passport || '______________'}</div>
+            <div className="text-xs text-gray-500 mb-6">{t('lp_passport', lang)}: {data.renter.passport || '______________'}</div>
 
             <div className="mb-8">
-                <div className="font-bold mb-8">Rider <span className="font-normal text-gray-400 text-xs ml-2">Tenant</span></div>
+                <div className="font-bold mb-8">{t('lp_rider', lang)} <span className="font-normal text-gray-400 text-xs ml-2">{t('lp_tenant', lang)}</span></div>
                  <div className="border-b border-gray-300 mb-1"></div>
-                <div className="text-xs text-gray-400">Date, signature</div>
+                <div className="text-xs text-gray-400">{t('lp_date_signature', lang)}</div>
             </div>
         </div>
       </div>

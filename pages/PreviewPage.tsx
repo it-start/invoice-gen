@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { PDFViewer, pdf } from '@react-pdf/renderer';
@@ -7,9 +8,10 @@ import { authService } from '../services/authService';
 import { LeasePdf } from '../components/LeasePdf';
 import LeasePreview from '../components/LeasePreview';
 import { LoginModal } from '../components/modals/LoginModal';
-import { LeaseData } from '../types';
+import { LeaseData, Language } from '../types';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { BrandLogo } from '../components/ui/BrandLogo';
+import { t } from '../utils/i18n';
 
 export default function PreviewPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +20,7 @@ export default function PreviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [lang, setLang] = useState<Language>('en');
   
   // Server Side Rendering State
   const templateId = searchParams.get('template_id');
@@ -28,6 +31,14 @@ export default function PreviewPage() {
 
   // Check output mode: 'blob' implies redirecting to raw pdf, undefined implies UI wrapper
   const outputMode = searchParams.get('output');
+
+  useEffect(() => {
+    // Simple language detection
+    const browserLang = navigator.language;
+    if (browserLang.toLowerCase().startsWith('ru')) {
+        setLang('ru');
+    }
+  }, []);
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -61,12 +72,12 @@ export default function PreviewPage() {
          setShowLoginModal(true);
       } else {
          console.error(err);
-         setError("Failed to load document");
+         setError(t('preview_not_found', lang));
       }
     } finally {
       setLoading(false);
     }
-  }, [id, templateId, searchParams]);
+  }, [id, templateId, searchParams, lang]);
 
   useEffect(() => {
     loadData();
@@ -169,7 +180,7 @@ export default function PreviewPage() {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-100 text-slate-500">
         <Loader2 className="animate-spin mb-4" size={48} />
-        <p>Loading Document...</p>
+        <p>{t('preview_loading', lang)}</p>
       </div>
     );
   }
@@ -179,7 +190,7 @@ export default function PreviewPage() {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-100 text-red-500">
         <AlertCircle size={48} className="mb-4" />
-        <p className="text-xl font-bold">{error || "Document not found"}</p>
+        <p className="text-xl font-bold">{error || t('preview_not_found', lang)}</p>
       </div>
     );
   }
@@ -191,19 +202,20 @@ export default function PreviewPage() {
               <Lock size={64} className="mb-6 text-slate-600" />
               <div className="mb-8 flex flex-col items-center">
                  <BrandLogo className="text-white h-8 mb-6" />
-                 <h2 className="text-2xl font-bold mb-2">Restricted Access</h2>
-                 <p className="text-slate-400">Authentication required to view this document.</p>
+                 <h2 className="text-2xl font-bold mb-2">{t('login_title', lang)}</h2>
+                 <p className="text-slate-400">{t('login_desc', lang)}</p>
               </div>
               <button 
                 onClick={() => setShowLoginModal(true)} 
                 className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-bold"
               >
-                  Log In
+                  {t('btn_login', lang)}
               </button>
               <LoginModal 
                   isOpen={showLoginModal} 
                   onClose={() => setShowLoginModal(false)}
                   onSuccess={handleLoginSuccess}
+                  lang={lang}
               />
           </div>
       );
@@ -218,7 +230,7 @@ export default function PreviewPage() {
                     <BrandLogo className="text-white h-5" />
                     <div className="h-6 w-px bg-slate-700"></div>
                     <div>
-                        <h1 className="font-bold text-sm">Server Preview</h1>
+                        <h1 className="font-bold text-sm">{t('server_preview', lang)}</h1>
                         <p className="text-[10px] text-slate-400">ID: {id}</p>
                     </div>
                 </div>
@@ -228,7 +240,7 @@ export default function PreviewPage() {
                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-medium flex items-center gap-2 shadow transition-all active:scale-95 disabled:opacity-70 disabled:cursor-wait"
                 >
                     {isDownloading ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />} 
-                    Download PDF
+                    {t('download_pdf', lang)}
                 </button>
             </div>
             <div className="flex-1 w-full bg-white overflow-hidden">
@@ -251,7 +263,7 @@ export default function PreviewPage() {
       return (
         <div className="h-screen w-full flex flex-col items-center justify-center bg-white">
             <Loader2 className="animate-spin mb-4 text-blue-600" size={48} />
-            <p className="text-slate-500 font-medium">Generating PDF...</p>
+            <p className="text-slate-500 font-medium">{t('generating_blob', lang)}</p>
         </div>
       );
   }
@@ -263,14 +275,14 @@ export default function PreviewPage() {
             <div className="bg-slate-900 p-4 text-white shadow-md sticky top-0 z-20 flex justify-between items-center">
                 <BrandLogo className="text-white h-5" />
                 <div className="text-right">
-                    <p className="font-bold text-xs opacity-80">Preview</p>
+                    <p className="font-bold text-xs opacity-80">{t('mobile_preview_tab', lang)}</p>
                     <p className="text-[10px] text-slate-400">ID: {id}</p>
                 </div>
             </div>
             <div className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-200 p-4 custom-scrollbar">
                 <div className="w-full flex justify-center pb-24">
                      <div className="origin-top transform scale-[0.45] sm:scale-[0.6] bg-white shadow-2xl">
-                        <LeasePreview data={data} />
+                        <LeasePreview data={data} lang={lang} />
                      </div>
                 </div>
             </div>
@@ -280,7 +292,7 @@ export default function PreviewPage() {
                 className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6 py-4 shadow-xl z-30 transition-all active:scale-95 disabled:opacity-70 flex items-center gap-3 font-bold"
             >
                 {isDownloading ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
-                Download PDF
+                {t('download_pdf', lang)}
             </button>
         </div>
       );
@@ -294,7 +306,7 @@ export default function PreviewPage() {
                 <BrandLogo className="text-white h-6" />
                 <div className="h-8 w-px bg-slate-700"></div>
                 <div>
-                    <h1 className="font-bold text-lg">Lease Agreement</h1>
+                    <h1 className="font-bold text-lg">{t('preview_lease_title', lang)}</h1>
                     <p className="text-xs text-slate-400">ID: {id}</p>
                 </div>
             </div>
@@ -302,7 +314,7 @@ export default function PreviewPage() {
                 onClick={handleDownloadClientPdf}
                 className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-1.5 rounded text-sm flex items-center gap-2 transition-colors"
             >
-                <Download size={14} /> Download File
+                <Download size={14} /> {t('download_file', lang)}
             </button>
        </div>
        <div className="flex-1 w-full">

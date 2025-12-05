@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Language } from '../../types';
+import { t } from '../../utils/i18n';
 
 interface Step {
     title: string;
@@ -10,9 +12,10 @@ interface Step {
 
 interface WizardContainerProps {
     steps: Step[];
+    lang?: Language;
 }
 
-export const WizardContainer: React.FC<WizardContainerProps> = ({ steps }) => {
+export const WizardContainer: React.FC<WizardContainerProps> = ({ steps, lang = 'en' }) => {
     const isMobile = useIsMobile();
     const [currentStep, setCurrentStep] = useState(0);
 
@@ -46,7 +49,7 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({ steps }) => {
             {/* Mobile Step Header */}
             <div className="flex items-center justify-between mb-2 px-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Step {currentStep + 1} of {steps.length}
+                    {t('step_counter', lang).replace('{current}', String(currentStep + 1)).replace('{total}', String(steps.length))}
                 </span>
                 <div className="flex gap-1">
                     {steps.map((_, idx) => (
@@ -74,14 +77,14 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({ steps }) => {
                     disabled={isFirst}
                     className={`flex-1 py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${isFirst ? 'bg-slate-100 text-slate-400' : 'bg-white border border-slate-300 text-slate-700 active:bg-slate-50'}`}
                 >
-                    <ChevronLeft size={18} /> Back
+                    <ChevronLeft size={18} /> {t('btn_back', lang)}
                 </button>
                 <button
                     onClick={() => setCurrentStep(prev => Math.min(steps.length - 1, prev + 1))}
                     disabled={isLast}
                      className={`flex-1 py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-all ${isLast ? 'bg-slate-100 text-slate-400' : 'bg-blue-600 text-white shadow-lg active:scale-95'}`}
                 >
-                    Next <ChevronRight size={18} />
+                    {t('btn_next', lang)} <ChevronRight size={18} />
                 </button>
             </div>
         </div>
