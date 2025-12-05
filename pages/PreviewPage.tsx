@@ -1,14 +1,14 @@
+
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { PDFViewer, pdf } from '@react-pdf/renderer';
 import { Loader2, AlertCircle, Lock, Download } from 'lucide-react';
-import { fetchReservation, fetchInvoiceHtml, fetchInvoicePdfBlob } from '../services/ownimaApi';
+import { fetchInvoiceHtml, fetchInvoicePdfBlob, loadLeaseData } from '../services/ownimaApi';
 import { authService } from '../services/authService';
 import { LeasePdf } from '../components/LeasePdf';
 import LeasePreview from '../components/LeasePreview';
 import { LoginModal } from '../components/modals/LoginModal';
-import { LeaseData, INITIAL_LEASE } from '../types';
-import QRCode from 'qrcode';
+import { LeaseData } from '../types';
 import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function PreviewPage() {
@@ -52,38 +52,9 @@ export default function PreviewPage() {
       }
 
       // BRANCH: Normal CLIENT-SIDE logic
-      // 1. Fetch data from API
-      const apiData = await fetchReservation(id);
-      
-      if (!apiData || Object.keys(apiData).length === 0) {
-         setError("Reservation not found");
-         return;
-      }
-
-      // 2. Generate QR Code
-      const url = `https://stage.ownima.com/qr/${id}`;
-      let qrCodeUrl = undefined;
-      try {
-          qrCodeUrl = await QRCode.toDataURL(url, { margin: 1, width: 200 });
-      } catch (e) {
-          console.error("QR Error", e);
-      }
-
-      // 3. Merge data
-      const mergedData: LeaseData = {
-          ...INITIAL_LEASE,
-          ...apiData,
-          reservationId: id,
-          vehicle: { ...INITIAL_LEASE.vehicle, ...apiData.vehicle },
-          pickup: { ...INITIAL_LEASE.pickup, ...apiData.pickup },
-          dropoff: { ...INITIAL_LEASE.dropoff, ...apiData.dropoff },
-          pricing: { ...INITIAL_LEASE.pricing, ...apiData.pricing },
-          owner: { ...INITIAL_LEASE.owner, ...apiData.owner },
-          renter: { ...INITIAL_LEASE.renter, ...apiData.renter },
-          qrCodeUrl: qrCodeUrl
-      };
-      
-      setData(mergedData);
+      // Fetches API data, generates QR, and merges with defaults in one go
+      const fullLeaseData = await loadLeaseData(id);
+      setData(fullLeaseData);
 
     } catch (err: any) {
       if (err.message === 'Unauthorized') {

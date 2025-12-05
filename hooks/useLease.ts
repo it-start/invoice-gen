@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { LeaseData, INITIAL_LEASE } from '../types';
 import QRCode from 'qrcode';
-import { fetchReservation } from '../services/ownimaApi';
+import { loadLeaseData } from '../services/ownimaApi';
 
 export const useLease = () => {
   const [data, setData] = useState<LeaseData>(() => {
@@ -20,6 +20,8 @@ export const useLease = () => {
   }, [data]);
 
   // QR Code Generation
+  // Note: loadLeaseData already generates a QR code on load.
+  // This effect ensures QR updates if the user manually changes the reservation ID in the form.
   useEffect(() => {
     const generateQr = async () => {
         try {
@@ -74,18 +76,9 @@ export const useLease = () => {
       if (!data.reservationId) return;
       setIsLoading(true);
       try {
-          const apiData = await fetchReservation(data.reservationId);
-          if (apiData) {
-              setData(prev => ({
-                  ...prev,
-                  ...apiData,
-                  vehicle: { ...prev.vehicle, ...apiData.vehicle },
-                  pickup: { ...prev.pickup, ...apiData.pickup },
-                  dropoff: { ...prev.dropoff, ...apiData.dropoff },
-                  pricing: { ...prev.pricing, ...apiData.pricing },
-                  renter: { ...prev.renter, ...apiData.renter },
-              }));
-          }
+          // Use centralized loader to get full object including QR and merged defaults
+          const fullLeaseData = await loadLeaseData(data.reservationId);
+          setData(fullLeaseData);
       } finally {
           setIsLoading(false);
       }

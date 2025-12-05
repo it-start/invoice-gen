@@ -1,6 +1,7 @@
 
-import { LeaseData } from "../types";
+import { LeaseData, INITIAL_LEASE } from "../types";
 import { authService } from "./authService";
+import QRCode from 'qrcode';
 
 // @ts-ignore
 const BASE_RESERVATION_URL = process.env.OWNIMA_API_URL || 'https://stage.ownima.com/api/v1/reservation';
@@ -133,6 +134,43 @@ export const fetchReservation = async (id: string): Promise<Partial<LeaseData> |
         console.error("Fetch Reservation Error", error);
         throw error;
     }
+};
+
+/**
+ * Loads full lease data including fetching from API, generating QR code,
+ * and merging with default values to ensure a complete object.
+ */
+export const loadLeaseData = async (id: string): Promise<LeaseData> => {
+    // 1. Fetch data from API
+    const apiData = await fetchReservation(id);
+    
+    if (!apiData) {
+        throw new Error("Reservation not found");
+    }
+
+    // 2. Generate QR Code
+    let qrCodeUrl = undefined;
+    try {
+        const url = `https://stage.ownima.com/qr/${id}`;
+        qrCodeUrl = await QRCode.toDataURL(url, { margin: 1, width: 200 });
+    } catch (e) {
+        console.error("QR Error", e);
+    }
+
+    // 3. Merge with default structure
+    // Deep merge specific objects to avoid overwriting entire objects with partial data
+    return {
+        ...INITIAL_LEASE,
+        ...apiData,
+        reservationId: id, // Ensure ID matches what was requested
+        vehicle: { ...INITIAL_LEASE.vehicle, ...apiData.vehicle },
+        pickup: { ...INITIAL_LEASE.pickup, ...apiData.pickup },
+        dropoff: { ...INITIAL_LEASE.dropoff, ...apiData.dropoff },
+        pricing: { ...INITIAL_LEASE.pricing, ...apiData.pricing },
+        owner: { ...INITIAL_LEASE.owner, ...apiData.owner },
+        renter: { ...INITIAL_LEASE.renter, ...apiData.renter },
+        qrCodeUrl: qrCodeUrl
+    };
 };
 
 export const fetchInvoiceHtml = async (reservationId: string, templateId: string): Promise<string> => {
