@@ -94,7 +94,7 @@ const mapResponseToLeaseData = (json: any, ownerProfile?: OwnerProfile | null): 
 
         return {
             reservationId: reservationId,
-            source: humanizeSource(r.source),
+            source: humanizeSource(r.humanized?.source),
             createdDate: r.created_date ? r.created_date.split('T').join(' ').slice(0, 16) : '',
             vehicle: {
                 name: `${brand} ${model}, ${year}`.trim(),
