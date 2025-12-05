@@ -254,6 +254,18 @@ export const LeasePdf: React.FC<LeasePdfProps> = ({ data }) => {
                     <Text style={styles.text}>Season price ({data.pricing.daysSeason} days)</Text>
                     <Text style={styles.text}>{data.pricing.priceSeason} THB</Text>
                 </View>
+                {data.pickup.fee > 0 && (
+                    <View style={styles.pricingRow}>
+                        <Text style={styles.text}>Pick-up fee</Text>
+                        <Text style={styles.text}>{data.pickup.fee} THB</Text>
+                    </View>
+                )}
+                {data.dropoff.fee > 0 && (
+                    <View style={styles.pricingRow}>
+                        <Text style={styles.text}>Return fee</Text>
+                        <Text style={styles.text}>{data.dropoff.fee} THB</Text>
+                    </View>
+                )}
             </View>
              <View style={styles.flex1}>
                 <Text style={styles.label}>Extra Options</Text>

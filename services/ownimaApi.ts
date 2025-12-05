@@ -92,6 +92,10 @@ const mapResponseToLeaseData = (json: any, ownerProfile?: OwnerProfile | null): 
         // Use username or bio as contact placeholder since phone/email are not explicitly in profile schema
         const ownerContact = ownerProfile?.username || '+000000000';
 
+        // Pickup/Dropoff Fees logic
+        const pickupFee = (p.asked_early_pickup || p.asked_late_pickup) ? (p.extra_price || 0) : 0;
+        const dropoffFee = (d.asked_early_return || d.asked_late_return) ? (d.extra_price || 0) : 0;
+
         return {
             reservationId: reservationId,
             source: humanizeSource(r.humanized?.source),
@@ -103,11 +107,13 @@ const mapResponseToLeaseData = (json: any, ownerProfile?: OwnerProfile | null): 
             },
             pickup: {
                 date: r.date_from ? r.date_from.split('T')[0] : '',
-                time: pickupTime
+                time: pickupTime,
+                fee: pickupFee
             },
             dropoff: {
                 date: r.date_to ? r.date_to.split('T')[0] : '',
-                time: dropoffTime
+                time: dropoffTime,
+                fee: dropoffFee
             },
             pricing: {
                 daysRegular: i.prices?.regular_price_days || 0,

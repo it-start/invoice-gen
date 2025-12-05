@@ -49,10 +49,12 @@ export interface LeaseData {
   pickup: {
     date: string;
     time: string;
+    fee: number;
   };
   dropoff: {
     date: string;
     time: string;
+    fee: number;
   };
   pricing: {
     daysRegular: number;
@@ -163,11 +165,13 @@ export const INITIAL_LEASE: LeaseData = {
   },
   pickup: {
     date: '2025-11-10',
-    time: '14:00 - 16:00'
+    time: '14:00 - 16:00',
+    fee: 0
   },
   dropoff: {
     date: '2025-11-24',
-    time: '10:00 - 12:00'
+    time: '10:00 - 12:00',
+    fee: 0
   },
   pricing: {
     daysRegular: 3,

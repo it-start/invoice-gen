@@ -95,6 +95,18 @@ const LeasePreview: React.FC<LeasePreviewProps> = ({ data, lang = 'en' }) => {
                 <span>{t('lp_season_price', lang)} ({data.pricing.daysSeason} {t('lp_days', lang)})</span>
                 <span className="font-mono">{data.pricing.priceSeason} THB</span>
             </div>
+            {data.pickup.fee > 0 && (
+                <div className="flex justify-between border-b border-gray-100 py-1">
+                    <span>{t('lp_pickup_fee', lang)}</span>
+                    <span className="font-mono">{data.pickup.fee} THB</span>
+                </div>
+            )}
+            {data.dropoff.fee > 0 && (
+                <div className="flex justify-between border-b border-gray-100 py-1">
+                    <span>{t('lp_return_fee', lang)}</span>
+                    <span className="font-mono">{data.dropoff.fee} THB</span>
+                </div>
+            )}
         </div>
         <div>
             <div className="font-bold text-gray-400 uppercase text-xs mb-2">{t('lp_extra_options', lang)}</div>

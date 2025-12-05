@@ -83,6 +83,7 @@ export type TranslationKey =
   | 'grp_renter'
   | 'lbl_passport'
   | 'lbl_terms'
+  | 'lbl_fee'
   // Login
   | 'login_title'
   | 'login_desc'
@@ -122,7 +123,9 @@ export type TranslationKey =
   | 'lp_date_signature'
   | 'lp_rider'
   | 'lp_tenant'
-  | 'lp_passport';
+  | 'lp_passport'
+  | 'lp_pickup_fee'
+  | 'lp_return_fee';
 
 const dictionary: Record<Language, Record<TranslationKey, string>> = {
   ru: {
@@ -210,6 +213,7 @@ const dictionary: Record<Language, Record<TranslationKey, string>> = {
     grp_renter: 'РАЙДЕР (АРЕНДАТОР)',
     lbl_passport: 'Паспорт',
     lbl_terms: 'Юридические условия',
+    lbl_fee: 'Сбор (Fee)',
 
     // Login
     login_title: 'Ограниченный доступ',
@@ -252,7 +256,9 @@ const dictionary: Record<Language, Record<TranslationKey, string>> = {
     lp_date_signature: 'Дата, подпись',
     lp_rider: 'Райдер',
     lp_tenant: 'Арендатор',
-    lp_passport: 'Паспорт'
+    lp_passport: 'Паспорт',
+    lp_pickup_fee: 'Сбор за выдачу',
+    lp_return_fee: 'Сбор за возврат'
   },
   en: {
     invoice_editor: 'Invoice Editor',
@@ -339,6 +345,7 @@ const dictionary: Record<Language, Record<TranslationKey, string>> = {
     grp_renter: 'RIDER (TENANT)',
     lbl_passport: 'Passport No',
     lbl_terms: 'Legal Terms',
+    lbl_fee: 'Extra Fee',
 
     // Login
     login_title: 'Restricted Access',
@@ -381,7 +388,9 @@ const dictionary: Record<Language, Record<TranslationKey, string>> = {
     lp_date_signature: 'Date, signature',
     lp_rider: 'Rider',
     lp_tenant: 'Tenant',
-    lp_passport: 'Passport'
+    lp_passport: 'Passport',
+    lp_pickup_fee: 'Pick-up fee',
+    lp_return_fee: 'Return fee'
   },
 };
 

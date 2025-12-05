@@ -57,17 +57,19 @@ const LeaseForm: React.FC<LeaseFormProps> = ({ data, lang, handlers }) => {
       <div className="space-y-4">
          <div className="bg-white p-3 rounded-lg border border-slate-200">
             <span className="text-xs font-bold text-blue-600 uppercase block mb-3">{t('grp_pickup', lang)}</span>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 mb-2">
                 <InputGroup label={t('lbl_date', lang)} type="date" value={data.pickup.date} onChange={(v) => updateLease('pickup', 'date', v)} />
                 <InputGroup label={t('lbl_time', lang)} value={data.pickup.time} onChange={(v) => updateLease('pickup', 'time', v)} />
             </div>
+            <InputGroup label={t('lbl_fee', lang)} type="number" value={data.pickup.fee} onChange={(v) => updateLease('pickup', 'fee', Number(v))} placeholder="0" />
          </div>
          <div className="bg-white p-3 rounded-lg border border-slate-200">
             <span className="text-xs font-bold text-red-600 uppercase block mb-3">{t('grp_return', lang)}</span>
-             <div className="grid grid-cols-2 gap-3">
+             <div className="grid grid-cols-2 gap-3 mb-2">
                 <InputGroup label={t('lbl_date', lang)} type="date" value={data.dropoff.date} onChange={(v) => updateLease('dropoff', 'date', v)} />
                 <InputGroup label={t('lbl_time', lang)} value={data.dropoff.time} onChange={(v) => updateLease('dropoff', 'time', v)} />
             </div>
+            <InputGroup label={t('lbl_fee', lang)} type="number" value={data.dropoff.fee} onChange={(v) => updateLease('dropoff', 'fee', Number(v))} placeholder="0" />
          </div>
       </div>
   );
