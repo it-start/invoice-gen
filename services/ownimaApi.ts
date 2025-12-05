@@ -162,7 +162,7 @@ export const loadLeaseData = async (id: string): Promise<LeaseData> => {
     return {
         ...INITIAL_LEASE,
         ...apiData,
-        reservationId: id, // Ensure ID matches what was requested
+        // reservationId: id, // Ensure ID matches what was requested
         vehicle: { ...INITIAL_LEASE.vehicle, ...apiData.vehicle },
         pickup: { ...INITIAL_LEASE.pickup, ...apiData.pickup },
         dropoff: { ...INITIAL_LEASE.dropoff, ...apiData.dropoff },
