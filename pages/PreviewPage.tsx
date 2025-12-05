@@ -1,8 +1,7 @@
-
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { PDFViewer, pdf } from '@react-pdf/renderer';
-import { Loader2, AlertCircle, Lock, Download, Printer } from 'lucide-react';
+import { Loader2, AlertCircle, Lock, Download } from 'lucide-react';
 import { fetchReservation, fetchInvoiceHtml, fetchInvoicePdfBlob } from '../services/ownimaApi';
 import { authService } from '../services/authService';
 import { LeasePdf } from '../components/LeasePdf';
