@@ -2,34 +2,30 @@
 # 🚀 InvoiceGen Pro: Architecture & Roadmap
 
 ## 🧐 Current Status Review
-**Phases 1-5 Complete.**
-The application is a fully functional, AI-powered, API-connected document generator.
+**Phases 1-5 & Enterprise Features Complete.**
+The application has evolved into a production-ready tool with robust security, localization, and hybrid rendering capabilities.
 
 **Core Strengths:**
 *   **Dual Engine:** Seamlessly handles structured Invoices and complex Lease Agreements.
-*   **Connected:** Fetches real-time reservation data from Ownima.
+*   **Hybrid Rendering:** Supports Client-Side PDF generation (`@react-pdf`) and Server-Side HTML previews.
+*   **Secure:** Integrated Token-based Authentication, Login Modal, and Iframe PostMessage handshake.
+*   **Global:** Fully localized (EN/RU) UI and document output.
 *   **Mobile-First:** "Wizard Mode" makes complex data entry easy on phones.
-*   **Visuals:** High-fidelity PDF generation with auto-highlighting of critical data (Early/Late times).
 
 ---
 
-## 🚧 Current Focus: Phase 1.5 - Architecture Refactor
+## 🚧 Current Focus: Phase 1.5 - Architecture Cleanup
 
-Before moving to Digital Signatures, we must clean up technical debt to prevent bugs.
+We have successfully unified the data loading logic. The next immediate step is decomposing the large Editor component.
 
-### 1. ♻️ Unify Data Loading (DRY)
-*   **Problem:** `PreviewPage.tsx` and `useLease.ts` duplicate the logic for Fetching API -> Generating QR -> Merging Defaults.
-*   **Solution:** Extract this pipeline into `services/leaseLoader.ts`. Both the Editor (Import button) and Preview Page (On Load) will use this single function.
-
-### 2. 🧩 Decompose EditorPage
-*   **Problem:** `EditorPage.tsx` is too large (AI logic, Modal UI, PDF handlers).
+### 1. 🧩 Decompose EditorPage (Next Up)
+*   **Problem:** `EditorPage.tsx` is too large (AI logic, Modal UI, PDF handlers are inline).
 *   **Solution:**
     *   Extract `AiModal` to `components/modals/AiModal.tsx`.
     *   Extract AI state logic to `hooks/useAiAssistant.ts`.
 
-### 3. 📂 Standardize Structure
-*   **Problem:** Inconsistent folder nesting (`src/pages` vs `pages`).
-*   **Solution:** Move all pages to root `pages/`.
+### 2. 🧪 Test Coverage
+*   **Goal:** Add unit tests for the complex pricing logic in `ownimaApi.ts` and the mapping functions.
 
 ---
 
@@ -39,16 +35,23 @@ Before moving to Digital Signatures, we must clean up technical debt to prevent 
 *   Component Decomposition, Custom Hooks (`useInvoice`, `useLease`), Reusable UI.
 
 ### ✅ Phase 2: Consolidation & Polish
-*   PDF Architecture (Shared Styles), Localization (i18n), AI Schema Expansion.
+*   PDF Architecture (Shared Styles), AI Schema Expansion.
 
 ### ✅ Phase 3: Mobile Wizard Mode
 *   Mobile Detection, Wizard UI Container, Form Refactoring.
 
-### ✅ Phase 4: Styling Unification
-*   Design System (`pdfStyles.ts`), Layout Primitives, Table/Grid standardization.
+### ✅ Phase 4: Styling & Branding
+*   Design System (`pdfStyles.ts`), Logo/Favicon integration, "Ownima" branding.
 
-### ✅ Phase 5: External API Integration
-*   `ownimaApi` Service, Environment Config, "Load from Cloud" UI, Data Mapping.
+### ✅ Phase 5: External API & Architecture
+*   `ownimaApi` Service, Environment Config, `loadLeaseData` centralized loader.
+*   **Refactor:** Unified fetching, QR generation, and default merging into a single robust service function.
+
+### ✅ Phase 5.5: Enterprise Features
+*   **Auth:** Login Modal, Bearer Token management, 401 handling.
+*   **Integration:** Iframe `postMessage` support for embedding in dashboards.
+*   **Hybrid Preview:** Support for `?output=blob` (Raw PDF) and `?template_id` (Server-Side HTML).
+*   **i18n:** Full English/Russian translation of UI and Forms.
 
 ---
 
