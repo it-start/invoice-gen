@@ -18,12 +18,13 @@ import { parseInvoiceText, parseLeaseText } from '../services/geminiService';
 import { Language } from '../types';
 import { t } from '../utils/i18n';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { BrandLogo } from '../components/ui/BrandLogo';
 
 type DocType = 'invoice' | 'lease';
 
 export default function EditorPage() {
   const [docType, setDocType] = useState<DocType>('invoice');
-  const [lang, setLang] = useState<Language>('ru');
+  const [lang, setLang] = useState<Language>('en');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   
