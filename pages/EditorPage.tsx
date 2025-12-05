@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { Download, Wand2, Loader2, RotateCcw, FileText, Car, Globe, Share2 } from 'lucide-react';
@@ -18,7 +17,6 @@ import { parseInvoiceText, parseLeaseText } from '../services/geminiService';
 import { Language } from '../types';
 import { t } from '../utils/i18n';
 import { useIsMobile } from '../hooks/useIsMobile';
-import { BrandLogo } from '../components/ui/BrandLogo';
 
 type DocType = 'invoice' | 'lease';
 
