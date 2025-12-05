@@ -83,14 +83,14 @@ const styles = StyleSheet.create({
   // Time badge style
   timeBadge: {
     backgroundColor: '#000000',
-    borderRadius: 3,
+    // borderRadius: 3,
     paddingVertical: 1,
     paddingHorizontal: 4,
   },
   timeBadgeText: {
     color: '#ffffff',
-    fontSize: 7,
-    fontWeight: 'bold',
+    fontSize: 8,
+    // fontWeight: 'bold',
   },
   // Terms Text
   termsBox: {

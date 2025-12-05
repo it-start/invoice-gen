@@ -11,7 +11,7 @@ const LeasePreview: React.FC<LeasePreviewProps> = ({ data }) => {
 
   const getTimeClasses = (time: string) => {
       if (isNonDefaultTime(time)) {
-          return "bg-black text-white px-2 py-1 rounded font-bold text-xs shadow-sm";
+          return "bg-black text-white px-2 py-1 font-bold text-lg";
       }
       return "text-gray-600 text-lg";
   };
