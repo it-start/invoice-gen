@@ -32,14 +32,6 @@ export default function PreviewPage() {
   // Check output mode: 'blob' implies redirecting to raw pdf, undefined implies UI wrapper
   const outputMode = searchParams.get('output');
 
-  useEffect(() => {
-    // Simple language detection
-    const browserLang = navigator.language;
-    if (browserLang.toLowerCase().startsWith('ru')) {
-        setLang('ru');
-    }
-  }, []);
-
   const loadData = useCallback(async () => {
     if (!id) return;
     
