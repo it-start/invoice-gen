@@ -111,19 +111,44 @@ export const INITIAL_INVOICE: InvoiceData = {
 };
 
 export const DEFAULT_TERMS = `DAILY VEHICLE RENTAL AGREEMENT
-(hereinafter referred to as "Agreement")
+(hereinafter referred to as “Agreement”)
 
 1. Parties to the Agreement:
 1.1. Owner - the party providing the vehicle for rent.
 1.2. Rider (Tenant) - the party renting and using the vehicle.
 
 2. Subject of the Agreement:
-2.1. The Owner agrees to rent, and the Rider agrees to accept and use the vehicle described in the rental form.
-2.2. The rental is based on a daily rate, with specific pick-up and return times.
+2.1. The Owner agrees to rent, and the Rider agrees to accept and use the vehicle (hereinafter referred to as “Vehicle”) described in the rental form.
+2.2. The rental is based on a daily rate, with specific pick-up and return times indicated in the agreement.
 
-3. Responsibilities of the Rider:
-3.1. The Rider agrees to operate the Vehicle with care and in compliance with local traffic laws.
-3.2. The Rider assumes full financial responsibility for loss, damage, theft, or fines.`;
+3. Rental Period:
+3.1. Pick-up date and time: as specified in the “Pick-up” section.
+3.2. Return date and time: as specified in the “Return” section.
+3.3. Late returns are subject to additional charges as defined in the agreement.
+
+4. Payment Terms:
+4.1. The total rental fee is shown in the “Total Price” field.
+4.2. A refundable security deposit is required and indicated in the “Deposit” section.
+4.3. The deposit may be withheld partially or fully in case of vehicle damage, traffic fines, or late return.
+
+5. Responsibilities of the Rider:
+5.1. The Rider agrees to operate the Vehicle with care and in compliance with local traffic laws.
+5.2. The Rider must not allow third parties to operate the Vehicle without the Owner’s written consent.
+5.3. The Rider assumes full financial responsibility for loss, damage, theft, or fines incurred during the rental period.
+5.4. The Vehicle must be returned in the same condition as received, with the same level of fuel unless otherwise agreed.
+
+6. Responsibilities of the Owner:
+6.1. The Owner ensures that the Vehicle is in roadworthy condition at the time of rental.
+6.2. The Owner is not liable for any losses, delays, or damages resulting from Rider’s use of the Vehicle unless caused by previously undisclosed faults.
+
+7. Additional Conditions:
+7.1. Extension of the rental period is subject to availability and additional charges.
+7.2. No refunds are provided for early returns.
+7.3. The Rider confirms they hold a valid driver’s license and meet legal requirements for operating the rented Vehicle.
+7.4. This Agreement may be signed in paper or digital form and holds equal legal force.
+
+8. Signatures:
+Both parties agree to the terms and conditions stated herein and confirm this with their signatures.`;
 
 export const INITIAL_LEASE: LeaseData = {
   reservationId: '9048',
