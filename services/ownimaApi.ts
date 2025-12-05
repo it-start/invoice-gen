@@ -9,8 +9,18 @@ const BASE_RESERVATION_URL = process.env.OWNIMA_API_URL || 'https://stage.ownima
 const API_V1_ROOT = BASE_RESERVATION_URL.replace(/\/reservation\/?$/, '');
 
 const INVOICE_ENDPOINT = `${API_V1_ROOT}/finance/invoice`;
+const OWNER_PROFILE_ENDPOINT = `${API_V1_ROOT}/rider/owner`;
 
-const mapResponseToLeaseData = (json: any): Partial<LeaseData> => {
+interface OwnerProfile {
+    id: string;
+    username: string;
+    name: string;
+    address: string;
+    rent_service_name?: string;
+    bio?: string;
+}
+
+const mapResponseToLeaseData = (json: any, ownerProfile?: OwnerProfile | null): Partial<LeaseData> => {
     try {
         const r = json.reservation;
         if (!r) return {};
@@ -58,6 +68,12 @@ const mapResponseToLeaseData = (json: any): Partial<LeaseData> => {
             price: item.calculated_price ?? 0
         }));
 
+        // Owner Info Mapping
+        const ownerSurname = ownerProfile?.rent_service_name || ownerProfile?.name || 'Your Surname';
+        const ownerAddress = ownerProfile?.address || 'Address line';
+        // Use username or bio as contact placeholder since phone/email are not explicitly in profile schema
+        const ownerContact = ownerProfile?.username || '+000000000';
+
         return {
             reservationId: reservationId,
             source: r.humanized?.source || r.source,
@@ -91,9 +107,9 @@ const mapResponseToLeaseData = (json: any): Partial<LeaseData> => {
                 passport: '' 
             },
             owner: {
-                surname: 'Your Surname',
-                contact: '+000000000',
-                address: 'Address line'
+                surname: ownerSurname,
+                contact: ownerContact,
+                address: ownerAddress
             }
         };
     } catch (error) {
@@ -113,6 +129,24 @@ const getAuthHeaders = (): Record<string, string> => {
     return headers;
 };
 
+const fetchOwnerProfile = async (ownerId: string): Promise<OwnerProfile | null> => {
+    try {
+        const response = await fetch(`${OWNER_PROFILE_ENDPOINT}/${ownerId}/profile`, {
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) {
+            console.warn(`Failed to fetch owner profile: ${response.status}`);
+            return null;
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Fetch Owner Profile Error", error);
+        return null;
+    }
+};
+
 export const fetchReservation = async (id: string): Promise<Partial<LeaseData> | null> => {
     try {
         const response = await fetch(`${BASE_RESERVATION_URL}/${id}`, {
@@ -128,7 +162,15 @@ export const fetchReservation = async (id: string): Promise<Partial<LeaseData> |
         }
 
         const data = await response.json();
-        return mapResponseToLeaseData(data);
+        
+        let ownerProfile = null;
+        const ownerId = data.reservation?.owner_id;
+        
+        if (ownerId) {
+            ownerProfile = await fetchOwnerProfile(ownerId);
+        }
+
+        return mapResponseToLeaseData(data, ownerProfile);
 
     } catch (error) {
         console.error("Fetch Reservation Error", error);
@@ -141,7 +183,7 @@ export const fetchReservation = async (id: string): Promise<Partial<LeaseData> |
  * and merging with default values to ensure a complete object.
  */
 export const loadLeaseData = async (id: string): Promise<LeaseData> => {
-    // 1. Fetch data from API
+    // 1. Fetch data from API (now includes owner profile fetch)
     const apiData = await fetchReservation(id);
     
     if (!apiData) {
