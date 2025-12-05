@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { PDFViewer, pdf } from '@react-pdf/renderer';
@@ -10,6 +9,7 @@ import LeasePreview from '../components/LeasePreview';
 import { LoginModal } from '../components/modals/LoginModal';
 import { LeaseData } from '../types';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { BrandLogo } from '../components/ui/BrandLogo';
 
 export default function PreviewPage() {
   const { id } = useParams<{ id: string }>();
@@ -189,8 +189,11 @@ export default function PreviewPage() {
       return (
           <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-900 text-white">
               <Lock size={64} className="mb-6 text-slate-600" />
-              <h2 className="text-2xl font-bold mb-2">Restricted Access</h2>
-              <p className="text-slate-400 mb-8">Authentication required to view this document.</p>
+              <div className="mb-8 flex flex-col items-center">
+                 <BrandLogo className="text-white h-8 mb-6" />
+                 <h2 className="text-2xl font-bold mb-2">Restricted Access</h2>
+                 <p className="text-slate-400">Authentication required to view this document.</p>
+              </div>
               <button 
                 onClick={() => setShowLoginModal(true)} 
                 className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-bold"
@@ -211,9 +214,13 @@ export default function PreviewPage() {
       return (
         <div className="h-screen w-full bg-slate-800 flex flex-col">
             <div className="bg-slate-900 p-4 text-white flex justify-between items-center shadow-md shrink-0">
-                <div>
-                    <h1 className="font-bold text-lg">Server Preview</h1>
-                    <p className="text-xs text-slate-400">ID: {id} • Template: {templateId}</p>
+                <div className="flex items-center gap-4">
+                    <BrandLogo className="text-white h-5" />
+                    <div className="h-6 w-px bg-slate-700"></div>
+                    <div>
+                        <h1 className="font-bold text-sm">Server Preview</h1>
+                        <p className="text-[10px] text-slate-400">ID: {id}</p>
+                    </div>
                 </div>
                 <button 
                     onClick={handleDownloadServerPdf}
@@ -254,9 +261,10 @@ export default function PreviewPage() {
       return (
         <div className="min-h-screen bg-slate-100 flex flex-col relative">
             <div className="bg-slate-900 p-4 text-white shadow-md sticky top-0 z-20 flex justify-between items-center">
-                <div>
-                    <h1 className="font-bold text-lg">Lease Preview</h1>
-                    <p className="text-xs text-slate-400">ID: {id}</p>
+                <BrandLogo className="text-white h-5" />
+                <div className="text-right">
+                    <p className="font-bold text-xs opacity-80">Preview</p>
+                    <p className="text-[10px] text-slate-400">ID: {id}</p>
                 </div>
             </div>
             <div className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-200 p-4 custom-scrollbar">
@@ -282,9 +290,13 @@ export default function PreviewPage() {
   return (
     <div className="h-screen w-full bg-slate-800 flex flex-col">
        <div className="bg-slate-900 p-4 text-white flex justify-between items-center shadow-md">
-            <div>
-                <h1 className="font-bold text-lg">Lease Agreement Preview</h1>
-                <p className="text-xs text-slate-400">ID: {id}</p>
+            <div className="flex items-center gap-4">
+                <BrandLogo className="text-white h-6" />
+                <div className="h-8 w-px bg-slate-700"></div>
+                <div>
+                    <h1 className="font-bold text-lg">Lease Agreement</h1>
+                    <p className="text-xs text-slate-400">ID: {id}</p>
+                </div>
             </div>
             <button 
                 onClick={handleDownloadClientPdf}

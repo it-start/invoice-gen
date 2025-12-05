@@ -1,7 +1,7 @@
-
 import React, { useState } from 'react';
 import { Loader2, Lock, X } from 'lucide-react';
 import { authService } from '../../services/authService';
+import { BrandLogo } from '../ui/BrandLogo';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -37,12 +37,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
         <div className="bg-slate-900 p-6 text-white flex justify-between items-start">
-            <div>
+            <div className="flex flex-col gap-2">
+                <BrandLogo className="text-white h-5 mb-1" />
                 <h3 className="text-lg font-bold flex items-center gap-2">
-                    <Lock size={18} />
+                    <Lock size={16} />
                     Restricted Access
                 </h3>
-                <p className="text-slate-400 text-xs mt-1">Please log in to view this document.</p>
+                <p className="text-slate-400 text-xs">Please log in to view this document.</p>
             </div>
             <button onClick={onClose} className="text-slate-400 hover:text-white">
                 <X size={20} />

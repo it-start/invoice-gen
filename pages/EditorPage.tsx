@@ -170,20 +170,24 @@ export default function EditorPage() {
 
       {/* SIDEBAR: Sticky/Scroll on Desktop, Auto-height on Mobile */}
       <div className={`w-full md:w-1/3 bg-white border-r border-gray-200 h-auto md:h-screen md:overflow-y-auto md:sticky md:top-0 shadow-xl z-10 flex-col ${isMobile && mobileTab !== 'edit' ? 'hidden' : 'flex'}`}>
-        {/* DOCUMENT TYPE SWITCHER */}
-        <div className="p-4 bg-slate-800 text-white flex gap-2 shadow-inner sticky top-0 z-20 md:static">
-             <button 
-                onClick={() => setDocType('invoice')} 
-                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded text-sm font-medium transition-all ${docType === 'invoice' ? 'bg-blue-600 shadow-lg' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
-             >
-                <FileText size={16} /> {t('switch_invoice', lang)}
-             </button>
-             <button 
-                onClick={() => setDocType('lease')} 
-                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded text-sm font-medium transition-all ${docType === 'lease' ? 'bg-blue-600 shadow-lg' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
-             >
-                <Car size={16} /> {t('switch_lease', lang)}
-             </button>
+        {/* BRANDING & TYPE SWITCHER */}
+        <div className="bg-slate-900 p-4 pb-0 flex flex-col gap-4 sticky top-0 z-20 md:static">
+             
+             {/* Document Switcher */}
+             <div className="p-1 pb-4 flex gap-2">
+                <button 
+                    onClick={() => setDocType('invoice')} 
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded text-sm font-medium transition-all ${docType === 'invoice' ? 'bg-blue-600 shadow-lg text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'}`}
+                >
+                    <FileText size={16} /> {t('switch_invoice', lang)}
+                </button>
+                <button 
+                    onClick={() => setDocType('lease')} 
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded text-sm font-medium transition-all ${docType === 'lease' ? 'bg-blue-600 shadow-lg text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'}`}
+                >
+                    <Car size={16} /> {t('switch_lease', lang)}
+                </button>
+             </div>
         </div>
 
         {/* Editor Content */}
