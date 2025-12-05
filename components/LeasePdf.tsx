@@ -15,7 +15,8 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingLeft: 20,
     paddingRight: 20,
-    paddingBottom: 40, // Increased bottom padding to make room for footer
+    // CRITICAL: Increased padding to ensure content doesn't flow behind the fixed signature footer
+    paddingBottom: 170, 
     fontFamily: 'Roboto',
     fontSize: 9,
     color: '#111',
@@ -86,14 +87,12 @@ const styles = StyleSheet.create({
   // Time badge style
   timeBadge: {
     backgroundColor: '#000000',
-    // borderRadius: 3,
     paddingVertical: 1,
     paddingHorizontal: 4,
   },
   timeBadgeText: {
     color: '#ffffff',
     fontSize: 8,
-    // fontWeight: 'bold',
   },
   // Terms Text
   termsBox: {
@@ -109,15 +108,34 @@ const styles = StyleSheet.create({
     color: '#333',
     textAlign: 'justify',
   },
-  // Fixed Footer
-  footer: {
+  
+  // --- FIXED FOOTER CONTAINER ---
+  fixedFooterContainer: {
     position: 'absolute',
-    bottom: 15,
+    bottom: 0,
     left: 20,
     right: 20,
+    height: 150, // Explicit height for the footer area
+    justifyContent: 'flex-end',
+    paddingBottom: 20,
+  },
+  
+  // Signature specific styles within footer
+  signatureSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 40,
+    marginBottom: 10,
+  },
+  signatureBlock: {
+    flex: 1,
+  },
+  
+  // Metadata line at very bottom
+  metadataFooter: {
     borderTopWidth: 1,
     borderTopColor: '#eee',
-    paddingTop: 8,
+    paddingTop: 4,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -256,40 +274,45 @@ export const LeasePdf: React.FC<LeasePdfProps> = ({ data }) => {
              <Text style={styles.termsText}>{data.terms}</Text>
         </View>
 
-        {/* Signatures */}
-        <View style={[styles.signatureSection, { marginTop: 10 }]}>
-            <View style={styles.signatureBlock}>
-                <Text style={styles.h3}>{data.owner.surname}</Text>
-                <Text style={styles.label}>{data.owner.contact}</Text>
-                <Text style={styles.label}>{data.owner.address}</Text>
+        {/* --- FIXED FOOTER (Signatures + Meta) --- */}
+        <View fixed style={styles.fixedFooterContainer}>
+            
+            {/* Signatures */}
+            <View style={styles.signatureSection}>
+                <View style={styles.signatureBlock}>
+                    <Text style={styles.h3}>{data.owner.surname}</Text>
+                    <Text style={styles.label}>{data.owner.contact}</Text>
+                    <Text style={styles.label}>{data.owner.address}</Text>
 
-                <View style={{ marginTop: 15 }}>
-                    <Text style={[styles.h3, { fontSize: 9 }]}>Owner (Lessor)</Text>
-                    <View style={styles.borderBottom} />
-                    <Text style={[styles.label, { marginTop: 2, textAlign: 'left' }]}>Date, signature</Text>
+                    <View style={{ marginTop: 15 }}>
+                        <Text style={[styles.h3, { fontSize: 9 }]}>Owner (Lessor)</Text>
+                        <View style={styles.borderBottom} />
+                        <Text style={[styles.label, { marginTop: 2, textAlign: 'left' }]}>Date, signature</Text>
+                    </View>
+                </View>
+                <View style={styles.signatureBlock}>
+                    <Text style={styles.h3}>{data.renter.surname}</Text>
+                    <Text style={styles.label}>{data.renter.contact}</Text>
+                    <Text style={styles.label}>Passport: {data.renter.passport}</Text>
+                    
+                    <View style={{ marginTop: 15 }}>
+                        <Text style={[styles.h3, { fontSize: 9 }]}>Rider (Tenant)</Text>
+                        <View style={styles.borderBottom} />
+                        <Text style={[styles.label, { marginTop: 2, textAlign: 'left' }]}>Date, signature</Text>
+                    </View>
                 </View>
             </View>
-            <View style={styles.signatureBlock}>
-                <Text style={styles.h3}>{data.renter.surname}</Text>
-                <Text style={styles.label}>{data.renter.contact}</Text>
-                <Text style={styles.label}>Passport: {data.renter.passport}</Text>
-                
-                 <View style={{ marginTop: 15 }}>
-                    <Text style={[styles.h3, { fontSize: 9 }]}>Rider (Tenant)</Text>
-                    <View style={styles.borderBottom} />
-                    <Text style={[styles.label, { marginTop: 2, textAlign: 'left' }]}>Date, signature</Text>
-                </View>
-            </View>
-        </View>
 
-        {/* Fixed Footer (Colontitul) */}
-        <View fixed style={styles.footer}>
-            <Text style={styles.footerText}>
-                {data.reservationId} • {data.vehicle.name} • {data.vehicle.plate}
-            </Text>
-            <Text style={styles.footerText} render={({ pageNumber, totalPages }) => (
-                `${pageNumber} / ${totalPages}`
-            )} />
+            {/* Meta Line */}
+            <View style={styles.metadataFooter}>
+                <Text style={styles.footerText}>
+                    {data.reservationId} • {data.vehicle.name} • {data.vehicle.plate}
+                </Text>
+                <Text style={styles.footerText} render={({ pageNumber, totalPages }) => (
+                    `${pageNumber} / ${totalPages}`
+                )} />
+            </View>
+
         </View>
 
       </Page>
