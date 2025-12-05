@@ -20,7 +20,7 @@ export default function PreviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [lang, setLang] = useState<Language>('en');
+  const [lang] = useState<Language>('en');
   
   // Server Side Rendering State
   const templateId = searchParams.get('template_id');
