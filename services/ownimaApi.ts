@@ -20,6 +20,24 @@ interface OwnerProfile {
     bio?: string;
 }
 
+const humanizeSource = (source: string | null | undefined): string => {
+    if (!source) return '';
+    const map: Record<string, string> = {
+        'SOURCE_ONLINE_RIDER_APP': 'Rider App',
+        'SOURCE_ONLINE_BOOKING_WEB': 'Website',
+        'SOURCE_OFFLINE_WALK_IN': 'Walk-in'
+    };
+    
+    if (map[source]) return map[source];
+    
+    // Generic fallback: SOURCE_SOME_THING -> Some Thing
+    return source
+        .replace(/^SOURCE_/, '')
+        .split('_')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(' ');
+};
+
 const mapResponseToLeaseData = (json: any, ownerProfile?: OwnerProfile | null): Partial<LeaseData> => {
     try {
         const r = json.reservation;
@@ -76,7 +94,7 @@ const mapResponseToLeaseData = (json: any, ownerProfile?: OwnerProfile | null): 
 
         return {
             reservationId: reservationId,
-            source: r.humanized?.source || r.source,
+            source: humanizeSource(r.source),
             createdDate: r.created_date ? r.created_date.split('T').join(' ').slice(0, 16) : '',
             vehicle: {
                 name: `${brand} ${model}, ${year}`.trim(),
