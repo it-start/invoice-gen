@@ -12,7 +12,10 @@ const styles = StyleSheet.create({
   
   // OVERRIDES FOR COMPACT SINGLE-PAGE LAYOUT
   page: {
-    padding: 20, // Reduced from 30
+    paddingTop: 20,
+    paddingLeft: 20,
+    paddingRight: 20,
+    paddingBottom: 40, // Increased bottom padding to make room for footer
     fontFamily: 'Roboto',
     fontSize: 9,
     color: '#111',
@@ -105,6 +108,23 @@ const styles = StyleSheet.create({
     lineHeight: 1.3,
     color: '#333',
     textAlign: 'justify',
+  },
+  // Fixed Footer
+  footer: {
+    position: 'absolute',
+    bottom: 15,
+    left: 20,
+    right: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 7,
+    color: '#999',
   }
 });
 
@@ -260,6 +280,16 @@ export const LeasePdf: React.FC<LeasePdfProps> = ({ data }) => {
                     <Text style={[styles.label, { marginTop: 2, textAlign: 'left' }]}>Date, signature</Text>
                 </View>
             </View>
+        </View>
+
+        {/* Fixed Footer (Colontitul) */}
+        <View fixed style={styles.footer}>
+            <Text style={styles.footerText}>
+                {data.reservationId} • {data.vehicle.name} • {data.vehicle.plate}
+            </Text>
+            <Text style={styles.footerText} render={({ pageNumber, totalPages }) => (
+                `${pageNumber} / ${totalPages}`
+            )} />
         </View>
 
       </Page>
