@@ -97,10 +97,26 @@ const LeaseForm: React.FC<LeaseFormProps> = ({ data, lang, handlers, compact = f
                     <button onClick={addExtraOption} className="text-blue-600 bg-blue-50 p-1.5 rounded hover:bg-blue-100 transition-colors"><Plus size={16}/></button>
                  </div>
                  {data.extraOptions.map((opt, i) => (
-                     <div key={i} className="flex gap-2 mb-2 items-center">
-                         <input className="flex-1 text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none" value={opt.name} onChange={e => updateExtraOption(i, 'name', e.target.value)} placeholder="Option Name" />
-                         <input className="w-24 text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none" type="number" value={opt.price} onChange={e => updateExtraOption(i, 'price', Number(e.target.value))} placeholder="0" />
-                         <button onClick={() => removeExtraOption(i)} className="text-slate-400 hover:text-red-500 p-1.5 transition-colors"><Trash2 size={16} /></button>
+                     <div key={i} className="flex gap-1.5 mb-2 items-center">
+                         <input 
+                            className="flex-1 min-w-0 text-sm px-2.5 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none placeholder:text-slate-400" 
+                            value={opt.name} 
+                            onChange={e => updateExtraOption(i, 'name', e.target.value)} 
+                            placeholder="Option Name" 
+                         />
+                         <input 
+                            className="w-20 text-sm px-1 py-2 text-center border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none placeholder:text-slate-400" 
+                            type="number" 
+                            value={opt.price} 
+                            onChange={e => updateExtraOption(i, 'price', Number(e.target.value))} 
+                            placeholder="0" 
+                         />
+                         <button 
+                            onClick={() => removeExtraOption(i)} 
+                            className="shrink-0 text-slate-400 hover:text-red-500 p-1.5 hover:bg-slate-100 rounded transition-colors"
+                         >
+                            <Trash2 size={16} />
+                         </button>
                      </div>
                  ))}
              </div>
