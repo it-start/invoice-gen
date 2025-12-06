@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { ChatSession, ChatMessage, LeaseData, NtfyMessage, LeaseStatus } from '../types';
 import { fetchReservationHistory, fetchNtfyMessages, sendNtfyMessage, loadLeaseData, HistoryEvent, getChatSseUrl } from '../services/ownimaApi';
@@ -121,6 +120,7 @@ interface ChatState {
     rejectReservation: () => Promise<void>;
     markAsRead: (sessionId: string) => void;
     markMessageAsRead: (sessionId: string, messageId: string) => void;
+    setupBackgroundSync: () => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -135,6 +135,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     hydrate: async () => {
         if (get().isHydrated) return;
         
+        // Setup listeners once on hydration
+        get().setupBackgroundSync();
+
         try {
             const storedSessions = await dbService.getAllSessions();
             set({ sessions: storedSessions, isHydrated: true });
@@ -142,6 +145,30 @@ export const useChatStore = create<ChatState>((set, get) => ({
             console.error("Hydration failed", e);
             set({ isHydrated: true }); // Mark as hydrated anyway so we don't block
         }
+    },
+
+    setupBackgroundSync: () => {
+        // Handle Tab Visibility Changes
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                const { activeSessionId, activeEventSource } = get();
+                
+                // If we have an active session but connection is closed/missing, reconnect
+                if (activeSessionId && (!activeEventSource || activeEventSource.readyState === EventSource.CLOSED)) {
+                    console.debug("App visible: Reconnecting chat...");
+                    get().loadChatSession(activeSessionId);
+                }
+            }
+        });
+
+        // Handle Online Status
+        window.addEventListener('online', () => {
+             const { activeSessionId } = get();
+             if (activeSessionId) {
+                 console.debug("Network online: Syncing chat...");
+                 get().loadChatSession(activeSessionId);
+             }
+        });
     },
 
     loadChatSession: async (reservationId: string) => {
@@ -310,7 +337,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     setActiveSession: (id: string) => {
         set({ activeSessionId: id });
-        // NOTE: We no longer auto-mark as read here. Visibility observer handles it.
     },
 
     markAsRead: (sessionId: string) => {
