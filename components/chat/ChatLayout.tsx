@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical } from 'lucide-react';
+import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage } from '../../types';
 import { t } from '../../utils/i18n';
@@ -77,6 +77,19 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     const [messageInput, setMessageInput] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [sidebarTab, setSidebarTab] = useState<'profile' | 'details'>('details');
+    
+    // Sidebar Collapse State with Persistence
+    const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('chat_sidebar_open');
+            return saved !== null ? JSON.parse(saved) : true;
+        }
+        return true;
+    });
+
+    useEffect(() => {
+        localStorage.setItem('chat_sidebar_open', JSON.stringify(isSidebarOpen));
+    }, [isSidebarOpen]);
 
     // --- REFS FOR SCROLLING ---
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -343,10 +356,21 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                              </p>
                          </div>
                     </div>
-                    <div className="flex gap-2 text-slate-400">
+                    <div className="flex gap-2 text-slate-400 items-center">
                         <button className="hidden md:block p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors"><Phone size={18} /></button>
                         <button className="hidden md:block p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors"><Video size={18} /></button>
-                        <button className="p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors"><MoreVertical size={18} /></button>
+                        
+                        {/* SIDEBAR TOGGLE */}
+                        <div className="h-6 w-px bg-slate-200 mx-1 hidden xl:block"></div>
+                        <button 
+                            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                            className={`p-2 rounded-full transition-colors hidden xl:block ${isSidebarOpen ? 'bg-blue-50 text-blue-600' : 'hover:bg-slate-100 hover:text-slate-600'}`}
+                            title="Toggle Details"
+                        >
+                            {isSidebarOpen ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
+                        </button>
+
+                        <button className="p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors xl:hidden"><MoreVertical size={18} /></button>
                     </div>
                 </div>
 
@@ -539,94 +563,95 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
 
             {/* RIGHT SIDEBAR: Lease Mini-Editor & Profile */}
             {activeChat && (
-            <div className="w-[360px] border-l border-slate-200 bg-white hidden xl:flex flex-col h-full shadow-lg z-20">
-                 
-                 {/* Sidebar Tabs */}
-                 <div className="flex border-b border-slate-200 bg-slate-50/50 p-1 gap-1 m-2 rounded-xl">
-                    <button 
-                        onClick={() => setSidebarTab('details')}
-                        className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${sidebarTab === 'details' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
-                    >
-                        <FileEdit size={14} /> Details
-                    </button>
-                    <button 
-                        onClick={() => setSidebarTab('profile')}
-                        className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${sidebarTab === 'profile' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
-                    >
-                        <UserIcon size={14} /> Profile
-                    </button>
-                 </div>
+            <div className={`bg-white border-l border-slate-100 hidden xl:flex flex-col h-full shadow-lg z-20 transition-all duration-300 ease-in-out overflow-hidden ${isSidebarOpen ? 'w-[340px] opacity-100' : 'w-0 opacity-0 border-none'}`}>
+                 <div className="w-[340px] h-full flex flex-col">
+                    {/* Sidebar Tabs */}
+                    <div className="flex border-b border-slate-200 bg-slate-50/50 p-1 gap-1 m-2 rounded-xl shrink-0">
+                        <button 
+                            onClick={() => setSidebarTab('details')}
+                            className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${sidebarTab === 'details' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+                        >
+                            <FileEdit size={14} /> Details
+                        </button>
+                        <button 
+                            onClick={() => setSidebarTab('profile')}
+                            className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${sidebarTab === 'profile' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+                        >
+                            <UserIcon size={14} /> Profile
+                        </button>
+                    </div>
 
-                 {/* Tab Content */}
-                 <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30">
-                    
-                    {/* DETAILS TAB (Mini-Editor) */}
-                    {sidebarTab === 'details' && (
-                        <div className="p-4">
-                            <LeaseForm 
-                                data={currentLeaseData} 
-                                handlers={leaseHandlers} 
-                                lang={lang} 
-                            />
-                        </div>
-                    )}
-
-                    {/* PROFILE TAB (Updated to Match Example) */}
-                    {sidebarTab === 'profile' && (
-                        <div className="p-8">
-                            <div className="flex flex-col items-center mb-6">
-                                <div className="w-28 h-28 rounded-full bg-white mb-5 overflow-hidden flex items-center justify-center font-bold text-4xl text-slate-300 border-4 border-slate-100 shadow-md relative group">
-                                    {activeChat.user.avatar ? (
-                                        <img src={activeChat.user.avatar} alt="Profile" className="w-full h-full object-cover" />
-                                    ) : activeChat.user.name[0]}
-                                </div>
-                                <h3 className="font-bold text-2xl text-slate-800 mb-1 text-center">{activeChat.user.name}</h3>
-                                <div className="flex gap-2">
-                                    <span className="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full font-bold border border-green-200 shadow-sm">
-                                        {t('chat_active', lang)}
-                                    </span>
-                                    <span className="bg-slate-100 text-slate-600 text-xs px-3 py-1 rounded-full font-bold border border-slate-200">
-                                        {activeChat.user.role}
-                                    </span>
-                                </div>
+                    {/* Tab Content */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30">
+                        
+                        {/* DETAILS TAB (Mini-Editor) */}
+                        {sidebarTab === 'details' && (
+                            <div className="p-4">
+                                <LeaseForm 
+                                    data={currentLeaseData} 
+                                    handlers={leaseHandlers} 
+                                    lang={lang} 
+                                />
                             </div>
-                            
-                            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-2">
-                                <h4 className="text-lg font-bold text-slate-800 mb-4">Contact info</h4>
+                        )}
+
+                        {/* PROFILE TAB */}
+                        {sidebarTab === 'profile' && (
+                            <div className="p-8">
+                                <div className="flex flex-col items-center mb-6">
+                                    <div className="w-28 h-28 rounded-full bg-white mb-5 overflow-hidden flex items-center justify-center font-bold text-4xl text-slate-300 border-4 border-slate-100 shadow-md relative group">
+                                        {activeChat.user.avatar ? (
+                                            <img src={activeChat.user.avatar} alt="Profile" className="w-full h-full object-cover" />
+                                        ) : activeChat.user.name[0]}
+                                    </div>
+                                    <h3 className="font-bold text-2xl text-slate-800 mb-1 text-center">{activeChat.user.name}</h3>
+                                    <div className="flex gap-2">
+                                        <span className="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full font-bold border border-green-200 shadow-sm">
+                                            {t('chat_active', lang)}
+                                        </span>
+                                        <span className="bg-slate-100 text-slate-600 text-xs px-3 py-1 rounded-full font-bold border border-slate-200">
+                                            {activeChat.user.role}
+                                        </span>
+                                    </div>
+                                </div>
                                 
-                                <InputGroup 
-                                    label="Rent service name *"
-                                    value={currentLeaseData.owner.surname}
-                                    onChange={() => {}}
-                                    readOnly={false} 
-                                    helperText="Will be shown on your booking website"
-                                />
+                                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-2">
+                                    <h4 className="text-lg font-bold text-slate-800 mb-4">Contact info</h4>
+                                    
+                                    <InputGroup 
+                                        label="Rent service name *"
+                                        value={currentLeaseData.owner.surname}
+                                        onChange={() => {}}
+                                        readOnly={false} 
+                                        helperText="Will be shown on your booking website"
+                                    />
 
-                                <InputGroup 
-                                    label="First name *"
-                                    value={activeChat.user.name.split(' ')[0] || ''}
-                                    onChange={() => {}}
-                                    readOnly={true}
-                                    helperText="Will be shown for Riders with confirmed reservations"
-                                />
+                                    <InputGroup 
+                                        label="First name *"
+                                        value={activeChat.user.name.split(' ')[0] || ''}
+                                        onChange={() => {}}
+                                        readOnly={true}
+                                        helperText="Will be shown for Riders with confirmed reservations"
+                                    />
 
-                                <InputGroup 
-                                    label="Family name *"
-                                    value={activeChat.user.name.split(' ').slice(1).join(' ') || ''}
-                                    onChange={() => {}}
-                                    readOnly={true}
-                                    helperText="Will be shown for Riders with confirmed reservations"
-                                />
+                                    <InputGroup 
+                                        label="Family name *"
+                                        value={activeChat.user.name.split(' ').slice(1).join(' ') || ''}
+                                        onChange={() => {}}
+                                        readOnly={true}
+                                        helperText="Will be shown for Riders with confirmed reservations"
+                                    />
 
-                                <InputGroup 
-                                    label="Phone number *"
-                                    value={activeChat.user.contact || ''}
-                                    onChange={() => {}}
-                                />
+                                    <InputGroup 
+                                        label="Phone number *"
+                                        value={activeChat.user.contact || ''}
+                                        onChange={() => {}}
+                                    />
+                                </div>
                             </div>
-                        </div>
-                    )}
-                 </div>
+                        )}
+                    </div>
+                </div>
             </div>
             )}
         </div>
