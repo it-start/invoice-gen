@@ -8,7 +8,7 @@ const PERSIST_KEY = 'chat_sessions_v1';
 
 // --- HELPERS ---
 
-const ntfyToChatMessage = (ntfy: NtfyMessage): ChatMessage => {
+const ntfyToChatMessage = (ntfy: NtfyMessage, initialStatus: 'read' | 'sent' = 'read'): ChatMessage => {
     let senderId = 'other';
     const currentUser = authService.getUsername();
 
@@ -44,7 +44,7 @@ const ntfyToChatMessage = (ntfy: NtfyMessage): ChatMessage => {
         text: ntfy.message,
         timestamp,
         type,
-        status: 'read', // Assume historical messages are read
+        status: initialStatus,
         metadata: {
             status: statusMetadata
         }
@@ -137,6 +137,7 @@ interface ChatState {
     getActiveSession: () => ChatSession | undefined;
     confirmReservation: () => Promise<void>;
     rejectReservation: () => Promise<void>;
+    markAsRead: (sessionId: string) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -181,7 +182,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             // 4. Merge & Sort
             const allMessages = [
                 ...historyEvents.map(h => historyToChatMessage(h)),
-                ...ntfyData.map((n: any) => ntfyToChatMessage(n))
+                ...ntfyData.map((n: any) => ntfyToChatMessage(n, 'read')) // Initial load is always read
             ];
             
             allMessages.sort((a, b) => a.timestamp - b.timestamp);
@@ -200,7 +201,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 messages: allMessages,
                 lastMessage: allMessages.length > 0 ? allMessages[allMessages.length - 1].text : 'No messages',
                 lastMessageTime: allMessages.length > 0 ? allMessages[allMessages.length - 1].timestamp : 0,
-                unreadCount: 0
+                unreadCount: 0 // Reset unread count on open
             };
 
             // 6. Update Store with Session & Persist
@@ -232,7 +233,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     const ntfyMsg = JSON.parse(event.data);
                     if (ntfyMsg.event !== 'message') return;
                     
-                    const chatMsg = ntfyToChatMessage(ntfyMsg);
+                    // Check if this message belongs to the active session
+                    // Note: Current arch only opens SSE for active, but safeguarding for future
+                    const isActive = get().activeSessionId === topicId;
+                    const status = isActive ? 'read' : 'sent';
+
+                    const chatMsg = ntfyToChatMessage(ntfyMsg, status);
                     
                     set(state => {
                         const sessionIndex = state.sessions.findIndex(s => s.id === topicId);
@@ -243,11 +249,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
                         if (session.messages.some(m => m.id === chatMsg.id)) return {};
 
                         const updatedMessages = [...session.messages, chatMsg];
+                        
+                        // Increment unread count if not active, otherwise keep 0
+                        const newUnreadCount = isActive ? 0 : (session.unreadCount || 0) + 1;
+
                         const updatedSession = {
                             ...session,
                             messages: updatedMessages,
                             lastMessage: chatMsg.text,
-                            lastMessageTime: chatMsg.timestamp
+                            lastMessageTime: chatMsg.timestamp,
+                            unreadCount: newUnreadCount
                         };
                         
                         const newSessions = [...state.sessions];
@@ -283,6 +294,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     setActiveSession: (id: string) => {
         set({ activeSessionId: id });
+        get().markAsRead(id);
+    },
+
+    markAsRead: (sessionId: string) => {
+        set(state => {
+            const sessions = state.sessions.map(s => {
+                if (s.id === sessionId) {
+                    // Reset unread count to 0
+                    return { ...s, unreadCount: 0 };
+                }
+                return s;
+            });
+            saveToStorage(sessions);
+            return { sessions };
+        });
     },
 
     sendMessage: async (text: string) => {

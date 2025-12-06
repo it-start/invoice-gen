@@ -89,6 +89,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         isLoading, 
         sendMessage, 
         setActiveSession,
+        markAsRead,
         confirmReservation, 
         rejectReservation, 
         leaseContext 
@@ -110,6 +111,13 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     // Determine Active Lease Context
     const isEditingActiveChat = activeChat && activeChat.id === leaseData.id;
     const currentLeaseData = isEditingActiveChat ? leaseData : (leaseContext || leaseData);
+
+    // --- MARK AS READ EFFECT ---
+    useEffect(() => {
+        if (activeChat && activeChat.unreadCount > 0) {
+            markAsRead(activeChat.id);
+        }
+    }, [activeChat, markAsRead]);
 
     // --- SMART AUTO SCROLL EFFECT ---
     useEffect(() => {
