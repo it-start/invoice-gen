@@ -1,7 +1,6 @@
 
-
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, MoreHorizontal, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage } from '../../types';
 import { t } from '../../utils/i18n';
@@ -71,6 +70,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
     // --- REFS FOR SCROLLING ---
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const prevChatIdRef = useRef<string | null>(null);
+    const prevMessageCountRef = useRef<number>(0);
 
     // --- ZUSTAND STORE ---
     const { sessions, activeSessionId, isLoading, sendMessage, leaseContext } = useChatStore();
@@ -85,35 +85,33 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
     }, [routeId, isMobile]);
 
     // Determine Active Chat based on Route ID or Store State
-    // The Route ID is the source of truth for navigation.
     const currentActiveId = routeId || activeSessionId;
     const activeChat = sessions.find((c: ChatSession) => c.id === currentActiveId);
     
-    // DETERMINE ACTIVE LEASE CONTEXT FOR DISPLAY
-    // If the currently edited lease (from props) matches the active chat ID, use local data (editor state).
-    // Otherwise use the store's context (API state) for the viewed chat.
+    // Determine Active Lease Context
     const isEditingActiveChat = activeChat && activeChat.id === leaseData.id;
     const currentLeaseData = isEditingActiveChat ? leaseData : (leaseContext || leaseData);
 
-    // --- AUTO SCROLL EFFECT ---
+    // --- SMART AUTO SCROLL EFFECT ---
     useEffect(() => {
         if (activeChat && messagesEndRef.current) {
-            // Instant scroll if chat ID changed (switched rooms)
-            // Smooth scroll if chat ID is same (new message)
             const isChatSwitch = activeChat.id !== prevChatIdRef.current;
+            const isNewMessage = activeChat.messages.length > prevMessageCountRef.current;
             
-            messagesEndRef.current.scrollIntoView({ 
-                behavior: isChatSwitch ? "auto" : "smooth",
-                block: "end"
-            });
+            // Only scroll if switching chats or if a new message arrived
+            if (isChatSwitch || isNewMessage) {
+                messagesEndRef.current.scrollIntoView({ 
+                    behavior: isChatSwitch ? "auto" : "smooth",
+                    block: "end"
+                });
+            }
             
             prevChatIdRef.current = activeChat.id;
+            prevMessageCountRef.current = activeChat.messages.length;
         }
-    }, [activeChat?.id, activeChat?.messages]);
+    }, [activeChat?.id, activeChat?.messages.length]);
 
     const handleChatSelect = (chatId: string) => {
-        // Navigate to the specific route. 
-        // The parent EditorPage listens to the URL and handles data loading.
         navigate(`/chat/detail/${chatId}`);
     };
 
@@ -126,9 +124,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
     };
 
     const handleBackToList = () => {
-        navigate('/'); // Go back to root or just switch view? 
-        // For standard "App" feel, maybe just visual switch, but here we are routing-driven.
-        // If we are at /chat/detail/:id, "Back" implies going to chat list.
         if (isMobile) {
             setMobileView('list');
         } else {
@@ -142,24 +137,37 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
         setMessageInput('');
     };
 
-    // --- DATE FORMATTERS ---
+    // --- FORMATTERS ---
     const formatTime = (timestamp: number) => {
         if (!timestamp) return '';
-        return new Intl.DateTimeFormat(lang === 'ru' ? 'ru-RU' : 'en-US', {
-            hour: 'numeric',
-            minute: '2-digit'
-        }).format(new Date(timestamp));
+        try {
+            return new Intl.DateTimeFormat(lang === 'ru' ? 'ru-RU' : 'en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(new Date(timestamp));
+        } catch (e) { return ''; }
     };
 
-    const formatDateTime = (timestamp: number) => {
+    const formatSystemDateTime = (timestamp: number) => {
         if (!timestamp) return '';
-        return new Intl.DateTimeFormat(lang === 'ru' ? 'ru-RU' : 'en-US', {
-            day: 'numeric',
-            month: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit'
-        }).format(new Date(timestamp));
+        try {
+            return new Intl.DateTimeFormat(lang === 'ru' ? 'ru-RU' : 'en-US', {
+                day: 'numeric',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(new Date(timestamp));
+        } catch (e) { return ''; }
+    };
+
+    const formatDateSeparator = (timestamp: number) => {
+        try {
+            return new Intl.DateTimeFormat(lang === 'ru' ? 'ru-RU' : 'en-US', {
+                weekday: 'short',
+                day: 'numeric', 
+                month: 'long'
+            }).format(new Date(timestamp));
+        } catch (e) { return ''; }
     };
 
     const listClasses = isMobile 
@@ -238,7 +246,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
             {activeChat ? (
             <div className={`${roomClasses} flex-col bg-white`}>
                 {/* Header */}
-                <div className="h-16 border-b border-slate-100 flex justify-between items-center px-4 md:px-6 shrink-0">
+                <div className="h-16 border-b border-slate-100 flex justify-between items-center px-4 md:px-6 shrink-0 bg-white z-10">
                     <div className="flex items-center gap-3">
                          {isMobile && (
                             <button onClick={handleBackToList} className="-ml-2 p-2 hover:bg-slate-100 rounded-full text-slate-600">
@@ -263,7 +271,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                 </div>
 
                 {/* Reservation Summary Pinned Bar */}
-                <div className="bg-slate-50 border-b border-slate-100 px-4 py-3 flex justify-between items-center shadow-sm shrink-0">
+                <div className="bg-slate-50 border-b border-slate-100 px-4 py-3 flex justify-between items-center shadow-sm shrink-0 z-10">
                     <div className="flex items-center gap-3">
                          <div className="bg-white p-2 rounded-lg border border-slate-200 text-blue-600">
                              <Car size={18} />
@@ -284,91 +292,108 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6 flex flex-col dark-scrollbar">
-                    <div className="text-center text-xs text-slate-400 my-4">History</div>
+                <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6 flex flex-col dark-scrollbar bg-white">
                     
-                    {activeChat.messages.map((msg: ChatMessage) => {
-                        // --- SYSTEM MESSAGE RENDERER ---
-                        if (msg.type === 'system') {
-                            const status = msg.metadata?.status;
-                            const style = status ? STATUS_CONFIG[status] : { bg: 'bg-slate-100', text: 'text-slate-600', icon: <CheckCheck size={12} />, label: 'System' };
-                            
-                            // Fallback if status config missing
-                            if (!style) return null; 
+                    {activeChat.messages.map((msg: ChatMessage, index: number) => {
+                        // Date Separator Logic
+                        const prevMsg = index > 0 ? activeChat.messages[index - 1] : null;
+                        const isDifferentDay = !prevMsg || new Date(msg.timestamp).toDateString() !== new Date(prevMsg.timestamp).toDateString();
 
-                            return (
-                                <div key={msg.id} className="flex flex-col gap-1 my-2">
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-8 flex-shrink-0 flex justify-center">
-                                            <div className="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-300">
-                                                <Check size={10} />
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col items-start max-w-[85%]">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <div className={`${style.bg} ${style.text} px-3 py-1 rounded-md text-xs font-bold flex items-center gap-1.5`}>
-                                                    {style.icon}
-                                                    {style.label}
-                                                </div>
-                                                <span className="text-[10px] text-slate-400">
-                                                    {formatDateTime(msg.timestamp)}
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-slate-500 pl-1">{msg.text}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        }
-
-                        // --- NORMAL MESSAGE RENDERER ---
-                        const isMe = msg.senderId === 'me';
                         return (
-                            <div key={msg.id} className={`flex gap-3 max-w-[85%] md:max-w-[80%] ${isMe ? 'self-end flex-row-reverse' : 'self-start'}`}>
-                                {!isMe && (
-                                    <div className="w-8 h-8 rounded-full bg-slate-200 flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-600">
-                                        {activeChat.user.name[0]}
+                            <React.Fragment key={msg.id}>
+                                {isDifferentDay && (
+                                    <div className="flex justify-center my-6">
+                                        <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full uppercase tracking-wider">
+                                            {formatDateSeparator(msg.timestamp)}
+                                        </span>
                                     </div>
                                 )}
-                                <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                                    <div className={`px-4 py-2 rounded-2xl text-sm ${
-                                        isMe 
-                                        ? 'bg-black text-white rounded-tr-none' 
-                                        : 'bg-slate-100 text-slate-800 rounded-tl-none'
-                                    }`}>
-                                        {msg.text}
-                                    </div>
-                                    <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400">
-                                        {isMe && msg.status === 'read' && <CheckCheck size={12} className="text-blue-500" />}
-                                        {isMe && msg.status === 'sent' && <Check size={12} />}
-                                        <span>{formatTime(msg.timestamp)}</span>
-                                    </div>
-                                </div>
-                            </div>
+
+                                {/* SYSTEM MESSAGE RENDERER */}
+                                {msg.type === 'system' ? (() => {
+                                    const status = msg.metadata?.status;
+                                    const style = status ? STATUS_CONFIG[status] : { bg: 'bg-slate-100', text: 'text-slate-600', icon: <CheckCheck size={12} />, label: 'System' };
+                                    
+                                    if (!style) return null;
+
+                                    return (
+                                        <div className="flex flex-col gap-1 my-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-8 flex-shrink-0 flex justify-center">
+                                                    <div className="w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300">
+                                                        <Check size={12} />
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col items-start max-w-[90%]">
+                                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                                        <div className={`${style.bg} ${style.text} px-2.5 py-0.5 rounded-md text-xs font-bold flex items-center gap-1.5 border border-black/5`}>
+                                                            {style.icon}
+                                                            {style.label}
+                                                        </div>
+                                                        <span className="text-[10px] text-slate-400 font-mono">
+                                                            {formatSystemDateTime(msg.timestamp)}
+                                                        </span>
+                                                    </div>
+                                                    {msg.text && <p className="text-xs text-slate-600 pl-1 italic">{msg.text}</p>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })() : (
+                                    /* NORMAL MESSAGE RENDERER */
+                                    (() => {
+                                        const isMe = msg.senderId === 'me';
+                                        return (
+                                            <div className={`flex gap-3 max-w-[85%] md:max-w-[75%] animate-in fade-in slide-in-from-bottom-2 duration-200 ${isMe ? 'self-end flex-row-reverse' : 'self-start'}`}>
+                                                {!isMe && (
+                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-300 flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-600 shadow-sm">
+                                                        {activeChat.user.name[0]}
+                                                    </div>
+                                                )}
+                                                <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                                                    <div className={`px-4 py-2.5 shadow-sm text-sm leading-relaxed ${
+                                                        isMe 
+                                                        ? 'bg-blue-600 text-white rounded-2xl rounded-tr-sm' 
+                                                        : 'bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-sm'
+                                                    }`}>
+                                                        {msg.text}
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 mt-1 px-1 text-[10px] text-slate-400 font-medium select-none">
+                                                        {isMe && msg.status === 'read' && <CheckCheck size={13} className="text-blue-500" />}
+                                                        {isMe && msg.status === 'sent' && <Check size={13} />}
+                                                        <span>{formatTime(msg.timestamp)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()
+                                )}
+                            </React.Fragment>
                         );
                     })}
-                    {/* Dummy div for scrolling to bottom */}
-                    <div ref={messagesEndRef} />
+                    {/* Dummy div for auto-scrolling anchor */}
+                    <div ref={messagesEndRef} className="h-2" />
                 </div>
 
                 {/* Input Area */}
-                <div className="p-4 border-t border-slate-100 shrink-0">
+                <div className="p-4 border-t border-slate-100 shrink-0 bg-white">
                     <div className="relative flex items-center gap-2">
                         <input 
                             type="text" 
-                            className="flex-1 bg-slate-50 border border-slate-200 rounded-full py-2.5 pl-4 pr-12 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 outline-none transition-all"
+                            className="flex-1 bg-slate-50 border border-slate-200 rounded-full py-3 pl-5 pr-12 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 outline-none transition-all placeholder:text-slate-400"
                             placeholder={t('chat_type_message', lang)}
                             value={messageInput}
                             onChange={(e) => setMessageInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                         />
                         <div className="absolute right-14 flex gap-2 text-slate-400">
-                             <button className="hover:text-slate-600 hidden sm:block"><ImageIcon size={18} /></button>
-                             <button className="hover:text-slate-600"><Smile size={18} /></button>
+                             <button className="hover:text-blue-600 transition-colors hidden sm:block p-1"><ImageIcon size={20} /></button>
+                             <button className="hover:text-blue-600 transition-colors p-1"><Smile size={20} /></button>
                         </div>
                         <button 
                             onClick={handleSend}
-                            className="bg-blue-600 text-white p-2.5 rounded-full hover:bg-blue-700 transition-colors shadow-md flex-shrink-0"
+                            disabled={!messageInput.trim()}
+                            className="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition-all shadow-md flex-shrink-0 disabled:opacity-50 disabled:shadow-none active:scale-95"
                         >
                             <Send size={18} />
                         </button>
@@ -376,59 +401,64 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                 </div>
             </div>
             ) : (
-                <div className={`${roomClasses} items-center justify-center text-slate-400 text-sm`}>
-                    Select a chat or search by ID
+                <div className={`${roomClasses} items-center justify-center flex-col gap-4 text-slate-400 bg-slate-50/50`}>
+                    <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center text-slate-400">
+                        <Smile size={32} />
+                    </div>
+                    <div className="text-sm font-medium">Select a chat or search by ID to start</div>
                 </div>
             )}
 
             {/* RIGHT SIDEBAR: Profile */}
             {activeChat && (
-            <div className="w-72 border-l border-slate-100 bg-white p-6 hidden xl:block">
+            <div className="w-72 border-l border-slate-100 bg-white p-6 hidden xl:flex flex-col h-full overflow-y-auto">
                  <div className="flex flex-col items-center mb-8">
-                     <div className="w-20 h-20 rounded-full bg-slate-200 mb-4 overflow-hidden flex items-center justify-center font-bold text-2xl text-slate-500">
+                     <div className="w-24 h-24 rounded-full bg-slate-100 mb-4 overflow-hidden flex items-center justify-center font-bold text-3xl text-slate-400 border-4 border-slate-50 shadow-sm">
                         {activeChat.user.avatar ? (
                             <img src={activeChat.user.avatar} alt="Profile" className="w-full h-full object-cover" />
                         ) : activeChat.user.name[0]}
                      </div>
-                     <h3 className="font-bold text-lg text-slate-800">{activeChat.user.name}</h3>
-                     <p className="text-sm text-slate-400 mb-2">{t('chat_active', lang)}</p>
+                     <h3 className="font-bold text-xl text-slate-800 mb-1 text-center">{activeChat.user.name}</h3>
+                     <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-bold">
+                        {t('chat_active', lang)}
+                     </span>
                      
                      {/* Lease Context Info */}
-                     <div className="w-full bg-slate-50 rounded-lg p-3 mb-6">
-                         <div className="flex justify-between text-xs mb-1">
-                             <span className="text-slate-500">Role</span>
-                             <span className="font-medium">{activeChat.user.role}</span>
+                     <div className="w-full bg-slate-50 rounded-xl p-4 mt-6 border border-slate-100">
+                         <div className="flex justify-between text-xs mb-2 border-b border-slate-200 pb-2">
+                             <span className="text-slate-500 font-medium">Role</span>
+                             <span className="font-bold text-slate-700">{activeChat.user.role}</span>
                          </div>
                          {activeChat.user.contact && (
-                             <div className="flex justify-between text-xs mb-1">
-                                 <span className="text-slate-500">Contact</span>
-                                 <span className="font-medium truncate max-w-[120px]" title={activeChat.user.contact}>{activeChat.user.contact}</span>
+                             <div className="flex justify-between text-xs mb-2 border-b border-slate-200 pb-2">
+                                 <span className="text-slate-500 font-medium">Contact</span>
+                                 <span className="font-bold text-slate-700 truncate max-w-[120px]" title={activeChat.user.contact}>{activeChat.user.contact}</span>
                              </div>
                          )}
                           <div className="flex justify-between text-xs">
-                             <span className="text-slate-500">Ref</span>
-                             <span className="font-medium">{currentLeaseData.reservationId}</span>
+                             <span className="text-slate-500 font-medium">Ref ID</span>
+                             <span className="font-mono font-bold text-slate-700">{currentLeaseData.reservationId}</span>
                          </div>
                      </div>
                  </div>
                  
-                 <button className="w-full bg-black text-white py-2.5 rounded-lg text-sm font-medium mb-6 hover:bg-slate-800 transition-colors">
+                 <button className="w-full bg-slate-900 text-white py-3 rounded-xl text-sm font-bold mb-6 hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200">
                      {t('chat_view_profile', lang)}
                  </button>
 
-                 <div className="space-y-4">
-                     <div className="flex items-center gap-3 text-slate-600 text-sm cursor-pointer hover:text-blue-600">
-                         <Search size={18} />
+                 <div className="space-y-1">
+                     <button className="w-full flex items-center gap-3 text-slate-600 text-sm p-3 hover:bg-slate-50 rounded-lg transition-colors font-medium">
+                         <Search size={18} className="text-slate-400" />
                          {t('chat_search_history', lang)}
-                     </div>
-                     <div className="flex items-center gap-3 text-slate-600 text-sm cursor-pointer hover:text-blue-600">
-                         <ImageIcon size={18} />
-                         Sent images
-                     </div>
-                      <div className="flex items-center gap-3 text-slate-600 text-sm cursor-pointer hover:text-blue-600">
-                         <MoreHorizontal size={18} />
-                         More options
-                     </div>
+                     </button>
+                     <button className="w-full flex items-center gap-3 text-slate-600 text-sm p-3 hover:bg-slate-50 rounded-lg transition-colors font-medium">
+                         <ImageIcon size={18} className="text-slate-400" />
+                         Shared media
+                     </button>
+                      <button className="w-full flex items-center gap-3 text-slate-600 text-sm p-3 hover:bg-slate-50 rounded-lg transition-colors font-medium">
+                         <Target size={18} className="text-slate-400" />
+                         Lease details
+                     </button>
                  </div>
             </div>
             )}
