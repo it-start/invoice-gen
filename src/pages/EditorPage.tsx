@@ -150,7 +150,8 @@ export default function EditorPage() {
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 shrink-0 z-30 shadow-sm">
              {/* Left: Logo + Nav (Desktop) */}
              <div className="flex items-center gap-6">
-                 <BrandLogo className="text-slate-800 h-6" />
+                 {/* Updated Logo Color to Brand Purple */}
+                 <BrandLogo className="text-[#8263FF] h-6" />
                  <div className="hidden md:block">
                      <NavPills />
                  </div>
