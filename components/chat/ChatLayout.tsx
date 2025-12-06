@@ -8,6 +8,7 @@ import { humanizeTime, formatShortDate } from '../../utils/dateUtils';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useChatStore } from '../../stores/chatStore';
 import LeaseForm from '../forms/LeaseForm';
+import InputGroup from '../ui/InputGroup';
 
 // --- STATUS CONFIGURATION ---
 const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, icon: React.ReactNode, label: string }> = {
@@ -195,7 +196,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         navigate('/');
     };
 
-    const handleSend = () => {
+    const handleSend = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         if (!messageInput.trim()) return;
         sendMessage(messageInput);
         setMessageInput('');
@@ -373,7 +375,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 p-2 md:p-6 overflow-y-auto space-y-4 md:space-y-6 flex flex-col dark-scrollbar bg-slate-50/50">
+                <div className="flex-1 p-2 md:p-6 overflow-y-auto space-y-4 md:space-y-6 flex flex-col dark-scrollbar bg-slate-50/50 overscroll-contain">
                     
                     {activeChat.messages.map((msg: ChatMessage, index: number) => {
                         // Date Separator Logic
@@ -483,31 +485,35 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                 </div>
 
                 {/* Input Area */}
-                <div className="p-3 md:p-4 border-t border-slate-200 shrink-0 bg-white z-10">
-                    <div className="relative flex items-center gap-2">
-                        <button className="p-2 md:p-3 text-slate-400 hover:bg-slate-100 rounded-full transition-colors md:hidden">
+                <div className="p-3 md:p-4 border-t border-slate-200 shrink-0 bg-white z-10 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+                    <form 
+                        className="relative flex items-center gap-2"
+                        onSubmit={handleSend}
+                        autoComplete="off"
+                    >
+                        <button type="button" className="p-2 md:p-3 text-slate-400 hover:bg-slate-100 rounded-full transition-colors md:hidden">
                              <ImageIcon size={20} />
                         </button>
                         <input 
                             type="text" 
-                            className="flex-1 bg-slate-100 border-transparent focus:bg-white border focus:border-blue-300 rounded-full py-2.5 md:py-3 pl-4 md:pl-5 pr-10 md:pr-12 text-sm focus:ring-4 focus:ring-blue-100 outline-none transition-all placeholder:text-slate-400"
+                            name="message"
+                            className="flex-1 bg-slate-100 border-transparent focus:bg-white border focus:border-blue-300 rounded-full py-2.5 md:py-3 pl-4 md:pl-5 pr-10 md:pr-12 text-base md:text-sm focus:ring-4 focus:ring-blue-100 outline-none transition-all placeholder:text-slate-400"
                             placeholder={t('chat_type_message', lang)}
                             value={messageInput}
                             onChange={(e) => setMessageInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                         />
                         <div className="absolute right-14 md:right-14 flex gap-2 text-slate-400 hidden md:flex">
-                             <button className="hover:text-blue-600 transition-colors p-1"><ImageIcon size={20} /></button>
-                             <button className="hover:text-blue-600 transition-colors p-1"><Smile size={20} /></button>
+                             <button type="button" className="hover:text-blue-600 transition-colors p-1"><ImageIcon size={20} /></button>
+                             <button type="button" className="hover:text-blue-600 transition-colors p-1"><Smile size={20} /></button>
                         </div>
                         <button 
-                            onClick={handleSend}
+                            type="submit"
                             disabled={!messageInput.trim()}
                             className="bg-blue-600 text-white p-2.5 md:p-3 rounded-full hover:bg-blue-700 transition-all shadow-md flex-shrink-0 disabled:opacity-50 disabled:shadow-none active:scale-95"
                         >
                             <Send size={18} />
                         </button>
-                    </div>
+                    </form>
                 </div>
             </div>
             ) : (
@@ -565,54 +571,58 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                         </div>
                     )}
 
-                    {/* PROFILE TAB (Legacy) */}
+                    {/* PROFILE TAB (Updated to Match Example) */}
                     {sidebarTab === 'profile' && (
                         <div className="p-8">
-                            <div className="flex flex-col items-center mb-8">
+                            <div className="flex flex-col items-center mb-6">
                                 <div className="w-28 h-28 rounded-full bg-white mb-5 overflow-hidden flex items-center justify-center font-bold text-4xl text-slate-300 border-4 border-slate-100 shadow-md relative group">
                                     {activeChat.user.avatar ? (
                                         <img src={activeChat.user.avatar} alt="Profile" className="w-full h-full object-cover" />
                                     ) : activeChat.user.name[0]}
-                                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    </div>
                                 </div>
                                 <h3 className="font-bold text-2xl text-slate-800 mb-1 text-center">{activeChat.user.name}</h3>
-                                <span className="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full font-bold border border-green-200 shadow-sm">
-                                    {t('chat_active', lang)}
-                                </span>
-                                
-                                <div className="w-full bg-white rounded-2xl p-5 mt-8 border border-slate-200 shadow-sm space-y-4">
-                                    <div className="flex justify-between text-xs border-b border-slate-100 pb-3">
-                                        <span className="text-slate-400 font-bold uppercase tracking-wider">Role</span>
-                                        <span className="font-bold text-slate-800 bg-slate-100 px-2 rounded">{activeChat.user.role}</span>
-                                    </div>
-                                    {activeChat.user.contact && (
-                                        <div className="flex justify-between text-xs border-b border-slate-100 pb-3">
-                                            <span className="text-slate-400 font-bold uppercase tracking-wider">Contact</span>
-                                            <span className="font-bold text-slate-800 truncate max-w-[150px]" title={activeChat.user.contact}>{activeChat.user.contact}</span>
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between text-xs">
-                                        <span className="text-slate-400 font-bold uppercase tracking-wider">Ref ID</span>
-                                        <span className="font-mono font-bold text-blue-600 bg-blue-50 px-2 rounded">{currentLeaseData.reservationId}</span>
-                                    </div>
+                                <div className="flex gap-2">
+                                    <span className="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full font-bold border border-green-200 shadow-sm">
+                                        {t('chat_active', lang)}
+                                    </span>
+                                    <span className="bg-slate-100 text-slate-600 text-xs px-3 py-1 rounded-full font-bold border border-slate-200">
+                                        {activeChat.user.role}
+                                    </span>
                                 </div>
                             </div>
                             
-                            <button className="w-full bg-slate-900 text-white py-3.5 rounded-xl text-sm font-bold mb-4 hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 active:scale-95 flex items-center justify-center gap-2">
-                                <UserIcon size={16} />
-                                {t('chat_view_profile', lang)}
-                            </button>
+                            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-2">
+                                <h4 className="text-lg font-bold text-slate-800 mb-4">Contact info</h4>
+                                
+                                <InputGroup 
+                                    label="Rent service name *"
+                                    value={currentLeaseData.owner.surname}
+                                    onChange={() => {}}
+                                    readOnly={false} 
+                                    helperText="Will be shown on your booking website"
+                                />
 
-                            <div className="space-y-2">
-                                <button className="w-full flex items-center gap-3 text-slate-600 text-sm p-3 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-100 rounded-xl transition-all font-medium">
-                                    <Search size={18} className="text-slate-400" />
-                                    {t('chat_search_history', lang)}
-                                </button>
-                                <button className="w-full flex items-center gap-3 text-slate-600 text-sm p-3 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-100 rounded-xl transition-all font-medium">
-                                    <ImageIcon size={18} className="text-slate-400" />
-                                    Shared media
-                                </button>
+                                <InputGroup 
+                                    label="First name *"
+                                    value={activeChat.user.name.split(' ')[0] || ''}
+                                    onChange={() => {}}
+                                    readOnly={true}
+                                    helperText="Will be shown for Riders with confirmed reservations"
+                                />
+
+                                <InputGroup 
+                                    label="Family name *"
+                                    value={activeChat.user.name.split(' ').slice(1).join(' ') || ''}
+                                    onChange={() => {}}
+                                    readOnly={true}
+                                    helperText="Will be shown for Riders with confirmed reservations"
+                                />
+
+                                <InputGroup 
+                                    label="Phone number *"
+                                    value={activeChat.user.contact || ''}
+                                    onChange={() => {}}
+                                />
                             </div>
                         </div>
                     )}

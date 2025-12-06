@@ -28,18 +28,17 @@ const LeaseForm: React.FC<LeaseFormProps> = ({ data, lang, handlers }) => {
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
            <div>
-               <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1 tracking-wide">{t('lbl_res_id', lang)}</label>
-               <div className="relative group">
-                   <input 
-                      disabled
-                      value={data.reservationId} 
-                      className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed"
-                   />
+               <InputGroup 
+                    label={t('lbl_res_id', lang)} 
+                    value={data.reservationId} 
+                    onChange={() => {}} 
+                    readOnly 
+                    helperText="Select chat to change"
+                >
                    <div className="absolute right-3 top-3 text-slate-400">
                        <MessageCircle size={16} />
                    </div>
-               </div>
-               <p className="text-[10px] text-slate-400 mt-1 ml-1">Select chat to change reservation</p>
+                </InputGroup>
            </div>
            
            <InputGroup label={t('lbl_template_id', lang)} value={data.contractTemplateId || ''} onChange={(v) => updateLease(null, 'contractTemplateId', v)} placeholder={t('lbl_optional', lang)} />
