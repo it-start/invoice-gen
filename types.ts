@@ -83,6 +83,7 @@ export interface LeaseData {
 // --- CHAT TYPES ---
 
 export type MessageType = 'text' | 'system' | 'image';
+export type LeaseStatus = 'completed' | 'overdue' | 'collected' | 'confirmed' | 'pending' | 'confirmation_owner' | 'confirmation_rider';
 
 // Internal UI Message Format
 export interface ChatMessage {
@@ -92,6 +93,9 @@ export interface ChatMessage {
   timestamp: string;
   type: MessageType;
   status: 'sent' | 'read';
+  metadata?: {
+    status?: LeaseStatus;
+  };
 }
 
 // Official Ntfy.sh API Contract
@@ -103,7 +107,7 @@ export interface NtfyMessage {
   message: string;
   title?: string; // Used as Sender Name
   priority?: number;
-  tags?: string[]; // Used for flags like 'read', 'system'
+  tags?: string[]; // Used for flags like 'read', 'system', 'status:collected'
   attachment?: {
     name: string;
     url: string;

@@ -1,19 +1,62 @@
 
+
 import React, { useState, useMemo } from 'react';
-import { Search, MoreHorizontal, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft } from 'lucide-react';
-import { ChatSession, LeaseData, Language, ChatMessage, NtfyMessage } from '../../types';
+import { Search, MoreHorizontal, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, AlertCircle, Clock, CheckCircle2, Target, CircleDashed } from 'lucide-react';
+import { ChatSession, LeaseData, Language, ChatMessage, NtfyMessage, LeaseStatus } from '../../types';
 import { t } from '../../utils/i18n';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
+// --- STATUS CONFIGURATION ---
+const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, icon: React.ReactNode, label: string }> = {
+    collected: {
+        bg: 'bg-green-100',
+        text: 'text-green-700',
+        icon: <Play size={12} fill="currentColor" />,
+        label: 'Collected'
+    },
+    completed: {
+        bg: 'bg-slate-200',
+        text: 'text-slate-600',
+        icon: <Check size={12} strokeWidth={4} />,
+        label: 'Completed'
+    },
+    overdue: {
+        bg: 'bg-red-100',
+        text: 'text-red-600',
+        icon: <Clock size={12} />,
+        label: 'Overdue'
+    },
+    confirmed: {
+        bg: 'bg-indigo-100',
+        text: 'text-indigo-600',
+        icon: <Target size={12} />,
+        label: 'Confirmed'
+    },
+    pending: {
+        bg: 'bg-orange-50',
+        text: 'text-orange-600',
+        icon: <CircleDashed size={12} />,
+        label: 'Pending'
+    },
+    confirmation_owner: {
+        bg: 'bg-indigo-50',
+        text: 'text-indigo-500',
+        icon: <CheckCheck size={12} />,
+        label: 'Confirmation by Owner'
+    },
+    confirmation_rider: {
+        bg: 'bg-purple-50',
+        text: 'text-purple-500',
+        icon: <CheckCheck size={12} />,
+        label: 'Confirmation by Rider'
+    }
+};
+
 // --- MOCK NTFY DATA ---
-// This follows the ntfy.sh JSON message format strictly.
-// We use 'topic' to group messages into chat sessions.
 const RAW_NTFY_DATA: NtfyMessage[] = [
-    // Chat 1: Renter (Helena Hills)
-    // Topic: lease-{reservationId}-renter
     {
         id: 'msg_1',
-        time: 1701336600, // 09:30 AM
+        time: 1701336600, 
         event: 'message',
         topic: 'lease-chat-renter',
         message: 'Oh?',
@@ -23,7 +66,7 @@ const RAW_NTFY_DATA: NtfyMessage[] = [
     },
     {
         id: 'msg_2',
-        time: 1701336660, // 09:31 AM
+        time: 1701336660, 
         event: 'message',
         topic: 'lease-chat-renter',
         message: 'Cool',
@@ -32,17 +75,26 @@ const RAW_NTFY_DATA: NtfyMessage[] = [
     },
     {
         id: 'msg_3',
-        time: 1701337260, // 09:41 AM
+        time: 1701337260, 
         event: 'message',
         topic: 'lease-chat-renter',
         message: 'How does it work?',
-        title: 'Me', // 'Me' title indicates sent by current user
+        title: 'Me',
         tags: ['read']
     },
-    // We removed the static system message from here to inject it dynamically with real data below
+    // Mocking a previous status event in the chat history
+    {
+        id: 'msg_4',
+        time: 1701337500,
+        event: 'message',
+        topic: 'lease-chat-renter',
+        message: 'Deal is confirmed. Dates booked',
+        title: 'System',
+        tags: ['system', 'status:confirmed']
+    },
     {
         id: 'msg_5',
-        time: 1701337800, // 09:50 AM
+        time: 1701337800, 
         event: 'message',
         topic: 'lease-chat-renter',
         message: 'You just edit any text to type in the conversation you want to show, and delete any bubbles you don\'t want to use',
@@ -51,29 +103,25 @@ const RAW_NTFY_DATA: NtfyMessage[] = [
     },
     {
         id: 'msg_6',
-        time: 1701337860, // 09:51 AM
+        time: 1701337860, 
         event: 'message',
         topic: 'lease-chat-renter',
         message: 'Boom!',
         title: 'Helena Hills',
         tags: ['read']
     },
-
-    // Chat 2: Support (Carlo)
     {
         id: 'msg_7',
-        time: 1701250000, // Yesterday
+        time: 1701250000,
         event: 'message',
         topic: 'lease-chat-support',
         message: 'Let\'s go',
         title: 'Carlo Emilio',
         tags: ['sent']
     },
-
-    // Chat 3: Owner (Oscar)
     {
         id: 'msg_8',
-        time: 1701000000, // Mon
+        time: 1701000000,
         event: 'message',
         topic: 'lease-chat-owner',
         message: 'Trueeeeee',
@@ -85,16 +133,22 @@ const RAW_NTFY_DATA: NtfyMessage[] = [
 // --- MAPPING LOGIC ---
 
 const ntfyToChatMessage = (ntfy: NtfyMessage): ChatMessage => {
-    // Determine sender type based on Title or Tags
     let senderId = 'other';
     if (ntfy.title === 'Me') senderId = 'me';
     else if (ntfy.title === 'System' || ntfy.tags?.includes('system')) senderId = 'system';
 
-    // Determine type
     let type: any = 'text';
-    if (ntfy.tags?.includes('system')) type = 'system';
+    let statusMetadata: LeaseStatus | undefined = undefined;
+
+    if (ntfy.tags?.includes('system')) {
+        type = 'system';
+        // Extract status from tags like "status:collected"
+        const statusTag = ntfy.tags?.find(t => t.startsWith('status:'));
+        if (statusTag) {
+            statusMetadata = statusTag.split(':')[1] as LeaseStatus;
+        }
+    }
     
-    // Format Timestamp
     const date = new Date(ntfy.time * 1000);
     const timestamp = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
@@ -104,12 +158,14 @@ const ntfyToChatMessage = (ntfy: NtfyMessage): ChatMessage => {
         text: ntfy.message,
         timestamp,
         type,
-        status: ntfy.tags?.includes('read') ? 'read' : 'sent'
+        status: ntfy.tags?.includes('read') ? 'read' : 'sent',
+        metadata: {
+            status: statusMetadata
+        }
     };
 };
 
 const hydrateSessionsFromNtfy = (leaseData: LeaseData): ChatSession[] => {
-    // Group raw ntfy messages by topic
     const sessions: Record<string, ChatSession> = {
         'lease-chat-renter': {
             id: 'lease-chat-renter',
@@ -158,17 +214,14 @@ const hydrateSessionsFromNtfy = (leaseData: LeaseData): ChatSession[] => {
         }
     };
 
-    // Sort by time first
     const sorted = [...RAW_NTFY_DATA].sort((a, b) => a.time - b.time);
 
-    // Populate sessions
     sorted.forEach(ntfy => {
         if (sessions[ntfy.topic]) {
             const msg = ntfyToChatMessage(ntfy);
             sessions[ntfy.topic].messages.push(msg);
             sessions[ntfy.topic].lastMessage = msg.text;
             sessions[ntfy.topic].lastMessageTime = msg.timestamp;
-            // Simple unread logic for mock: if last msg from other and not read
             if (msg.senderId === 'other' && msg.status !== 'read') {
                  sessions[ntfy.topic].unreadCount += 1;
             }
@@ -178,17 +231,18 @@ const hydrateSessionsFromNtfy = (leaseData: LeaseData): ChatSession[] => {
     // --- INJECT DYNAMIC SYSTEM MESSAGE WITH LEASE INFO ---
     if (sessions['lease-chat-renter']) {
         const vehicleName = leaseData.vehicle.name || 'Vehicle';
-        // Insert before the last few messages to look like it happened during convo
+        // This simulates the "Collected" status message from the screenshot
         const systemMsg: ChatMessage = {
             id: 'sys-lease-status',
             senderId: 'system',
             text: `${vehicleName} is in use by Rider`,
             timestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
             type: 'system',
-            status: 'read'
+            status: 'read',
+            metadata: {
+                status: 'collected'
+            }
         };
-        // Splice it in before the "Boom!" message (which is index 4 in raw data, so roughly end of array)
-        // We just push it near the end for effect
         const msgs = sessions['lease-chat-renter'].messages;
         if (msgs.length > 2) {
             msgs.splice(msgs.length - 2, 0, systemMsg);
@@ -210,7 +264,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
     const isMobile = useIsMobile();
     const [mobileView, setMobileView] = useState<'list' | 'room'>('list');
 
-    // Initialize sessions from Ntfy Mock Data
     const initialSessions = useMemo(() => hydrateSessionsFromNtfy(leaseData), [leaseData]);
     const [chats, setChats] = useState<ChatSession[]>(initialSessions);
     const [activeChatId, setActiveChatId] = useState<string>('lease-chat-renter');
@@ -232,7 +285,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
     const handleSendMessage = () => {
         if (!messageInput.trim()) return;
         
-        // In a real app, this would POST to ntfy
         const newMsg: ChatMessage = {
             id: Math.random().toString(),
             senderId: 'me',
@@ -257,7 +309,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
         setMessageInput('');
     };
 
-    // Determine layout visibility classes based on mobile state
     const listClasses = isMobile 
         ? (mobileView === 'list' ? 'w-full flex' : 'hidden') 
         : 'w-80 border-r border-slate-100 flex';
@@ -317,7 +368,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
             {/* MIDDLE: Chat Room */}
             <div className={`${roomClasses} flex-col bg-white`}>
                 {/* Header */}
-                <div className="h-16 border-b border-slate-100 flex justify-between items-center px-4 md:px-6">
+                <div className="h-16 border-b border-slate-100 flex justify-between items-center px-4 md:px-6 shrink-0">
                     <div className="flex items-center gap-3">
                          {isMobile && (
                             <button onClick={handleBackToList} className="-ml-2 p-2 hover:bg-slate-100 rounded-full text-slate-600">
@@ -341,21 +392,60 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                     </div>
                 </div>
 
+                {/* Reservation Summary Pinned Bar */}
+                <div className="bg-slate-50 border-b border-slate-100 px-4 py-3 flex justify-between items-center shadow-sm shrink-0">
+                    <div className="flex items-center gap-3">
+                         <div className="bg-white p-2 rounded-lg border border-slate-200 text-blue-600">
+                             <Car size={18} />
+                         </div>
+                         <div>
+                             <h4 className="text-sm font-bold text-slate-800">{leaseData.vehicle.name}</h4>
+                             <div className="flex items-center gap-2 text-xs text-slate-500">
+                                 <span className="bg-slate-200 px-1.5 rounded text-slate-600 font-mono">{leaseData.vehicle.plate}</span>
+                                 <span>•</span>
+                                 <span>{leaseData.pickup.date} - {leaseData.dropoff.date}</span>
+                             </div>
+                         </div>
+                    </div>
+                    <div className="text-right">
+                         <span className="block text-sm font-bold text-slate-800">{leaseData.pricing.total} THB</span>
+                         <span className="block text-[10px] text-slate-400">#{leaseData.reservationId}</span>
+                    </div>
+                </div>
+
                 {/* Messages */}
                 <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6 flex flex-col dark-scrollbar">
                     <div className="text-center text-xs text-slate-400 my-4">Today</div>
                     
                     {activeChat.messages.map((msg) => {
+                        // --- SYSTEM MESSAGE RENDERER ---
                         if (msg.type === 'system') {
+                            const status = msg.metadata?.status;
+                            // Default styling if no specific status is found
+                            const style = status ? STATUS_CONFIG[status] : { bg: 'bg-slate-100', text: 'text-slate-600', icon: <CheckCheck size={12} />, label: 'System' };
+                            
                             return (
-                                <div key={msg.id} className="flex justify-center my-4">
-                                    <div className="bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 border border-emerald-100">
-                                        <CheckCheck size={14} /> {msg.text}
+                                <div key={msg.id} className="flex flex-col gap-1 my-2">
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-8 flex-shrink-0 flex justify-center">
+                                            {/* Optional: Checkmark icon next to system messages to align with screenshot style */}
+                                            <div className="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-300">
+                                                <Check size={10} />
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-start max-w-[85%]">
+                                            <div className={`${style.bg} ${style.text} px-3 py-1 rounded-md text-xs font-bold flex items-center gap-1.5 mb-1`}>
+                                                {style.icon}
+                                                {style.label}
+                                            </div>
+                                            <p className="text-xs text-slate-500 pl-1">{msg.text}</p>
+                                        </div>
                                     </div>
                                 </div>
                             );
                         }
 
+                        // --- NORMAL MESSAGE RENDERER ---
                         const isMe = msg.senderId === 'me';
                         return (
                             <div key={msg.id} className={`flex gap-3 max-w-[85%] md:max-w-[80%] ${isMe ? 'self-end flex-row-reverse' : 'self-start'}`}>
@@ -384,7 +474,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                 </div>
 
                 {/* Input Area */}
-                <div className="p-4 border-t border-slate-100">
+                <div className="p-4 border-t border-slate-100 shrink-0">
                     <div className="relative flex items-center gap-2">
                         <input 
                             type="text" 
