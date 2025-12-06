@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import { Search, MoreHorizontal, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2 } from 'lucide-react';
 import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage } from '../../types';
@@ -18,7 +17,7 @@ const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, icon: React
     completed: {
         bg: 'bg-slate-200',
         text: 'text-slate-600',
-        icon: <Check size={12} strokeWidth={4} />,
+        icon: <Check size={12} strokeWidth={3} />,
         label: 'Completed'
     },
     overdue: {
@@ -28,8 +27,8 @@ const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, icon: React
         label: 'Overdue'
     },
     confirmed: {
-        bg: 'bg-indigo-100',
-        text: 'text-indigo-600',
+        bg: 'bg-purple-100',
+        text: 'text-purple-700',
         icon: <Target size={12} />,
         label: 'Confirmed'
     },
@@ -41,14 +40,14 @@ const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, icon: React
     },
     confirmation_owner: {
         bg: 'bg-indigo-50',
-        text: 'text-indigo-500',
+        text: 'text-indigo-600',
         icon: <CheckCheck size={12} />,
         label: 'Confirmation by Owner'
     },
     confirmation_rider: {
         bg: 'bg-purple-50',
-        text: 'text-purple-500',
-        icon: <CheckCheck size={12} />,
+        text: 'text-purple-600',
+        icon: <Check size={12} />,
         label: 'Confirmation by Rider'
     }
 };
