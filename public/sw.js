@@ -1,4 +1,4 @@
-const CACHE_NAME = 'invoicegen-v1';
+const CACHE_NAME = 'ownima-pro-v1';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -74,7 +74,7 @@ self.addEventListener('fetch', (event) => {
 // Push Event: Handle incoming push notifications
 self.addEventListener('push', (event) => {
   const data = event.data ? event.data.json() : {};
-  const title = data.title || 'InvoiceGen Pro';
+  const title = data.title || 'Ownima Pro';
   const options = {
     body: data.body || 'You have a new message',
     icon: '/favicon.svg',

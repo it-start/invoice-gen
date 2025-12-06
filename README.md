@@ -1,28 +1,33 @@
-# InvoiceGen Pro 📄
+# Ownima Pro 📄
 
-**InvoiceGen Pro** is a professional, client-side document generator built with React and TypeScript. It specializes in creating compliant Russian business invoices ("Счет на оплату") and vehicle lease agreements with high-fidelity PDF output.
+**Ownima Pro** is a professional rental management workspace built with React and TypeScript. It seamlessly integrates Lease Agreement generation, Invoice creation, and real-time Chat for Owners and Renters.
 
-Built for **Ownima**, it seamlessly integrates with reservation APIs to fetch real-time data, while also offering AI-powered text import capabilities using Google Gemini.
+Built for **Ownima**, it provides a unified platform to manage vehicle reservations, sign contracts digitally, and communicate via a unified timeline.
 
 ## 🚀 Key Features
 
-*   **Dual Document Engine**:
-    *   **Russian Invoices**: Standardized A4 layout with automatic VAT calculation and bank details formatting.
+*   **Rent & Lease Manager**:
     *   **Lease Agreements**: Dynamic vehicle rental contracts with automatic "Early/Late" pickup highlighting and fee calculation.
-*   **Real-time PDF Generation**: Instant client-side rendering using `@react-pdf/renderer`. No backend required for generation.
+    *   **Russian Invoices**: Standardized A4 layout with automatic VAT calculation and bank details formatting.
+    *   **Digital Signatures**: Sign directly on the device using the integrated signature pad.
+*   **Real-time Collaboration**:
+    *   **Chat System**: Integrated messaging with Owners/Renters.
+    *   **System Events**: Automatic updates for reservation status changes (Confirmed, Collected, Overdue).
+*   **Offline-Ready (PWA)**:
+    *   **Service Worker**: Caches app shell for instant loading and offline access.
+    *   **IndexedDB**: Persists chat history and session data locally.
 *   **AI Smart Import**: Paste unstructured text (emails, messages) and let **Google Gemini 2.5** parse it into structured forms.
-*   **Mobile-First Wizard**: Complex forms transform into a step-by-step wizard on mobile devices for easy field entry.
-*   **API Integration**: Direct connection to Ownima Reservation API to pull booking details via ID.
-*   **Server-Side Preview**: Support for rendering server-generated HTML templates for authorized users.
+*   **Mobile-First Wizard**: Complex forms transform into a step-by-step wizard on mobile devices.
 
 ## 🛠️ Tech Stack
 
 *   **Framework**: React 18 + Vite
 *   **Language**: TypeScript (Strict Mode)
+*   **State Management**: Zustand
+*   **Persistence**: IndexedDB (idb)
 *   **Styling**: Tailwind CSS
 *   **PDF Engine**: `@react-pdf/renderer`
 *   **AI**: Google GenAI SDK (`@google/genai`)
-*   **Icons**: Lucide React
 *   **Routing**: React Router DOM
 
 ## 🏁 Getting Started
@@ -36,7 +41,7 @@ Built for **Ownima**, it seamlessly integrates with reservation APIs to fetch re
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/invoice-gen-pro.git
+git clone https://github.com/ownima/ownima-pro.git
 
 # Install dependencies
 npm install
@@ -71,14 +76,13 @@ npm run build
 
 ## 🧩 Project Structure
 
+*   `src/components/chat`: Chat layout and components.
 *   `src/components/forms`: Form logic and UI inputs.
 *   `src/components/modals`: Dialogs (Login, AI Import).
-*   `src/components/ui`: Reusable UI atoms (Wizard, InputGroup).
-*   `src/components/PdfDocument.tsx`: Invoice PDF layout definition.
-*   `src/components/LeasePdf.tsx`: Lease Agreement PDF layout definition.
-*   `src/pages`: Main application views (`EditorPage`, `PreviewPage`).
-*   `src/services`: API clients (`ownimaApi`, `geminiService`, `authService`).
-*   `src/hooks`: State management logic (`useInvoice`, `useLease`).
+*   `src/components/ui`: Reusable UI atoms (Wizard, InputGroup, SignaturePad).
+*   `src/stores`: Global state (chatStore).
+*   `src/services`: API clients (`ownimaApi`, `geminiService`, `dbService`).
+*   `src/hooks`: React hooks (`useInvoice`, `useLease`).
 *   `src/types.ts`: Centralized TypeScript interfaces.
 
 ## 🔒 Authentication

@@ -1,7 +1,7 @@
 {
-  "name": "InvoiceGen Pro",
-  "short_name": "InvoiceGen",
-  "description": "Professional Invoice & Lease Generator with Chat",
+  "name": "Ownima Pro",
+  "short_name": "Ownima",
+  "description": "Professional Rental Management Workspace & Chat",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
