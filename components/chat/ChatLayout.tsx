@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Search, MoreHorizontal, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft } from 'lucide-react';
 import { ChatSession, LeaseData, Language, ChatMessage, NtfyMessage } from '../../types';
@@ -247,7 +246,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                         />
                     </div>
                 </div>
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {chats.map(chat => (
                         <div 
                             key={chat.id}
@@ -307,7 +306,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6 flex flex-col">
+                <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6 flex flex-col dark-scrollbar">
                     <div className="text-center text-xs text-slate-400 my-4">Nov 30, 2023</div>
                     
                     {activeChat.messages.map((msg) => {
