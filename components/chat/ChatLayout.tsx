@@ -4,6 +4,7 @@ import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Chec
 import { useNavigate, useParams } from 'react-router-dom';
 import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage } from '../../types';
 import { t } from '../../utils/i18n';
+import { humanizeTime } from '../../utils/dateUtils';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useChatStore } from '../../stores/chatStore';
 import LeaseForm from '../forms/LeaseForm';
@@ -209,7 +210,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                         <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
                         <input 
                             type="text" 
-                            placeholder="Search Reservation ID..."
+                            placeholder="Search ID..."
                             className="w-full pl-10 pr-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -237,28 +238,29 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                             <div 
                                 key={chat.id}
                                 onClick={() => handleChatSelect(chat.id)}
-                                className={`p-4 flex gap-3 cursor-pointer transition-all border-b border-slate-50 group
+                                className={`p-3 md:p-4 flex gap-3 cursor-pointer transition-all border-b border-slate-50 group
                                     ${isActive 
                                         ? 'bg-blue-50/50 border-l-4 border-l-blue-500 shadow-inner' 
                                         : 'hover:bg-slate-50 border-l-4 border-l-transparent'
                                     }`}
                             >
                                 <div className="relative shrink-0">
-                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg overflow-hidden transition-all
+                                    <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-lg overflow-hidden transition-all
                                         ${isActive ? 'bg-blue-200 text-blue-700 ring-2 ring-white shadow-md' : 'bg-slate-200 text-slate-500 group-hover:bg-slate-300'}`}>
                                         {chat.user.avatar ? <img src={chat.user.avatar} alt={chat.user.name} /> : chat.user.name[0]}
                                     </div>
-                                    <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white ${chat.user.status === 'online' ? 'bg-green-500' : 'bg-slate-400'}`}></div>
+                                    <div className={`absolute bottom-0 right-0 w-3 h-3 md:w-3.5 md:h-3.5 rounded-full border-2 border-white ${chat.user.status === 'online' ? 'bg-green-500' : 'bg-slate-400'}`}></div>
                                 </div>
                                 <div className="flex-1 min-w-0 flex flex-col justify-center">
                                     <div className="flex justify-between items-baseline mb-0.5">
                                         <h3 className={`font-bold text-sm truncate ${isActive ? 'text-blue-900' : 'text-slate-800'}`}>{chat.user.name}</h3>
-                                        <span className={`text-[10px] font-medium ${isActive ? 'text-blue-600' : 'text-slate-400'}`}>
-                                            {chat.lastMessageTime > 0 ? formatTime(chat.lastMessageTime) : ''}
+                                        <span className={`text-[10px] font-medium whitespace-nowrap ml-2 ${isActive ? 'text-blue-600' : 'text-slate-400'}`}>
+                                            {/* USE HUMANIZED TIME HERE */}
+                                            {chat.lastMessageTime > 0 ? humanizeTime(chat.lastMessageTime, lang) : ''}
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <p className={`text-xs truncate max-w-[140px] ${isActive ? 'text-blue-700 font-medium' : 'text-slate-500 group-hover:text-slate-600'}`}>
+                                        <p className={`text-xs truncate max-w-[140px] md:max-w-[140px] ${isActive ? 'text-blue-700 font-medium' : 'text-slate-500 group-hover:text-slate-600'}`}>
                                             {chat.lastMessage}
                                         </p>
                                         {chat.unreadCount > 0 && (
@@ -278,54 +280,55 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
             {activeChat ? (
             <div className={`${roomClasses} flex-col bg-slate-50/30 relative`}>
                 {/* Header */}
-                <div className="h-16 border-b border-slate-200 flex justify-between items-center px-4 md:px-6 shrink-0 bg-white shadow-sm z-20">
-                    <div className="flex items-center gap-3">
+                <div className="h-14 md:h-16 border-b border-slate-200 flex justify-between items-center px-3 md:px-6 shrink-0 bg-white shadow-sm z-20">
+                    <div className="flex items-center gap-2 md:gap-3">
                          {isMobile && (
                             <button onClick={handleBackToList} className="-ml-2 p-2 hover:bg-slate-100 rounded-full text-slate-600">
                                 <ArrowLeft size={20} />
                             </button>
                          )}
-                         <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold border border-slate-100">
+                         <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold border border-slate-100">
                              {activeChat.user.name[0]}
                          </div>
                          <div>
                              <h3 className="font-bold text-slate-800 text-sm">{activeChat.user.name}</h3>
-                             <p className="text-xs text-green-600 flex items-center gap-1 font-medium">
+                             <p className="text-[10px] md:text-xs text-green-600 flex items-center gap-1 font-medium">
                                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
                                 {t('chat_active', lang)}
                              </p>
                          </div>
                     </div>
                     <div className="flex gap-2 text-slate-400">
-                        <button className="p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors"><Phone size={18} /></button>
-                        <button className="p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors"><Video size={18} /></button>
-                        <button className="p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors md:hidden"><MoreVertical size={18} /></button>
+                        <button className="hidden md:block p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors"><Phone size={18} /></button>
+                        <button className="hidden md:block p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors"><Video size={18} /></button>
+                        <button className="p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors"><MoreVertical size={18} /></button>
                     </div>
                 </div>
 
-                {/* Reservation Summary Pinned Bar */}
-                <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex justify-between items-center shadow-sm shrink-0 z-10 sticky top-0">
-                    <div className="flex items-center gap-3">
-                         <div className="bg-blue-50 p-2 rounded-lg border border-blue-100 text-blue-600">
+                {/* Reservation Summary Pinned Bar (Optimized for Mobile) */}
+                <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 px-3 md:px-4 py-2 md:py-3 flex justify-between items-center shadow-sm shrink-0 z-10 sticky top-0">
+                    <div className="flex items-center gap-2 md:gap-3">
+                         {/* Hide Icon on Mobile to save space */}
+                         <div className="hidden md:block bg-blue-50 p-2 rounded-lg border border-blue-100 text-blue-600">
                              <Car size={18} />
                          </div>
-                         <div>
-                             <h4 className="text-sm font-bold text-slate-800">{currentLeaseData.vehicle.name}</h4>
-                             <div className="flex items-center gap-2 text-xs text-slate-500">
-                                 <span className="bg-slate-100 border border-slate-200 px-1.5 rounded text-slate-600 font-mono">{currentLeaseData.vehicle.plate}</span>
+                         <div className="min-w-0">
+                             <h4 className="text-xs md:text-sm font-bold text-slate-800 truncate">{currentLeaseData.vehicle.name}</h4>
+                             <div className="flex items-center gap-2 text-[10px] md:text-xs text-slate-500">
+                                 <span className="bg-slate-100 border border-slate-200 px-1.5 rounded text-slate-600 font-mono whitespace-nowrap">{currentLeaseData.vehicle.plate}</span>
                                  <span className="hidden sm:inline">•</span>
-                                 <span className="hidden sm:inline">{currentLeaseData.pickup.date} - {currentLeaseData.dropoff.date}</span>
+                                 <span className="hidden sm:inline truncate">{currentLeaseData.pickup.date} - {currentLeaseData.dropoff.date}</span>
                              </div>
                          </div>
                     </div>
-                    <div className="text-right">
-                         <span className="block text-sm font-bold text-slate-800 bg-slate-100 px-2 rounded">{currentLeaseData.pricing.total} THB</span>
-                         <span className="block text-[10px] text-slate-400 mt-0.5">#{currentLeaseData.reservationId}</span>
+                    <div className="text-right shrink-0 ml-2">
+                         <span className="block text-xs md:text-sm font-bold text-slate-800 bg-slate-100 px-2 rounded whitespace-nowrap">{currentLeaseData.pricing.total} THB</span>
+                         <span className="block text-[9px] md:text-[10px] text-slate-400 mt-0.5">#{currentLeaseData.reservationId}</span>
                     </div>
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6 flex flex-col dark-scrollbar bg-slate-50/50">
+                <div className="flex-1 p-2 md:p-6 overflow-y-auto space-y-4 md:space-y-6 flex flex-col dark-scrollbar bg-slate-50/50">
                     
                     {activeChat.messages.map((msg: ChatMessage, index: number) => {
                         // Date Separator Logic
@@ -335,7 +338,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                         return (
                             <React.Fragment key={msg.id}>
                                 {isDifferentDay && (
-                                    <div className="flex justify-center my-6 sticky top-2 z-0">
+                                    <div className="flex justify-center my-4 md:my-6 sticky top-2 z-0">
                                         <span className="text-[10px] font-bold text-slate-500 bg-white border border-slate-200 shadow-sm px-3 py-1 rounded-full uppercase tracking-wider">
                                             {formatDateSeparator(msg.timestamp)}
                                         </span>
@@ -352,37 +355,37 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                     const isActionable = status === 'confirmation_owner' && currentLeaseData.status !== 'confirmed' && currentLeaseData.status !== 'rejected';
 
                                     return (
-                                        <div className="flex flex-col gap-1 my-2 animate-in fade-in slide-in-from-bottom-2 duration-300 px-4 md:px-12">
+                                        <div className="flex flex-col gap-1 my-2 animate-in fade-in slide-in-from-bottom-2 duration-300 px-2 md:px-12">
                                             <div className="flex items-start gap-3 w-full">
                                                 <div className="w-full flex flex-col items-center">
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <div className="h-px w-8 bg-slate-200"></div>
-                                                        <div className={`${style.bg} ${style.text} px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 border border-black/5 shadow-sm`}>
+                                                        <div className="h-px w-4 md:w-8 bg-slate-200"></div>
+                                                        <div className={`${style.bg} ${style.text} px-2 md:px-3 py-1 rounded-full text-[10px] md:text-xs font-bold flex items-center gap-1.5 border border-black/5 shadow-sm`}>
                                                             {style.icon}
                                                             {style.label}
                                                         </div>
-                                                        <div className="h-px w-8 bg-slate-200"></div>
+                                                        <div className="h-px w-4 md:w-8 bg-slate-200"></div>
                                                     </div>
                                                     
-                                                    <span className="text-[10px] text-slate-400 font-mono mb-1">
+                                                    <span className="text-[9px] md:text-[10px] text-slate-400 font-mono mb-1">
                                                             {formatSystemDateTime(msg.timestamp)}
                                                     </span>
                                                     
-                                                    {msg.text && <p className="text-xs text-slate-500 italic text-center max-w-xs">{msg.text}</p>}
+                                                    {msg.text && <p className="text-[11px] md:text-xs text-slate-500 italic text-center max-w-xs">{msg.text}</p>}
                                                     
                                                     {/* INTERACTIVE ACTIONS BUBBLE */}
                                                     {isActionable && (
-                                                        <div className="mt-3 flex gap-3 animate-in zoom-in duration-300">
+                                                        <div className="mt-3 flex gap-2 md:gap-3 animate-in zoom-in duration-300">
                                                             <button 
                                                                 onClick={() => confirmReservation()}
-                                                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95 ring-2 ring-offset-2 ring-transparent hover:ring-blue-200"
+                                                                className="flex items-center gap-2 px-3 md:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95 ring-2 ring-offset-2 ring-transparent hover:ring-blue-200"
                                                             >
                                                                 <ThumbsUp size={14} />
-                                                                Confirm Reservation
+                                                                Confirm
                                                             </button>
                                                             <button 
                                                                 onClick={() => rejectReservation()}
-                                                                className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-100 rounded-xl text-xs font-bold shadow-sm transition-all active:scale-95"
+                                                                className="flex items-center gap-2 px-3 md:px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-100 rounded-xl text-xs font-bold shadow-sm transition-all active:scale-95"
                                                             >
                                                                 <ThumbsDown size={14} />
                                                                 Reject
@@ -398,23 +401,23 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                     (() => {
                                         const isMe = msg.senderId === 'me';
                                         return (
-                                            <div className={`flex gap-3 max-w-[85%] md:max-w-[70%] animate-in fade-in slide-in-from-bottom-2 duration-200 ${isMe ? 'self-end flex-row-reverse' : 'self-start'}`}>
+                                            <div className={`flex gap-2 md:gap-3 max-w-[90%] md:max-w-[70%] animate-in fade-in slide-in-from-bottom-2 duration-200 ${isMe ? 'self-end flex-row-reverse' : 'self-start'}`}>
                                                 {!isMe && (
-                                                    <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-600 shadow-sm mt-auto">
+                                                    <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-white border border-slate-200 flex-shrink-0 flex items-center justify-center text-[10px] md:text-xs font-bold text-slate-600 shadow-sm mt-auto">
                                                         {activeChat.user.name[0]}
                                                     </div>
                                                 )}
                                                 <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                                                    <div className={`px-4 py-3 shadow-sm text-sm leading-relaxed ${
+                                                    <div className={`px-3 py-2 md:px-4 md:py-3 shadow-sm text-[13px] md:text-sm leading-relaxed ${
                                                         isMe 
                                                         ? 'bg-blue-600 text-white rounded-2xl rounded-tr-sm shadow-blue-100' 
                                                         : 'bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-sm shadow-sm'
                                                     }`}>
                                                         {msg.text}
                                                     </div>
-                                                    <div className="flex items-center gap-1.5 mt-1 px-1 text-[10px] text-slate-400 font-medium select-none">
-                                                        {isMe && msg.status === 'read' && <CheckCheck size={13} className="text-blue-500" />}
-                                                        {isMe && msg.status === 'sent' && <Check size={13} />}
+                                                    <div className="flex items-center gap-1.5 mt-1 px-1 text-[9px] md:text-[10px] text-slate-400 font-medium select-none">
+                                                        {isMe && msg.status === 'read' && <CheckCheck size={12} className="text-blue-500" />}
+                                                        {isMe && msg.status === 'sent' && <Check size={12} />}
                                                         <span>{formatTime(msg.timestamp)}</span>
                                                     </div>
                                                 </div>
@@ -430,27 +433,27 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                 </div>
 
                 {/* Input Area */}
-                <div className="p-4 border-t border-slate-200 shrink-0 bg-white z-10">
+                <div className="p-3 md:p-4 border-t border-slate-200 shrink-0 bg-white z-10">
                     <div className="relative flex items-center gap-2">
-                        <button className="p-3 text-slate-400 hover:bg-slate-100 rounded-full transition-colors md:hidden">
+                        <button className="p-2 md:p-3 text-slate-400 hover:bg-slate-100 rounded-full transition-colors md:hidden">
                              <ImageIcon size={20} />
                         </button>
                         <input 
                             type="text" 
-                            className="flex-1 bg-slate-100 border-transparent focus:bg-white border focus:border-blue-300 rounded-full py-3 pl-5 pr-12 text-sm focus:ring-4 focus:ring-blue-100 outline-none transition-all placeholder:text-slate-400"
+                            className="flex-1 bg-slate-100 border-transparent focus:bg-white border focus:border-blue-300 rounded-full py-2.5 md:py-3 pl-4 md:pl-5 pr-10 md:pr-12 text-sm focus:ring-4 focus:ring-blue-100 outline-none transition-all placeholder:text-slate-400"
                             placeholder={t('chat_type_message', lang)}
                             value={messageInput}
                             onChange={(e) => setMessageInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                         />
-                        <div className="absolute right-16 md:right-14 flex gap-2 text-slate-400">
-                             <button className="hover:text-blue-600 transition-colors hidden sm:block p-1"><ImageIcon size={20} /></button>
+                        <div className="absolute right-14 md:right-14 flex gap-2 text-slate-400 hidden md:flex">
+                             <button className="hover:text-blue-600 transition-colors p-1"><ImageIcon size={20} /></button>
                              <button className="hover:text-blue-600 transition-colors p-1"><Smile size={20} /></button>
                         </div>
                         <button 
                             onClick={handleSend}
                             disabled={!messageInput.trim()}
-                            className="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition-all shadow-md flex-shrink-0 disabled:opacity-50 disabled:shadow-none active:scale-95"
+                            className="bg-blue-600 text-white p-2.5 md:p-3 rounded-full hover:bg-blue-700 transition-all shadow-md flex-shrink-0 disabled:opacity-50 disabled:shadow-none active:scale-95"
                         >
                             <Send size={18} />
                         </button>
