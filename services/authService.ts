@@ -8,6 +8,7 @@ const BASE_RESERVATION_URL = process.env.OWNIMA_API_URL || 'https://stage.ownima
 const AUTH_URL = (BASE_RESERVATION_URL || '').replace('/reservation', '/auth/access-token');
 
 const TOKEN_KEY = 'ownima_token';
+const USER_KEY = 'ownima_user';
 
 interface LoginResponse {
   access_token: string;
@@ -37,10 +38,12 @@ export const authService = {
 
     const data: LoginResponse = await response.json();
     localStorage.setItem(TOKEN_KEY, data.access_token);
+    localStorage.setItem(USER_KEY, username);
   },
 
   logout: () => {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
   },
 
   getToken: (): string | null => {
@@ -49,6 +52,10 @@ export const authService = {
   
   setToken: (token: string): void => {
     localStorage.setItem(TOKEN_KEY, token);
+  },
+
+  getUsername: (): string | null => {
+    return localStorage.getItem(USER_KEY);
   },
 
   isAuthenticated: (): boolean => {

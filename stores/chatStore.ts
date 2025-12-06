@@ -1,15 +1,25 @@
 
-
 import { create } from 'zustand';
 import { ChatSession, ChatMessage, LeaseData, NtfyMessage, LeaseStatus } from '../types';
 import { fetchReservationHistory, fetchNtfyMessages, sendNtfyMessage, loadLeaseData, HistoryEvent, getChatSseUrl } from '../services/ownimaApi';
+import { authService } from '../services/authService';
+
+const PERSIST_KEY = 'chat_sessions_v1';
 
 // --- HELPERS ---
 
 const ntfyToChatMessage = (ntfy: NtfyMessage): ChatMessage => {
     let senderId = 'other';
-    // Assume user is 'Me' if title matches, or logic can be improved based on Auth
-    if (ntfy.title === 'Me') senderId = 'me';
+    const currentUser = authService.getUsername();
+
+    // Strict Auth Matching
+    if (currentUser && ntfy.title === currentUser) {
+        senderId = 'me';
+    } 
+    // Fallback Legacy Matching
+    else if (ntfy.title === 'Me') {
+        senderId = 'me';
+    }
     
     // System messages detection
     if (ntfy.title === 'System' || ntfy.tags?.includes('system')) senderId = 'system';
@@ -91,6 +101,25 @@ const historyToChatMessage = (event: HistoryEvent): ChatMessage => {
     };
 };
 
+const loadFromStorage = (): ChatSession[] => {
+    try {
+        const stored = localStorage.getItem(PERSIST_KEY);
+        return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+        console.warn("Failed to load chat sessions from storage", e);
+        return [];
+    }
+};
+
+const saveToStorage = (sessions: ChatSession[]) => {
+    try {
+        // Optional: Limit storage size here if needed in future
+        localStorage.setItem(PERSIST_KEY, JSON.stringify(sessions));
+    } catch (e) {
+        console.warn("Failed to save chat sessions to storage", e);
+    }
+};
+
 // --- STORE DEFINITION ---
 
 interface ChatState {
@@ -111,7 +140,7 @@ interface ChatState {
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
-    sessions: [],
+    sessions: loadFromStorage(),
     activeSessionId: null,
     isLoading: false,
     error: null,
@@ -120,13 +149,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     loadChatSession: async (reservationId: string) => {
         // Close existing connection if switching
-        const { activeEventSource } = get();
+        const { activeEventSource, sessions } = get();
         if (activeEventSource) {
             activeEventSource.close();
             set({ activeEventSource: null });
         }
 
-        set({ isLoading: true, error: null });
+        // Stale-While-Revalidate Strategy
+        const existingSession = sessions.find(s => s.id === reservationId);
+        
+        // Always set active session immediately to update UI focus
+        if (existingSession) {
+            set({ activeSessionId: reservationId, isLoading: false, error: null });
+        } else {
+            set({ activeSessionId: reservationId, isLoading: true, error: null });
+        }
+
         try {
             // 1. Fetch Lease Data to get Renter/Owner context
             const leaseData = await loadLeaseData(reservationId);
@@ -148,7 +186,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             
             allMessages.sort((a, b) => a.timestamp - b.timestamp);
 
-            // 5. Create Session
+            // 5. Create/Update Session
             const newSession: ChatSession = {
                 id: topicId, // Use UUID as session ID
                 user: {
@@ -165,7 +203,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 unreadCount: 0
             };
 
-            // 6. Update Store with Session
+            // 6. Update Store with Session & Persist
             set(state => {
                 const existingIdx = state.sessions.findIndex(s => s.id === topicId);
                 let newSessions = [...state.sessions];
@@ -174,8 +212,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 } else {
                     newSessions.push(newSession);
                 }
+                
+                saveToStorage(newSessions);
+
                 return {
                     sessions: newSessions,
+                    // Ensure activeSessionId is set (in case we did SWR update or full load)
                     activeSessionId: topicId,
                     isLoading: false
                 };
@@ -211,6 +253,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
                         const newSessions = [...state.sessions];
                         newSessions[sessionIndex] = updatedSession;
                         
+                        saveToStorage(newSessions);
+                        
                         return { sessions: newSessions };
                     });
                 } catch (e) {
@@ -220,15 +264,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
             
             eventSource.onerror = (err) => {
                 console.error("SSE Connection Error", err);
-                // Standard browser behavior handles many reconnects, 
-                // but we could implement backoff here if needed.
             };
 
             set({ activeEventSource: eventSource });
 
         } catch (e: any) {
             console.error("Load Chat Error", e);
-            set({ isLoading: false, error: e.message || "Failed to load chat" });
+            // If we have existing session, error is less critical (we just show stale data)
+            // But we should probably notify the user
+            set(state => ({ 
+                isLoading: false, 
+                error: state.activeSessionId && state.sessions.find(s => s.id === state.activeSessionId) 
+                    ? null // Hide error if we have data to show
+                    : (e.message || "Failed to load chat")
+            }));
         }
     },
 
@@ -265,11 +314,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
         });
 
         set({ sessions: updatedSessions });
+        saveToStorage(updatedSessions);
 
         // Send to API
         try {
             await sendNtfyMessage(activeSessionId, text);
-            // Re-fetching is handled by the live SSE stream which will eventually bring the confirmed message
+            // Re-fetching is handled by the live SSE stream
         } catch (e) {
             console.error("Failed to send message", e);
         }
@@ -289,8 +339,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             leaseContext: state.leaseContext ? { ...state.leaseContext, status: 'confirmed' } : null
         }));
 
-        // 2. Send System Message via Ntfy (simulating API state change response)
-        // In real app: POST /confirm -> Backend sends system msg
+        // 2. Send System Message via Ntfy
         await sendMessage("✅ Reservation confirmed by Owner");
     },
 
