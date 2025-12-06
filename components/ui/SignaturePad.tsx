@@ -10,7 +10,6 @@ interface SignaturePadProps {
     onClear: () => void;
     savedLabel?: string;
     clearLabel?: string;
-    saveLabel?: string;
 }
 
 const SignaturePad: React.FC<SignaturePadProps> = ({ 
@@ -20,7 +19,6 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
     onClear,
     savedLabel = "Saved",
     clearLabel = "Clear",
-    saveLabel = "Save"
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDrawing, setIsDrawing] = useState(false);
