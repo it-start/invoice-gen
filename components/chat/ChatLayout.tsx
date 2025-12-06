@@ -39,15 +39,7 @@ const RAW_NTFY_DATA: NtfyMessage[] = [
         title: 'Me', // 'Me' title indicates sent by current user
         tags: ['read']
     },
-    {
-        id: 'msg_4',
-        time: 1701337500, // 09:45 AM
-        event: 'message',
-        topic: 'lease-chat-renter',
-        message: 'Vehicle is in use by Rider',
-        title: 'System',
-        tags: ['system', 'read']
-    },
+    // We removed the static system message from here to inject it dynamically with real data below
     {
         id: 'msg_5',
         time: 1701337800, // 09:50 AM
@@ -182,6 +174,28 @@ const hydrateSessionsFromNtfy = (leaseData: LeaseData): ChatSession[] => {
             }
         }
     });
+
+    // --- INJECT DYNAMIC SYSTEM MESSAGE WITH LEASE INFO ---
+    if (sessions['lease-chat-renter']) {
+        const vehicleName = leaseData.vehicle.name || 'Vehicle';
+        // Insert before the last few messages to look like it happened during convo
+        const systemMsg: ChatMessage = {
+            id: 'sys-lease-status',
+            senderId: 'system',
+            text: `${vehicleName} is in use by Rider`,
+            timestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+            type: 'system',
+            status: 'read'
+        };
+        // Splice it in before the "Boom!" message (which is index 4 in raw data, so roughly end of array)
+        // We just push it near the end for effect
+        const msgs = sessions['lease-chat-renter'].messages;
+        if (msgs.length > 2) {
+            msgs.splice(msgs.length - 2, 0, systemMsg);
+        } else {
+            msgs.push(systemMsg);
+        }
+    }
 
     return Object.values(sessions);
 };
@@ -335,8 +349,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                         if (msg.type === 'system') {
                             return (
                                 <div key={msg.id} className="flex justify-center my-4">
-                                    <div className="bg-green-50 text-green-800 px-3 py-1 rounded text-xs font-medium flex items-center gap-2">
-                                        <CheckCheck size={12} /> {msg.text}
+                                    <div className="bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 border border-emerald-100">
+                                        <CheckCheck size={14} /> {msg.text}
                                     </div>
                                 </div>
                             );
