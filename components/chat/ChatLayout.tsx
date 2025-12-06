@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -115,10 +116,11 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         localStorage.setItem('chat_sidebar_open', JSON.stringify(isSidebarOpen));
     }, [isSidebarOpen]);
 
-    // --- REFS FOR SCROLLING ---
+    // --- REFS FOR SCROLLING & INPUTS ---
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const prevChatIdRef = useRef<string | null>(null);
     const prevMessageCountRef = useRef<number>(0);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // --- ZUSTAND STORE ---
     const { 
@@ -126,6 +128,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         activeSessionId, 
         isLoading, 
         sendMessage, 
+        sendImage,
         setActiveSession,
         markMessageAsRead,
         confirmReservation, 
@@ -241,6 +244,23 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         setMessageInput('');
     };
 
+    const handleImageClick = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            sendImage(file);
+        }
+        // Reset input so same file can be selected again
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
     // --- FORMATTERS ---
     const formatTime = (timestamp: number) => {
         if (!timestamp) return '';
@@ -305,6 +325,15 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     return (
         <div className="flex h-full bg-white md:rounded-xl overflow-hidden md:border border-slate-200 md:shadow-sm">
             
+            {/* Hidden File Input */}
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/*" 
+                onChange={handleFileChange}
+            />
+
             {/* LEFT SIDEBAR: Chat List */}
             <div className={`${listClasses} flex-col bg-slate-50`}>
                 <div className="p-4 border-b border-slate-200 bg-white shadow-sm z-10">
@@ -550,7 +579,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                         </div>
                                     );
                                 })() : (
-                                    /* NORMAL MESSAGE RENDERER */
+                                    /* NORMAL / IMAGE MESSAGE RENDERER */
                                     (() => {
                                         const isMe = msg.senderId === 'me';
                                         return (
@@ -566,13 +595,26 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                                     </div>
                                                 )}
                                                 <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                                                    <div className={`px-3 py-2 md:px-4 md:py-3 shadow-sm text-[13px] md:text-sm leading-relaxed ${
-                                                        isMe 
-                                                        ? 'bg-blue-600 text-white rounded-2xl rounded-tr-sm shadow-blue-100' 
-                                                        : 'bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-sm shadow-sm'
-                                                    }`}>
-                                                        {msg.text}
-                                                    </div>
+                                                    
+                                                    {msg.type === 'image' && msg.attachmentUrl ? (
+                                                        <div className={`overflow-hidden rounded-2xl shadow-sm border border-black/5 ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'}`}>
+                                                            <img 
+                                                                src={msg.attachmentUrl} 
+                                                                alt="Attachment" 
+                                                                className="max-w-full max-h-[300px] object-cover bg-slate-100"
+                                                                loading="lazy"
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <div className={`px-3 py-2 md:px-4 md:py-3 shadow-sm text-[13px] md:text-sm leading-relaxed ${
+                                                            isMe 
+                                                            ? 'bg-blue-600 text-white rounded-2xl rounded-tr-sm shadow-blue-100' 
+                                                            : 'bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-sm shadow-sm'
+                                                        }`}>
+                                                            {msg.text}
+                                                        </div>
+                                                    )}
+
                                                     <div className="flex items-center gap-1.5 mt-1 px-1 text-[9px] md:text-xs text-slate-400 font-medium select-none">
                                                         {isMe && msg.status === 'read' && <CheckCheck size={12} className="text-blue-500" />}
                                                         {isMe && msg.status === 'sent' && <Check size={12} />}
@@ -597,7 +639,11 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                         onSubmit={handleSend}
                         autoComplete="off"
                     >
-                        <button type="button" className="p-2 md:p-3 text-slate-400 hover:bg-slate-100 rounded-full transition-colors md:hidden">
+                        <button 
+                            type="button" 
+                            onClick={handleImageClick}
+                            className="p-2 md:p-3 text-slate-400 hover:bg-slate-100 rounded-full transition-colors md:hidden"
+                        >
                              <ImageIcon size={20} />
                         </button>
                         <input 
@@ -609,7 +655,13 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                             onChange={(e) => setMessageInput(e.target.value)}
                         />
                         <div className="absolute right-14 md:right-14 flex gap-2 text-slate-400 hidden md:flex">
-                             <button type="button" className="hover:text-blue-600 transition-colors p-1"><ImageIcon size={20} /></button>
+                             <button 
+                                type="button" 
+                                onClick={handleImageClick}
+                                className="hover:text-blue-600 transition-colors p-1"
+                            >
+                                <ImageIcon size={20} />
+                            </button>
                              <button type="button" className="hover:text-blue-600 transition-colors p-1"><Smile size={20} /></button>
                         </div>
                         <button 

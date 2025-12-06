@@ -403,4 +403,18 @@ export const sendNtfyMessage = async (topicId: string, message: string) => {
     }
 };
 
+export const sendNtfyImage = async (topicId: string, file: File) => {
+    try {
+        await fetch(`${CHAT_BASE_URL}/chat-${topicId}`, {
+            method: 'PUT',
+            body: file,
+            headers: {
+                'Filename': file.name
+            }
+        });
+    } catch (e) {
+        console.error("Send image error", e);
+    }
+};
+
 export const getChatSseUrl = (topicId: string) => `${CHAT_BASE_URL}/chat-${topicId}/sse`;

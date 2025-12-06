@@ -1,8 +1,8 @@
 
 
 import { create } from 'zustand';
-import { ChatSession, ChatMessage, LeaseData, NtfyMessage, LeaseStatus } from '../types';
-import { fetchReservationHistory, fetchNtfyMessages, sendNtfyMessage, loadLeaseData, HistoryEvent, getChatSseUrl } from '../services/ownimaApi';
+import { ChatSession, ChatMessage, LeaseData, NtfyMessage, LeaseStatus, MessageType } from '../types';
+import { fetchReservationHistory, fetchNtfyMessages, sendNtfyMessage, sendNtfyImage, loadLeaseData, HistoryEvent, getChatSseUrl } from '../services/ownimaApi';
 import { authService } from '../services/authService';
 import { dbService } from '../services/dbService';
 
@@ -24,8 +24,9 @@ const ntfyToChatMessage = (ntfy: NtfyMessage, initialStatus: 'read' | 'sent' = '
     // System messages detection
     if (ntfy.title === 'System' || ntfy.tags?.includes('system')) senderId = 'system';
 
-    let type: any = 'text';
+    let type: MessageType = 'text';
     let statusMetadata: LeaseStatus | undefined = undefined;
+    let attachmentUrl: string | undefined = undefined;
 
     if (ntfy.tags?.includes('system')) {
         type = 'system';
@@ -34,6 +35,14 @@ const ntfyToChatMessage = (ntfy: NtfyMessage, initialStatus: 'read' | 'sent' = '
             statusMetadata = statusTag.split(':')[1] as LeaseStatus;
         }
     }
+
+    // Check for attachment
+    if (ntfy.attachment) {
+        type = 'image';
+        // Use attachment URL directly. Usually absolute or relative to domain.
+        // Ntfy usually provides valid URL in attachment.url
+        attachmentUrl = ntfy.attachment.url;
+    }
     
     // Store as raw timestamp (ms)
     const timestamp = ntfy.time * 1000;
@@ -41,10 +50,11 @@ const ntfyToChatMessage = (ntfy: NtfyMessage, initialStatus: 'read' | 'sent' = '
     return {
         id: ntfy.id,
         senderId,
-        text: ntfy.message,
+        text: ntfy.message, // Ntfy usually uses filename as message for uploads if not specified
         timestamp,
         type,
         status: initialStatus,
+        attachmentUrl,
         metadata: {
             status: statusMetadata
         }
@@ -117,6 +127,7 @@ interface ChatState {
     loadChatSession: (reservationId: string) => Promise<void>;
     setActiveSession: (id: string) => void;
     sendMessage: (text: string) => Promise<void>;
+    sendImage: (file: File) => Promise<void>;
     getActiveSession: () => ChatSession | undefined;
     confirmReservation: () => Promise<void>;
     rejectReservation: () => Promise<void>;
@@ -243,7 +254,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     avatar: leaseData.renter.avatar || ''
                 },
                 messages: allMessages,
-                lastMessage: allMessages.length > 0 ? allMessages[allMessages.length - 1].text : 'No messages',
+                lastMessage: allMessages.length > 0 ? (allMessages[allMessages.length - 1].type === 'image' ? 'Image Attachment' : allMessages[allMessages.length - 1].text) : 'No messages',
                 lastMessageTime: allMessages.length > 0 ? allMessages[allMessages.length - 1].timestamp : 0,
                 unreadCount: unreadCount,
                 isArchived: existingSession?.isArchived || false, // Preserve archive status
@@ -311,7 +322,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                         const updatedSession = {
                             ...session,
                             messages: updatedMessages,
-                            lastMessage: chatMsg.text,
+                            lastMessage: chatMsg.type === 'image' ? 'Image Attachment' : chatMsg.text,
                             lastMessageTime: chatMsg.timestamp,
                             unreadCount: newUnreadCount
                         };
@@ -456,6 +467,54 @@ export const useChatStore = create<ChatState>((set, get) => ({
             // Re-fetching is handled by the live SSE stream
         } catch (e) {
             console.error("Failed to send message", e);
+        }
+    },
+
+    sendImage: async (file: File) => {
+        const { activeSessionId, sessions } = get();
+        if (!activeSessionId || !file) return;
+
+        // Optimistic UI Update using Object URL
+        const tempId = Math.random().toString();
+        const now = Date.now();
+        const blobUrl = URL.createObjectURL(file);
+        
+        const newMsg: ChatMessage = {
+            id: tempId,
+            senderId: 'me',
+            text: file.name,
+            timestamp: now,
+            type: 'image',
+            status: 'sent',
+            attachmentUrl: blobUrl
+        };
+
+        let updatedSession: ChatSession | undefined;
+
+        const updatedSessions = sessions.map(session => {
+            if (session.id === activeSessionId) {
+                updatedSession = {
+                    ...session,
+                    messages: [...session.messages, newMsg],
+                    lastMessage: 'Image Attachment',
+                    lastMessageTime: now
+                };
+                return updatedSession;
+            }
+            return session;
+        });
+
+        set({ sessions: updatedSessions });
+        
+        if (updatedSession) {
+            await dbService.saveSession(updatedSession);
+        }
+
+        // Upload to API
+        try {
+            await sendNtfyImage(activeSessionId, file);
+        } catch (e) {
+            console.error("Failed to send image", e);
         }
     },
 

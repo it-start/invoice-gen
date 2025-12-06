@@ -112,6 +112,7 @@ export interface ChatMessage {
   timestamp: number; // Unix timestamp in ms
   type: MessageType;
   status: 'sent' | 'read';
+  attachmentUrl?: string; // URL for image/file attachments
   metadata?: {
     status?: LeaseStatus;
   };
