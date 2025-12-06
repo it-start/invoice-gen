@@ -262,9 +262,12 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-start max-w-[85%]">
-                                            <div className={`${style.bg} ${style.text} px-3 py-1 rounded-md text-xs font-bold flex items-center gap-1.5 mb-1`}>
-                                                {style.icon}
-                                                {style.label}
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <div className={`${style.bg} ${style.text} px-3 py-1 rounded-md text-xs font-bold flex items-center gap-1.5`}>
+                                                    {style.icon}
+                                                    {style.label}
+                                                </div>
+                                                <span className="text-[10px] text-slate-400">{msg.timestamp}</span>
                                             </div>
                                             <p className="text-xs text-slate-500 pl-1">{msg.text}</p>
                                         </div>
