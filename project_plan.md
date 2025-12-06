@@ -2,8 +2,8 @@
 # 🚀 InvoiceGen Pro: Architecture & Roadmap
 
 ## 🧐 Current Status Review
-**Phases 1-5 & Enterprise Features Complete.**
-The application has evolved into a production-ready tool with robust security, localization, and hybrid rendering capabilities.
+**Phases 1-5 & Refactoring Complete.**
+The application is now highly modular. The `EditorPage` has been successfully decomposed into dedicated hooks (`useAiAssistant`) and components (`AiModal`), significantly improving maintainability.
 
 **Core Strengths:**
 *   **Dual Engine:** Seamlessly handles structured Invoices and complex Lease Agreements.
@@ -11,21 +11,26 @@ The application has evolved into a production-ready tool with robust security, l
 *   **Secure:** Integrated Token-based Authentication, Login Modal, and Iframe PostMessage handshake.
 *   **Global:** Fully localized (EN/RU) UI and document output.
 *   **Mobile-First:** "Wizard Mode" makes complex data entry easy on phones.
+*   **Clean Architecture:** Centralized API services, strict Types, and modular UI components.
 
 ---
 
-## 🚧 Current Focus: Phase 1.5 - Architecture Cleanup
+## 🚧 Current Focus: Phase 6 - Digital Signatures (The "Paperless" Step)
 
-We have successfully unified the data loading logic. The next immediate step is decomposing the large Editor component.
+We are moving towards a fully digital workflow. The goal is to allow users (Renters/Owners) to sign directly on the device screen, removing the need to print the PDF.
 
-### 1. 🧩 Decompose EditorPage (Next Up)
-*   **Problem:** `EditorPage.tsx` is too large (AI logic, Modal UI, PDF handlers are inline).
-*   **Solution:**
-    *   Extract `AiModal` to `components/modals/AiModal.tsx`.
-    *   Extract AI state logic to `hooks/useAiAssistant.ts`.
+### 1. ✍️ Signature Capture UI
+*   **Library:** Integrate `react-signature-canvas`.
+*   **Integration:** Add a new step to the `WizardContainer` (Step 5) specifically for signing.
+*   **UI:** Create a signing pad with "Clear" and "Save" controls.
 
-### 2. 🧪 Test Coverage
-*   **Goal:** Add unit tests for the complex pricing logic in `ownimaApi.ts` and the mapping functions.
+### 2. 💾 State Management
+*   **Storage:** Store captured signatures as Base64 data URIs within the `LeaseData` structure.
+*   **Updates:** Update `types.ts` to support `ownerSignature` and `renterSignature` fields.
+
+### 3. 📄 PDF Integration
+*   **Rendering:** Update `LeasePdf.tsx` and `InvoicePdf.tsx` to render the captured signature images in the signature blocks if available.
+*   **Fallback:** Maintain the existing text/line placeholder if no digital signature is provided.
 
 ---
 
@@ -53,16 +58,12 @@ We have successfully unified the data loading logic. The next immediate step is 
 *   **Hybrid Preview:** Support for `?output=blob` (Raw PDF) and `?template_id` (Server-Side HTML).
 *   **i18n:** Full English/Russian translation of UI and Forms.
 
+### ✅ Phase 1.5: Architecture Cleanup
+*   **Decomposition:** `EditorPage.tsx` refactored. AI logic moved to `useAiAssistant.ts` and UI to `AiModal.tsx`.
+
 ---
 
 ## 🔮 The Future: "Pro" Features Roadmap
-
-### 📅 Phase 6: Digital Signatures (The "Paperless" Step)
-**Goal:** Allow users (Renters/Owners) to sign directly on the device screen.
-*   **Signature Pad:** Integrate `react-signature-canvas` into the `WizardContainer` (Step 5).
-*   **State Management:** Store signatures as Base64 data URIs in `LeaseData`.
-*   **PDF Integration:** Render the captured signature image into the PDF signature block, replacing the text placeholder.
-*   **Value:** True "Walk-in" experience—generate, sign, and email PDF without a printer.
 
 ### 📅 Phase 7: Local Document History (The "Dashboard" Step)
 **Goal:** Persist generated documents so users don't lose work when starting new ones.
@@ -76,6 +77,9 @@ We have successfully unified the data loading logic. The next immediate step is 
 *   **Manifest:** Add `manifest.json` for "Add to Home Screen".
 *   **Service Worker:** Cache app shell (JS/CSS) for instant loading.
 *   **Offline Mode:** Graceful handling of API errors when offline (allow manual entry fallback).
+
+### 🧪 Technical Debt: Test Coverage
+*   **Goal:** Add unit tests for the complex pricing logic in `ownimaApi.ts` and the mapping functions.
 
 ---
 
