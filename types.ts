@@ -87,7 +87,21 @@ export interface LeaseData {
 // --- CHAT TYPES ---
 
 export type MessageType = 'text' | 'system' | 'image';
-export type LeaseStatus = 'completed' | 'overdue' | 'collected' | 'confirmed' | 'pending' | 'confirmation_owner' | 'confirmation_rider' | 'rejected';
+
+// Updated to match ReservationStatus enum
+export type LeaseStatus = 
+  | 'pending' 
+  | 'confirmation_rider' 
+  | 'confirmed' 
+  | 'collected' 
+  | 'maintenance' 
+  | 'completed' 
+  | 'cancelled' 
+  | 'overdue' 
+  | 'conflict' 
+  | 'confirmation_owner' 
+  | 'no_response' 
+  | 'rejected'; // Kept for backward compatibility if needed
 
 // Internal UI Message Format
 export interface ChatMessage {

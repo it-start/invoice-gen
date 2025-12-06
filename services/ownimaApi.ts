@@ -1,6 +1,6 @@
 
 
-import { LeaseData, INITIAL_LEASE } from "../types";
+import { LeaseData, INITIAL_LEASE, LeaseStatus } from "../types";
 import { authService } from "./authService";
 import QRCode from 'qrcode';
 
@@ -38,6 +38,33 @@ const humanizeSource = (source: string | null | undefined): string => {
         .split('_')
         .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
         .join(' ');
+};
+
+const mapApiStatus = (rawStatus: string | undefined): LeaseStatus => {
+    if (!rawStatus) return 'pending';
+    
+    const s = rawStatus.toUpperCase();
+    
+    if (s.includes('COLLECTED')) return 'collected';
+    if (s.includes('COMPLETED')) return 'completed';
+    if (s.includes('CONFIRMED')) return 'confirmed';
+    if (s.includes('OVERDUE')) return 'overdue';
+    if (s.includes('CANCELLED')) return 'cancelled';
+    if (s.includes('MAINTENANCE')) return 'maintenance';
+    if (s.includes('CONFLICT')) return 'conflict';
+    if (s.includes('NO_RESPONSE')) return 'no_response';
+    
+    // Confirmation states logic
+    if (s.includes('CONFIRMATION')) {
+        if (s.includes('RIDER')) return 'confirmation_rider';
+        if (s.includes('OWNER')) return 'confirmation_owner';
+        return 'pending'; // Fallback or old "RESERVATION_CONFIRMATION"
+    }
+    
+    // Fallback logic for generic pending
+    if (s.includes('PENDING')) return 'pending';
+
+    return 'pending';
 };
 
 const mapResponseToLeaseData = (json: any, ownerProfile?: OwnerProfile | null): Partial<LeaseData> => {
@@ -80,6 +107,10 @@ const mapResponseToLeaseData = (json: any, ownerProfile?: OwnerProfile | null): 
             reservationId = `${r.humanized.owner_id}-${r.humanized.id}`;
         }
 
+        // Map Status
+        const statusRaw = r.humanized?.status || r.status;
+        const status = mapApiStatus(statusRaw);
+
         // Extra Options Parsing
         // The API returns selected_extra_options as an array of objects wrapping the actual option and calculation
         const rawOptions = r.selected_extra_options || [];
@@ -101,6 +132,7 @@ const mapResponseToLeaseData = (json: any, ownerProfile?: OwnerProfile | null): 
         return {
             id: r.id, // Store real UUID for API calls
             reservationId: reservationId, // Store humanized ID for Display
+            status: status,
             source: humanizeSource(r.humanized?.source),
             createdDate: r.created_date ? r.created_date.split('T').join(' ').slice(0, 16) : '',
             vehicle: {

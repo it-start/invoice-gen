@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck } from 'lucide-react';
+import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage } from '../../types';
 import { t } from '../../utils/i18n';
@@ -45,19 +46,44 @@ const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, icon: React
         bg: 'bg-indigo-50',
         text: 'text-indigo-600',
         icon: <CheckCheck size={12} />,
-        label: 'Confirmation by Owner'
+        label: 'Conf. by Owner'
     },
     confirmation_rider: {
         bg: 'bg-purple-50',
         text: 'text-purple-600',
         icon: <Check size={12} />,
-        label: 'Confirmation by Rider'
+        label: 'Conf. by Rider'
     },
     rejected: {
         bg: 'bg-red-50',
         text: 'text-red-600',
         icon: <X size={12} />,
         label: 'Rejected'
+    },
+    // New Statuses mapping
+    maintenance: {
+        bg: 'bg-gray-100',
+        text: 'text-gray-600',
+        icon: <Wrench size={12} />,
+        label: 'Maintenance'
+    },
+    cancelled: {
+        bg: 'bg-red-50',
+        text: 'text-red-600',
+        icon: <Ban size={12} />,
+        label: 'Cancelled'
+    },
+    conflict: {
+        bg: 'bg-amber-100',
+        text: 'text-amber-700',
+        icon: <AlertTriangle size={12} />,
+        label: 'Conflict'
+    },
+    no_response: {
+        bg: 'bg-slate-100',
+        text: 'text-slate-500',
+        icon: <HelpCircle size={12} />,
+        label: 'No Response'
     }
 };
 
