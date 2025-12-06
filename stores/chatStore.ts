@@ -119,20 +119,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
             // 2. Fetch History (System Messages)
             const historyEvents = await fetchReservationHistory(reservationId);
-            const historyMessages = historyEvents.map(historyToChatMessage);
-
+            
             // 3. Fetch Ntfy Messages (User Chat)
             const ntfyData = await fetchNtfyMessages(reservationId);
-            const chatMessages = ntfyData.map((n: any) => ntfyToChatMessage(n));
-
+            
             // 4. Merge & Sort
             // Combine arrays and sort by timestamp (approximated via ID or parsed Date)
-            // historyMessages have timestamp string, chatMessages have timestamp string.
-            // Ideally we should keep raw Date objects for sorting, but for now we concatenate.
-            // Since API history is usually chronological and chat log is chronological, 
-            // a simple concat might put history first, then chat. 
-            // Better: We should sort based on the original time values if available.
-            // Re-mapping for sort:
             const allMessages = [
                 ...historyEvents.map(h => ({ msg: historyToChatMessage(h), time: new Date(h.confirmation_date).getTime() })),
                 ...ntfyData.map((n: any) => ({ msg: ntfyToChatMessage(n), time: n.time * 1000 }))
