@@ -33,6 +33,12 @@ self.addEventListener('activate', (event) => {
 
 // Fetch Event: Network First for API, Stale-While-Revalidate for Assets
 self.addEventListener('fetch', (event) => {
+  // CRITICAL: Ignore non-http schemes (e.g. chrome-extension://, file://)
+  // attempting to cache these throws the "Request scheme unsupported" error.
+  if (!event.request.url.startsWith('http')) {
+    return;
+  }
+
   const url = new URL(event.request.url);
 
   // Strategy for API calls (Network First, no caching of POST/PUT)
@@ -45,7 +51,12 @@ self.addEventListener('fetch', (event) => {
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
         // Update cache if valid response
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+        // We generally only want to cache 'basic' (same-origin) or 'cors' (valid external) responses
+        if (
+          networkResponse && 
+          networkResponse.status === 200 && 
+          (networkResponse.type === 'basic' || networkResponse.type === 'cors')
+        ) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
