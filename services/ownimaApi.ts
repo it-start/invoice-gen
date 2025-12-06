@@ -312,12 +312,17 @@ export const fetchReservationHistory = async (id: string): Promise<HistoryEvent[
         const data = await response.json();
         
         // Handle nested structure: { history: { confirmations: [] } }
-        if (data.history && Array.isArray(data.history.confirmations)) {
-            return data.history.confirmations;
+        // The API returns an object with a "history" key, which can be an object containing "confirmations"
+        if (data.history) {
+            if (Array.isArray(data.history.confirmations)) {
+                return data.history.confirmations;
+            }
+            if (Array.isArray(data.history)) {
+                return data.history;
+            }
         }
         
         // Fallback or legacy support
-        if (Array.isArray(data.history)) return data.history;
         if (Array.isArray(data)) return data;
 
         return [];

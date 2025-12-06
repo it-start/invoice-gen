@@ -47,7 +47,10 @@ const historyToChatMessage = (event: HistoryEvent): ChatMessage => {
     
     if (event.meta?.reason_hint) {
         // Map "reservation_pending" -> "pending"
-        const hint = event.meta.reason_hint.replace('reservation_', '');
+        // Map "reservation_confirmation_by_rider" -> "confirmation_rider"
+        let hint = event.meta.reason_hint.replace('reservation_', '');
+        hint = hint.replace('_by_', '_'); // Normalize "confirmation_by_rider" to "confirmation_rider"
+        
         // Validate against known statuses or cast if dynamic
         statusKey = hint as LeaseStatus; 
     } else if (typeof event.status === 'string') {
@@ -72,6 +75,8 @@ const historyToChatMessage = (event: HistoryEvent): ChatMessage => {
         if (statusKey === 'completed') text = 'Lease completed successfully';
         if (statusKey === 'confirmed') text = 'Reservation confirmed';
         if (statusKey === 'pending') text = 'Reservation is pending';
+        if (statusKey === 'confirmation_owner') text = 'Waiting for Owner confirmation';
+        if (statusKey === 'confirmation_rider') text = 'Waiting for Rider confirmation';
     }
 
     return {
@@ -118,10 +123,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
             set({ leaseContext: leaseData });
 
             // 2. Fetch History (System Messages)
-            const historyEvents = await fetchReservationHistory(reservationId);
+            const historyEvents = await fetchReservationHistory(leaseData.id || reservationId);
             
             // 3. Fetch Ntfy Messages (User Chat)
-            const ntfyData = await fetchNtfyMessages(reservationId);
+            // Use the real UUID (leaseData.id) for the chat topic if available, otherwise input
+            const topicId = leaseData.id || reservationId;
+            const ntfyData = await fetchNtfyMessages(topicId);
             
             // 4. Merge & Sort
             // Combine arrays and sort by timestamp (approximated via ID or parsed Date)
@@ -135,7 +142,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
             // 5. Create Session
             const newSession: ChatSession = {
-                id: reservationId,
+                id: topicId, // Use UUID as session ID
                 user: {
                     id: leaseData.renter.surname, // simplified ID
                     name: leaseData.renter.surname || 'Renter',
@@ -153,7 +160,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             // 6. Update Store
             set(state => {
                 // Check if session exists
-                const existingIdx = state.sessions.findIndex(s => s.id === reservationId);
+                const existingIdx = state.sessions.findIndex(s => s.id === topicId);
                 let newSessions = [...state.sessions];
                 
                 if (existingIdx >= 0) {
@@ -164,7 +171,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 
                 return {
                     sessions: newSessions,
-                    activeSessionId: reservationId,
+                    activeSessionId: topicId,
                     isLoading: false
                 };
             });
