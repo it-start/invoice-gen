@@ -35,7 +35,7 @@ const LeaseForm: React.FC<LeaseFormProps> = ({ data, lang, handlers }) => {
                     readOnly 
                     helperText="Select chat to change"
                 >
-                   <div className="absolute right-3 top-3 text-slate-400">
+                   <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
                        <MessageCircle size={16} />
                    </div>
                 </InputGroup>
@@ -60,16 +60,16 @@ const LeaseForm: React.FC<LeaseFormProps> = ({ data, lang, handlers }) => {
   // Step 2: Schedule
   const ScheduleStep = (
       <div className="space-y-4">
-         <div className="bg-white p-3 rounded-lg border border-slate-200">
-            <span className="text-xs font-bold text-blue-600 uppercase block mb-3">{t('grp_pickup', lang)}</span>
+         <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+            <span className="text-[11px] font-bold text-blue-600 uppercase block mb-3 tracking-wider">{t('grp_pickup', lang)}</span>
             <div className="grid grid-cols-2 gap-3 mb-2">
                 <InputGroup label={t('lbl_date', lang)} type="date" value={data.pickup.date} onChange={(v) => updateLease('pickup', 'date', v)} />
                 <InputGroup label={t('lbl_time', lang)} value={data.pickup.time} onChange={(v) => updateLease('pickup', 'time', v)} />
             </div>
             <InputGroup label={t('lbl_fee', lang)} type="number" value={data.pickup.fee} onChange={(v) => updateLease('pickup', 'fee', Number(v))} placeholder="0" />
          </div>
-         <div className="bg-white p-3 rounded-lg border border-slate-200">
-            <span className="text-xs font-bold text-red-600 uppercase block mb-3">{t('grp_return', lang)}</span>
+         <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+            <span className="text-[11px] font-bold text-red-600 uppercase block mb-3 tracking-wider">{t('grp_return', lang)}</span>
              <div className="grid grid-cols-2 gap-3 mb-2">
                 <InputGroup label={t('lbl_date', lang)} type="date" value={data.dropoff.date} onChange={(v) => updateLease('dropoff', 'date', v)} />
                 <InputGroup label={t('lbl_time', lang)} value={data.dropoff.time} onChange={(v) => updateLease('dropoff', 'time', v)} />
@@ -94,18 +94,18 @@ const LeaseForm: React.FC<LeaseFormProps> = ({ data, lang, handlers }) => {
              <div className="pt-4 border-t border-slate-200 mt-2">
                  <div className="flex justify-between items-center mb-3">
                     <span className="text-xs font-bold text-slate-500 uppercase">{t('grp_extra', lang)}</span>
-                    <button onClick={addExtraOption} className="text-blue-600 bg-blue-50 p-1 rounded hover:bg-blue-100"><Plus size={16}/></button>
+                    <button onClick={addExtraOption} className="text-blue-600 bg-blue-50 p-1.5 rounded hover:bg-blue-100 transition-colors"><Plus size={16}/></button>
                  </div>
                  {data.extraOptions.map((opt, i) => (
                      <div key={i} className="flex gap-2 mb-2 items-center">
-                         <input className="flex-1 text-sm p-2 border rounded" value={opt.name} onChange={e => updateExtraOption(i, 'name', e.target.value)} placeholder="Option Name" />
-                         <input className="w-20 text-sm p-2 border rounded" type="number" value={opt.price} onChange={e => updateExtraOption(i, 'price', Number(e.target.value))} placeholder="0" />
-                         <button onClick={() => removeExtraOption(i)} className="text-red-400 p-1"><Trash2 size={16} /></button>
+                         <input className="flex-1 text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none" value={opt.name} onChange={e => updateExtraOption(i, 'name', e.target.value)} placeholder="Option Name" />
+                         <input className="w-24 text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-100 outline-none" type="number" value={opt.price} onChange={e => updateExtraOption(i, 'price', Number(e.target.value))} placeholder="0" />
+                         <button onClick={() => removeExtraOption(i)} className="text-slate-400 hover:text-red-500 p-1.5 transition-colors"><Trash2 size={16} /></button>
                      </div>
                  ))}
              </div>
 
-             <div className="grid grid-cols-2 gap-3 border-t pt-4 mt-2 bg-slate-100 p-2 rounded">
+             <div className="grid grid-cols-2 gap-3 border-t pt-4 mt-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
                 <InputGroup label={t('lbl_deposit', lang)} type="number" value={data.pricing.deposit} onChange={(v) => updateLease('pricing', 'deposit', Number(v))} />
                 <InputGroup label={t('lbl_total_paid', lang)} type="number" value={data.pricing.total} onChange={(v) => updateLease('pricing', 'total', Number(v))} className="font-bold" />
              </div>
@@ -116,21 +116,21 @@ const LeaseForm: React.FC<LeaseFormProps> = ({ data, lang, handlers }) => {
   const PartiesStep = (
       <div className="space-y-5">
              <div>
-                 <span className="text-xs font-bold text-gray-500 block mb-2 uppercase bg-slate-100 p-1 rounded">{t('grp_owner', lang)}</span>
+                 <span className="text-[11px] font-bold text-gray-500 block mb-3 uppercase bg-slate-100 px-2 py-1 rounded tracking-wider">{t('grp_owner', lang)}</span>
                  <InputGroup label={t('lbl_surname', lang)} value={data.owner.surname} onChange={(v) => updateLease('owner', 'surname', v)} />
                  <InputGroup label={t('lbl_contact', lang)} value={data.owner.contact} onChange={(v) => updateLease('owner', 'contact', v)} />
                  <InputGroup label={t('lbl_address', lang)} value={data.owner.address} onChange={(v) => updateLease('owner', 'address', v)} />
              </div>
              <div className="border-t pt-4">
-                 <span className="text-xs font-bold text-gray-500 block mb-2 uppercase bg-slate-100 p-1 rounded">{t('grp_renter', lang)}</span>
+                 <span className="text-[11px] font-bold text-gray-500 block mb-3 uppercase bg-slate-100 px-2 py-1 rounded tracking-wider">{t('grp_renter', lang)}</span>
                  <InputGroup label={t('lbl_surname', lang)} value={data.renter.surname} onChange={(v) => updateLease('renter', 'surname', v)} />
                  <InputGroup label={t('lbl_contact', lang)} value={data.renter.contact} onChange={(v) => updateLease('renter', 'contact', v)} />
                  <InputGroup label={t('lbl_passport', lang)} value={data.renter.passport} onChange={(v) => updateLease('renter', 'passport', v)} />
              </div>
              <div className="border-t pt-4">
-                <span className="text-xs font-bold text-gray-500 block mb-2 uppercase">{t('lbl_terms', lang)}</span>
+                <span className="text-[11px] font-bold text-gray-500 block mb-2 uppercase tracking-wider">{t('lbl_terms', lang)}</span>
                 <textarea 
-                    className="w-full h-32 text-[10px] p-2 border rounded font-mono focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full h-32 text-[10px] p-3 border border-slate-300 rounded-lg font-mono focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none leading-relaxed transition-all"
                     value={data.terms}
                     onChange={(e) => updateLease(null, 'terms', e.target.value)}
                 />
