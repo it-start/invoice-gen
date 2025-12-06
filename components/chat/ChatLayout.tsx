@@ -131,9 +131,13 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     }, [activeChat?.id, activeChat?.messages.length]);
 
     const handleChatSelect = (chatId: string) => {
-        // Optimistic update
-        setActiveSession(chatId);
-        navigate(`/chat/detail/${chatId}`);
+        setActiveSession(chatId); // Instant UI feedback
+        // If we are already on this route (e.g. user went back via UI state but URL stayed), force view
+        if (routeId === chatId && isMobile) {
+            setMobileView('room');
+        } else {
+            navigate(`/chat/detail/${chatId}`);
+        }
     };
 
     const handleSearchSubmit = (e: React.FormEvent) => {
@@ -145,11 +149,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     };
 
     const handleBackToList = () => {
-        if (isMobile) {
-            setMobileView('list');
-        } else {
-            navigate('/');
-        }
+        // Always navigate to root to clear route params, ensuring subsequent clicks on the same chat trigger a route change or are handled correctly
+        navigate('/');
     };
 
     const handleSend = () => {
