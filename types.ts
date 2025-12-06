@@ -84,6 +84,7 @@ export interface LeaseData {
 
 export type MessageType = 'text' | 'system' | 'image';
 
+// Internal UI Message Format
 export interface ChatMessage {
   id: string;
   senderId: string; // 'me' or 'other'
@@ -91,6 +92,24 @@ export interface ChatMessage {
   timestamp: string;
   type: MessageType;
   status: 'sent' | 'read';
+}
+
+// Official Ntfy.sh API Contract
+export interface NtfyMessage {
+  id: string;
+  time: number; // Unix timestamp
+  event: 'message' | 'open' | 'keepalive';
+  topic: string;
+  message: string;
+  title?: string; // Used as Sender Name
+  priority?: number;
+  tags?: string[]; // Used for flags like 'read', 'system'
+  attachment?: {
+    name: string;
+    url: string;
+    type: string;
+    size: number;
+  };
 }
 
 export interface ChatUser {

@@ -1,46 +1,170 @@
 
-import React, { useState } from 'react';
-import { Search, MoreHorizontal, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Clock, Check } from 'lucide-react';
-import { ChatSession, LeaseData, Language, ChatMessage } from '../../types';
+
+import React, { useState, useMemo } from 'react';
+import { Search, MoreHorizontal, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check } from 'lucide-react';
+import { ChatSession, LeaseData, Language, ChatMessage, NtfyMessage } from '../../types';
 import { t } from '../../utils/i18n';
 
-// MOCK DATA GENERATOR
-const getMockChats = (currentLease: LeaseData): ChatSession[] => {
-    const renterName = currentLease.renter.surname || 'Renter';
-    return [
-        {
-            id: '1',
-            user: { id: 'r1', name: renterName, avatar: '', status: 'online', role: 'Renter' },
-            lastMessage: 'How does it work?',
-            lastMessageTime: '09:41 AM',
-            unreadCount: 2,
-            messages: [
-                { id: '1', senderId: 'other', text: 'Oh?', timestamp: '09:30 AM', type: 'text', status: 'read' },
-                { id: '2', senderId: 'other', text: 'Cool', timestamp: '09:31 AM', type: 'text', status: 'read' },
-                { id: '3', senderId: 'me', text: 'How does it work?', timestamp: '09:41 AM', type: 'text', status: 'read' },
-                { id: '4', senderId: 'system', text: 'Vehicle is in use by Rider', timestamp: '09:45 AM', type: 'system', status: 'read' },
-                { id: '5', senderId: 'me', text: 'You just edit any text to type in the conversation you want to show, and delete any bubbles you don\'t want to use', timestamp: '09:50 AM', type: 'text', status: 'read' },
-                { id: '6', senderId: 'other', text: 'Boom!', timestamp: '09:51 AM', type: 'text', status: 'read' }
-            ]
-        },
-        {
-            id: '2',
-            user: { id: 's1', name: 'Carlo Emilio', avatar: '', status: 'busy', role: 'Support' },
-            lastMessage: 'Let\'s go',
-            lastMessageTime: 'Yesterday',
-            unreadCount: 0,
-            messages: []
-        },
-        {
-            id: '3',
-            user: { id: 'o1', name: 'Oscar Davis', avatar: '', status: 'offline', role: 'Owner' },
-            lastMessage: 'Trueeeeee',
-            lastMessageTime: 'Mon',
-            unreadCount: 0,
-            messages: []
-        }
-    ];
+// --- MOCK NTFY DATA ---
+// This follows the ntfy.sh JSON message format strictly.
+// We use 'topic' to group messages into chat sessions.
+const RAW_NTFY_DATA: NtfyMessage[] = [
+    // Chat 1: Renter (Helena Hills)
+    // Topic: lease-{reservationId}-renter
+    {
+        id: 'msg_1',
+        time: 1701336600, // 09:30 AM
+        event: 'message',
+        topic: 'lease-chat-renter',
+        message: 'Oh?',
+        title: 'Helena Hills',
+        tags: ['read'],
+        priority: 3
+    },
+    {
+        id: 'msg_2',
+        time: 1701336660, // 09:31 AM
+        event: 'message',
+        topic: 'lease-chat-renter',
+        message: 'Cool',
+        title: 'Helena Hills',
+        tags: ['read']
+    },
+    {
+        id: 'msg_3',
+        time: 1701337260, // 09:41 AM
+        event: 'message',
+        topic: 'lease-chat-renter',
+        message: 'How does it work?',
+        title: 'Me', // 'Me' title indicates sent by current user
+        tags: ['read']
+    },
+    {
+        id: 'msg_4',
+        time: 1701337500, // 09:45 AM
+        event: 'message',
+        topic: 'lease-chat-renter',
+        message: 'Vehicle is in use by Rider',
+        title: 'System',
+        tags: ['system', 'read']
+    },
+    {
+        id: 'msg_5',
+        time: 1701337800, // 09:50 AM
+        event: 'message',
+        topic: 'lease-chat-renter',
+        message: 'You just edit any text to type in the conversation you want to show, and delete any bubbles you don\'t want to use',
+        title: 'Me',
+        tags: ['read']
+    },
+    {
+        id: 'msg_6',
+        time: 1701337860, // 09:51 AM
+        event: 'message',
+        topic: 'lease-chat-renter',
+        message: 'Boom!',
+        title: 'Helena Hills',
+        tags: ['read']
+    },
+
+    // Chat 2: Support (Carlo)
+    {
+        id: 'msg_7',
+        time: 1701250000, // Yesterday
+        event: 'message',
+        topic: 'lease-chat-support',
+        message: 'Let\'s go',
+        title: 'Carlo Emilio',
+        tags: ['sent']
+    },
+
+    // Chat 3: Owner (Oscar)
+    {
+        id: 'msg_8',
+        time: 1701000000, // Mon
+        event: 'message',
+        topic: 'lease-chat-owner',
+        message: 'Trueeeeee',
+        title: 'Oscar Davis',
+        tags: ['sent']
+    }
+];
+
+// --- MAPPING LOGIC ---
+
+const ntfyToChatMessage = (ntfy: NtfyMessage): ChatMessage => {
+    // Determine sender type based on Title or Tags
+    let senderId = 'other';
+    if (ntfy.title === 'Me') senderId = 'me';
+    else if (ntfy.title === 'System' || ntfy.tags?.includes('system')) senderId = 'system';
+
+    // Determine type
+    let type: any = 'text';
+    if (ntfy.tags?.includes('system')) type = 'system';
+    
+    // Format Timestamp
+    const date = new Date(ntfy.time * 1000);
+    const timestamp = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+    return {
+        id: ntfy.id,
+        senderId,
+        text: ntfy.message,
+        timestamp,
+        type,
+        status: ntfy.tags?.includes('read') ? 'read' : 'sent'
+    };
 };
+
+const hydrateSessionsFromNtfy = (leaseData: LeaseData): ChatSession[] => {
+    // Group raw ntfy messages by topic
+    const sessions: Record<string, ChatSession> = {
+        'lease-chat-renter': {
+            id: 'lease-chat-renter',
+            user: { id: 'r1', name: leaseData.renter.surname || 'Renter', avatar: '', status: 'online', role: 'Renter' },
+            messages: [],
+            lastMessage: '',
+            lastMessageTime: '',
+            unreadCount: 0
+        },
+        'lease-chat-support': {
+             id: 'lease-chat-support',
+             user: { id: 's1', name: 'Carlo Emilio', avatar: '', status: 'busy', role: 'Support' },
+             messages: [],
+             lastMessage: '',
+             lastMessageTime: '',
+             unreadCount: 0
+        },
+        'lease-chat-owner': {
+             id: 'lease-chat-owner',
+             user: { id: 'o1', name: 'Oscar Davis', avatar: '', status: 'offline', role: 'Owner' },
+             messages: [],
+             lastMessage: '',
+             lastMessageTime: '',
+             unreadCount: 0
+        }
+    };
+
+    // Sort by time first
+    const sorted = [...RAW_NTFY_DATA].sort((a, b) => a.time - b.time);
+
+    // Populate sessions
+    sorted.forEach(ntfy => {
+        if (sessions[ntfy.topic]) {
+            const msg = ntfyToChatMessage(ntfy);
+            sessions[ntfy.topic].messages.push(msg);
+            sessions[ntfy.topic].lastMessage = msg.text;
+            sessions[ntfy.topic].lastMessageTime = msg.timestamp;
+            // Simple unread logic for mock: if last msg from other and not read
+            if (msg.senderId === 'other' && msg.status !== 'read') {
+                 sessions[ntfy.topic].unreadCount += 1;
+            }
+        }
+    });
+
+    return Object.values(sessions);
+};
+
 
 interface ChatLayoutProps {
     leaseData: LeaseData;
@@ -48,8 +172,10 @@ interface ChatLayoutProps {
 }
 
 export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
-    const [chats, setChats] = useState<ChatSession[]>(() => getMockChats(leaseData));
-    const [activeChatId, setActiveChatId] = useState<string>('1');
+    // Initialize sessions from Ntfy Mock Data
+    const initialSessions = useMemo(() => hydrateSessionsFromNtfy(leaseData), [leaseData]);
+    const [chats, setChats] = useState<ChatSession[]>(initialSessions);
+    const [activeChatId, setActiveChatId] = useState<string>('lease-chat-renter');
     const [messageInput, setMessageInput] = useState('');
 
     const activeChat = chats.find(c => c.id === activeChatId) || chats[0];
@@ -57,28 +183,28 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
     const handleSendMessage = () => {
         if (!messageInput.trim()) return;
         
-        const newMessage: ChatMessage = {
+        // In a real app, this would POST to ntfy
+        const newMsg: ChatMessage = {
             id: Math.random().toString(),
             senderId: 'me',
             text: messageInput,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            timestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
             type: 'text',
             status: 'sent'
         };
 
-        const updatedChats = chats.map(c => {
+        setChats(prev => prev.map(c => {
             if (c.id === activeChatId) {
                 return {
                     ...c,
-                    messages: [...c.messages, newMessage],
+                    messages: [...c.messages, newMsg],
                     lastMessage: messageInput,
                     lastMessageTime: 'Just now'
                 };
             }
             return c;
-        });
+        }));
 
-        setChats(updatedChats);
         setMessageInput('');
     };
 
@@ -154,7 +280,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
 
                 {/* Messages */}
                 <div className="flex-1 p-6 overflow-y-auto space-y-6 flex flex-col">
-                    <div className="text-center text-xs text-slate-400 my-4">Nov 30, 2023, 9:41 AM</div>
+                    <div className="text-center text-xs text-slate-400 my-4">Nov 30, 2023</div>
                     
                     {activeChat.messages.map((msg) => {
                         if (msg.type === 'system') {
