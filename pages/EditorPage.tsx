@@ -191,7 +191,7 @@ export default function EditorPage() {
             {docType === 'chat' ? (
                  <div className="w-full h-full p-0 md:p-6 overflow-hidden">
                      <div className="h-full max-w-[1600px] mx-auto">
-                        <ChatLayout leaseData={lease.data} lang={lang} />
+                        <ChatLayout leaseData={lease.data} lang={lang} leaseHandlers={lease} />
                      </div>
                  </div>
             ) : (

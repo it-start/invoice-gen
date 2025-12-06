@@ -41,6 +41,7 @@ export interface LeaseData {
   id?: string; // UUID for API calls
   reservationId: string; // Display ID (e.g. humanized "123-456")
   contractTemplateId?: string; // New field for Server-Side Preview
+  status?: LeaseStatus; // Added status field
   source: string;
   createdDate: string; // DateTime string
   vehicle: {
@@ -84,7 +85,7 @@ export interface LeaseData {
 // --- CHAT TYPES ---
 
 export type MessageType = 'text' | 'system' | 'image';
-export type LeaseStatus = 'completed' | 'overdue' | 'collected' | 'confirmed' | 'pending' | 'confirmation_owner' | 'confirmation_rider';
+export type LeaseStatus = 'completed' | 'overdue' | 'collected' | 'confirmed' | 'pending' | 'confirmation_owner' | 'confirmation_rider' | 'rejected';
 
 // Internal UI Message Format
 export interface ChatMessage {
@@ -214,6 +215,7 @@ export const INITIAL_LEASE: LeaseData = {
   reservationId: '9048',
   contractTemplateId: '',
   source: 'OFFLINE_WALK_IN',
+  status: 'pending',
   createdDate: new Date().toISOString().slice(0, 16).replace('T', ' '),
   vehicle: {
     name: 'BMW X1, 2017',

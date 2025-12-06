@@ -106,6 +106,8 @@ interface ChatState {
     setActiveSession: (id: string) => void;
     sendMessage: (text: string) => Promise<void>;
     getActiveSession: () => ChatSession | undefined;
+    confirmReservation: () => Promise<void>;
+    rejectReservation: () => Promise<void>;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -276,5 +278,32 @@ export const useChatStore = create<ChatState>((set, get) => ({
     getActiveSession: () => {
         const { sessions, activeSessionId } = get();
         return sessions.find(s => s.id === activeSessionId);
+    },
+
+    confirmReservation: async () => {
+        const { sendMessage, leaseContext } = get();
+        if (!leaseContext) return;
+        
+        // 1. Optimistically update Status in local store
+        set(state => ({
+            leaseContext: state.leaseContext ? { ...state.leaseContext, status: 'confirmed' } : null
+        }));
+
+        // 2. Send System Message via Ntfy (simulating API state change response)
+        // In real app: POST /confirm -> Backend sends system msg
+        await sendMessage("✅ Reservation confirmed by Owner");
+    },
+
+    rejectReservation: async () => {
+         const { sendMessage, leaseContext } = get();
+        if (!leaseContext) return;
+        
+        // 1. Optimistically update Status
+        set(state => ({
+            leaseContext: state.leaseContext ? { ...state.leaseContext, status: 'rejected' } : null
+        }));
+
+        // 2. Send System Message
+        await sendMessage("❌ Reservation rejected by Owner");
     }
 }));

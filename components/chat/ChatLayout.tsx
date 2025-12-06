@@ -1,11 +1,13 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2 } from 'lucide-react';
+import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage } from '../../types';
 import { t } from '../../utils/i18n';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useChatStore } from '../../stores/chatStore';
+import LeaseForm from '../forms/LeaseForm';
 
 // --- STATUS CONFIGURATION ---
 const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, icon: React.ReactNode, label: string }> = {
@@ -50,15 +52,22 @@ const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, icon: React
         text: 'text-purple-600',
         icon: <Check size={12} />,
         label: 'Confirmation by Rider'
+    },
+    rejected: {
+        bg: 'bg-red-50',
+        text: 'text-red-600',
+        icon: <X size={12} />,
+        label: 'Rejected'
     }
 };
 
 interface ChatLayoutProps {
     leaseData: LeaseData;
     lang: Language;
+    leaseHandlers: any;
 }
 
-export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
+export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHandlers }) => {
     const isMobile = useIsMobile();
     const navigate = useNavigate();
     const { id: routeId } = useParams<{ id: string }>(); // Get ID from URL
@@ -66,6 +75,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
     const [mobileView, setMobileView] = useState<'list' | 'room'>('list');
     const [messageInput, setMessageInput] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [sidebarTab, setSidebarTab] = useState<'profile' | 'details'>('details');
 
     // --- REFS FOR SCROLLING ---
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -73,7 +83,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
     const prevMessageCountRef = useRef<number>(0);
 
     // --- ZUSTAND STORE ---
-    const { sessions, activeSessionId, isLoading, sendMessage, leaseContext } = useChatStore();
+    const { sessions, activeSessionId, isLoading, sendMessage, confirmReservation, rejectReservation, leaseContext } = useChatStore();
     
     // Sync mobile view when route changes
     useEffect(() => {
@@ -316,6 +326,11 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                                     
                                     if (!style) return null;
 
+                                    // Interactive Logic: Is this message actionable?
+                                    // For now, only 'confirmation_owner' is interactive and only if it matches current state (roughly)
+                                    // To keep it simple, we allow interaction if it is the specific status type
+                                    const isActionable = status === 'confirmation_owner' && currentLeaseData.status !== 'confirmed' && currentLeaseData.status !== 'rejected';
+
                                     return (
                                         <div className="flex flex-col gap-1 my-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                             <div className="flex items-start gap-3">
@@ -335,6 +350,26 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                                                         </span>
                                                     </div>
                                                     {msg.text && <p className="text-xs text-slate-600 pl-1 italic">{msg.text}</p>}
+                                                    
+                                                    {/* INTERACTIVE ACTIONS BUBBLE */}
+                                                    {isActionable && (
+                                                        <div className="mt-2 flex gap-3">
+                                                            <button 
+                                                                onClick={() => confirmReservation()}
+                                                                className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all active:scale-95"
+                                                            >
+                                                                <ThumbsUp size={12} />
+                                                                Confirm Reservation
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => rejectReservation()}
+                                                                className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-100 rounded-lg text-xs font-bold shadow-sm transition-all active:scale-95"
+                                                            >
+                                                                <ThumbsDown size={12} />
+                                                                Reject
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -409,56 +444,88 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                 </div>
             )}
 
-            {/* RIGHT SIDEBAR: Profile */}
+            {/* RIGHT SIDEBAR: Lease Mini-Editor & Profile */}
             {activeChat && (
-            <div className="w-72 border-l border-slate-100 bg-white p-6 hidden xl:flex flex-col h-full overflow-y-auto">
-                 <div className="flex flex-col items-center mb-8">
-                     <div className="w-24 h-24 rounded-full bg-slate-100 mb-4 overflow-hidden flex items-center justify-center font-bold text-3xl text-slate-400 border-4 border-slate-50 shadow-sm">
-                        {activeChat.user.avatar ? (
-                            <img src={activeChat.user.avatar} alt="Profile" className="w-full h-full object-cover" />
-                        ) : activeChat.user.name[0]}
-                     </div>
-                     <h3 className="font-bold text-xl text-slate-800 mb-1 text-center">{activeChat.user.name}</h3>
-                     <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-bold">
-                        {t('chat_active', lang)}
-                     </span>
-                     
-                     {/* Lease Context Info */}
-                     <div className="w-full bg-slate-50 rounded-xl p-4 mt-6 border border-slate-100">
-                         <div className="flex justify-between text-xs mb-2 border-b border-slate-200 pb-2">
-                             <span className="text-slate-500 font-medium">Role</span>
-                             <span className="font-bold text-slate-700">{activeChat.user.role}</span>
-                         </div>
-                         {activeChat.user.contact && (
-                             <div className="flex justify-between text-xs mb-2 border-b border-slate-200 pb-2">
-                                 <span className="text-slate-500 font-medium">Contact</span>
-                                 <span className="font-bold text-slate-700 truncate max-w-[120px]" title={activeChat.user.contact}>{activeChat.user.contact}</span>
-                             </div>
-                         )}
-                          <div className="flex justify-between text-xs">
-                             <span className="text-slate-500 font-medium">Ref ID</span>
-                             <span className="font-mono font-bold text-slate-700">{currentLeaseData.reservationId}</span>
-                         </div>
-                     </div>
-                 </div>
+            <div className="w-[340px] border-l border-slate-100 bg-white hidden xl:flex flex-col h-full shadow-lg z-20">
                  
-                 <button className="w-full bg-slate-900 text-white py-3 rounded-xl text-sm font-bold mb-6 hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200">
-                     {t('chat_view_profile', lang)}
-                 </button>
+                 {/* Sidebar Tabs */}
+                 <div className="flex border-b border-slate-100 bg-slate-50">
+                    <button 
+                        onClick={() => setSidebarTab('details')}
+                        className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${sidebarTab === 'details' ? 'bg-white text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        <FileEdit size={16} /> Details
+                    </button>
+                    <button 
+                        onClick={() => setSidebarTab('profile')}
+                        className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${sidebarTab === 'profile' ? 'bg-white text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        <UserIcon size={16} /> Profile
+                    </button>
+                 </div>
 
-                 <div className="space-y-1">
-                     <button className="w-full flex items-center gap-3 text-slate-600 text-sm p-3 hover:bg-slate-50 rounded-lg transition-colors font-medium">
-                         <Search size={18} className="text-slate-400" />
-                         {t('chat_search_history', lang)}
-                     </button>
-                     <button className="w-full flex items-center gap-3 text-slate-600 text-sm p-3 hover:bg-slate-50 rounded-lg transition-colors font-medium">
-                         <ImageIcon size={18} className="text-slate-400" />
-                         Shared media
-                     </button>
-                      <button className="w-full flex items-center gap-3 text-slate-600 text-sm p-3 hover:bg-slate-50 rounded-lg transition-colors font-medium">
-                         <Target size={18} className="text-slate-400" />
-                         Lease details
-                     </button>
+                 {/* Tab Content */}
+                 <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/50">
+                    
+                    {/* DETAILS TAB (Mini-Editor) */}
+                    {sidebarTab === 'details' && (
+                        <div className="p-4">
+                            <LeaseForm 
+                                data={currentLeaseData} 
+                                handlers={leaseHandlers} 
+                                lang={lang} 
+                            />
+                        </div>
+                    )}
+
+                    {/* PROFILE TAB (Legacy) */}
+                    {sidebarTab === 'profile' && (
+                        <div className="p-6">
+                            <div className="flex flex-col items-center mb-8">
+                                <div className="w-24 h-24 rounded-full bg-slate-100 mb-4 overflow-hidden flex items-center justify-center font-bold text-3xl text-slate-400 border-4 border-slate-50 shadow-sm">
+                                    {activeChat.user.avatar ? (
+                                        <img src={activeChat.user.avatar} alt="Profile" className="w-full h-full object-cover" />
+                                    ) : activeChat.user.name[0]}
+                                </div>
+                                <h3 className="font-bold text-xl text-slate-800 mb-1 text-center">{activeChat.user.name}</h3>
+                                <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-bold">
+                                    {t('chat_active', lang)}
+                                </span>
+                                
+                                <div className="w-full bg-slate-50 rounded-xl p-4 mt-6 border border-slate-100">
+                                    <div className="flex justify-between text-xs mb-2 border-b border-slate-200 pb-2">
+                                        <span className="text-slate-500 font-medium">Role</span>
+                                        <span className="font-bold text-slate-700">{activeChat.user.role}</span>
+                                    </div>
+                                    {activeChat.user.contact && (
+                                        <div className="flex justify-between text-xs mb-2 border-b border-slate-200 pb-2">
+                                            <span className="text-slate-500 font-medium">Contact</span>
+                                            <span className="font-bold text-slate-700 truncate max-w-[120px]" title={activeChat.user.contact}>{activeChat.user.contact}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-slate-500 font-medium">Ref ID</span>
+                                        <span className="font-mono font-bold text-slate-700">{currentLeaseData.reservationId}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button className="w-full bg-slate-900 text-white py-3 rounded-xl text-sm font-bold mb-6 hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200">
+                                {t('chat_view_profile', lang)}
+                            </button>
+
+                            <div className="space-y-1">
+                                <button className="w-full flex items-center gap-3 text-slate-600 text-sm p-3 hover:bg-slate-50 rounded-lg transition-colors font-medium">
+                                    <Search size={18} className="text-slate-400" />
+                                    {t('chat_search_history', lang)}
+                                </button>
+                                <button className="w-full flex items-center gap-3 text-slate-600 text-sm p-3 hover:bg-slate-50 rounded-lg transition-colors font-medium">
+                                    <ImageIcon size={18} className="text-slate-400" />
+                                    Shared media
+                                </button>
+                            </div>
+                        </div>
+                    )}
                  </div>
             </div>
             )}
