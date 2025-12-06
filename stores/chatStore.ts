@@ -120,6 +120,7 @@ interface ChatState {
     confirmReservation: () => Promise<void>;
     rejectReservation: () => Promise<void>;
     markAsRead: (sessionId: string) => void;
+    markMessageAsRead: (sessionId: string, messageId: string) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -178,14 +179,27 @@ export const useChatStore = create<ChatState>((set, get) => ({
             // Use the real UUID (leaseData.id) for the chat topic if available, otherwise input
             const topicId = leaseData.id || reservationId;
             const ntfyData = await fetchNtfyMessages(topicId);
-            
+
+            // Create a map of existing messages to preserve status (read/sent)
+            const localMsgMap = new Map(existingSession?.messages.map(m => [m.id, m]));
+
             // 4. Merge & Sort
             const allMessages = [
                 ...historyEvents.map(h => historyToChatMessage(h)),
-                ...ntfyData.map((n: any) => ntfyToChatMessage(n, 'read')) // Initial load is always read
+                ...ntfyData.map((n: any) => {
+                    const local = localMsgMap.get(n.id);
+                    // Use local status if available (preserve 'read' state)
+                    // If new message (fresh load), default to 'read' (history) unless we want to assume unread.
+                    // For typical "load history" behavior, we treat fetched history as read if we don't know otherwise.
+                    const status = local ? local.status : 'read';
+                    return ntfyToChatMessage(n, status);
+                })
             ];
             
             allMessages.sort((a, b) => a.timestamp - b.timestamp);
+
+            // Recalculate unread count (incoming 'other' messages with status 'sent')
+            const unreadCount = allMessages.filter(m => m.senderId !== 'me' && m.senderId !== 'system' && m.status === 'sent').length;
 
             // 5. Create/Update Session
             const newSession: ChatSession = {
@@ -201,7 +215,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 messages: allMessages,
                 lastMessage: allMessages.length > 0 ? allMessages[allMessages.length - 1].text : 'No messages',
                 lastMessageTime: allMessages.length > 0 ? allMessages[allMessages.length - 1].timestamp : 0,
-                unreadCount: 0 // Reset unread count on open
+                unreadCount: unreadCount 
             };
 
             // 6. Update Store with Session & Persist
@@ -234,10 +248,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     const ntfyMsg = JSON.parse(event.data);
                     if (ntfyMsg.event !== 'message') return;
                     
-                    // Check if this message belongs to the active session
-                    // Note: Current arch only opens SSE for active, but safeguarding for future
-                    const isActive = get().activeSessionId === topicId;
-                    const status = isActive ? 'read' : 'sent';
+                    // Always mark incoming live messages as 'sent' (unread) initially.
+                    // The UI IntersectionObserver will mark them as 'read' when visible.
+                    const status = 'sent';
 
                     const chatMsg = ntfyToChatMessage(ntfyMsg, status);
                     
@@ -251,8 +264,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
                         const updatedMessages = [...session.messages, chatMsg];
                         
-                        // Increment unread count if not active, otherwise keep 0
-                        const newUnreadCount = isActive ? 0 : (session.unreadCount || 0) + 1;
+                        // Increment unread count (if message is not from me)
+                        // Note: ntfyToChatMessage handles senderId logic. 
+                        // If I sent it (via another device), senderId is 'me', so unreadCount shouldn't increase.
+                        const isIncoming = chatMsg.senderId !== 'me' && chatMsg.senderId !== 'system';
+                        const newUnreadCount = isIncoming ? (session.unreadCount || 0) + 1 : (session.unreadCount || 0);
 
                         const updatedSession = {
                             ...session,
@@ -283,8 +299,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
         } catch (e: any) {
             console.error("Load Chat Error", e);
-            // If we have existing session, error is less critical (we just show stale data)
-            // But we should probably notify the user
             set(state => ({ 
                 isLoading: false, 
                 error: state.activeSessionId && state.sessions.find(s => s.id === state.activeSessionId) 
@@ -296,27 +310,56 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     setActiveSession: (id: string) => {
         set({ activeSessionId: id });
-        get().markAsRead(id);
+        // NOTE: We no longer auto-mark as read here. Visibility observer handles it.
     },
 
     markAsRead: (sessionId: string) => {
         set(state => {
-            let sessionToUpdate: ChatSession | undefined;
+            const sessionIdx = state.sessions.findIndex(s => s.id === sessionId);
+            if (sessionIdx === -1) return {};
             
-            const sessions = state.sessions.map(s => {
-                if (s.id === sessionId) {
-                    // Reset unread count to 0
-                    sessionToUpdate = { ...s, unreadCount: 0 };
-                    return sessionToUpdate;
-                }
-                return s;
-            });
+            const session = state.sessions[sessionIdx];
+            // Mark all messages as read
+            const newMessages = session.messages.map(m => ({ ...m, status: 'read' as const }));
             
-            if (sessionToUpdate) {
-                dbService.saveSession(sessionToUpdate);
-            }
+            const newSession = { ...session, messages: newMessages, unreadCount: 0 };
+            const newSessions = [...state.sessions];
+            newSessions[sessionIdx] = newSession;
             
-            return { sessions };
+            dbService.saveSession(newSession);
+            return { sessions: newSessions };
+        });
+    },
+
+    markMessageAsRead: (sessionId: string, messageId: string) => {
+        set(state => {
+            const sessionIdx = state.sessions.findIndex(s => s.id === sessionId);
+            if (sessionIdx === -1) return {};
+
+            const session = state.sessions[sessionIdx];
+            const msgIdx = session.messages.findIndex(m => m.id === messageId);
+            
+            // If message not found or already read, do nothing
+            if (msgIdx === -1 || session.messages[msgIdx].status === 'read') return {};
+
+            const newMessages = [...session.messages];
+            newMessages[msgIdx] = { ...newMessages[msgIdx], status: 'read' };
+
+            // Decrement unread count, ensure it doesn't go below 0
+            const newUnreadCount = Math.max(0, session.unreadCount - 1);
+
+            const newSession = {
+                ...session,
+                messages: newMessages,
+                unreadCount: newUnreadCount
+            };
+
+            const newSessions = [...state.sessions];
+            newSessions[sessionIdx] = newSession;
+
+            dbService.saveSession(newSession);
+
+            return { sessions: newSessions };
         });
     },
 

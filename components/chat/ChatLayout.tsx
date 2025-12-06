@@ -89,7 +89,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         isLoading, 
         sendMessage, 
         setActiveSession,
-        markAsRead,
+        markMessageAsRead,
         confirmReservation, 
         rejectReservation, 
         leaseContext,
@@ -121,12 +121,37 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     const isEditingActiveChat = activeChat && activeChat.id === leaseData.id;
     const currentLeaseData = isEditingActiveChat ? leaseData : (leaseContext || leaseData);
 
-    // --- MARK AS READ EFFECT ---
+    // --- READ RECEIPT / VISIBILITY OBSERVER ---
     useEffect(() => {
-        if (activeChat && activeChat.unreadCount > 0) {
-            markAsRead(activeChat.id);
-        }
-    }, [activeChat, markAsRead]);
+        if (!activeChat) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const el = entry.target as HTMLElement;
+                    const id = el.dataset.id;
+                    const status = el.dataset.status;
+                    const sender = el.dataset.sender;
+                    
+                    // If message is incoming (sender !== 'me') and unread (status === 'sent')
+                    // Note: 'other' is used for incoming messages in chatStore
+                    if (id && status === 'sent' && sender !== 'me' && sender !== 'system') {
+                        markMessageAsRead(activeChat.id, id);
+                        observer.unobserve(el); // Stop observing once marked
+                    }
+                }
+            });
+        }, {
+            root: null, // Viewport
+            threshold: 0.5 // Trigger when 50% visible
+        });
+
+        // Select all message wrappers that are potentially unread
+        const elements = document.querySelectorAll('.message-wrapper');
+        elements.forEach(el => observer.observe(el));
+
+        return () => observer.disconnect();
+    }, [activeChat?.id, activeChat?.messages, markMessageAsRead]);
 
     // --- SMART AUTO SCROLL EFFECT ---
     useEffect(() => {
@@ -421,7 +446,12 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                     (() => {
                                         const isMe = msg.senderId === 'me';
                                         return (
-                                            <div className={`flex gap-2 md:gap-3 max-w-[90%] md:max-w-[70%] animate-in fade-in slide-in-from-bottom-2 duration-200 ${isMe ? 'self-end flex-row-reverse' : 'self-start'}`}>
+                                            <div 
+                                                className={`message-wrapper flex gap-2 md:gap-3 max-w-[90%] md:max-w-[70%] animate-in fade-in slide-in-from-bottom-2 duration-200 ${isMe ? 'self-end flex-row-reverse' : 'self-start'}`}
+                                                data-id={msg.id}
+                                                data-status={msg.status}
+                                                data-sender={msg.senderId}
+                                            >
                                                 {!isMe && (
                                                     <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-white border border-slate-200 flex-shrink-0 flex items-center justify-center text-[10px] md:text-xs font-bold text-slate-600 shadow-sm mt-auto">
                                                         {activeChat.user.name[0]}
