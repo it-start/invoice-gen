@@ -91,7 +91,7 @@ export interface ChatMessage {
   id: string;
   senderId: string; // 'me' or 'other'
   text: string;
-  timestamp: string;
+  timestamp: number; // Unix timestamp in ms
   type: MessageType;
   status: 'sent' | 'read';
   metadata?: {
@@ -131,7 +131,7 @@ export interface ChatSession {
   id: string;
   user: ChatUser;
   lastMessage: string;
-  lastMessageTime: string;
+  lastMessageTime: number; // Unix timestamp in ms
   unreadCount: number;
   messages: ChatMessage[];
 }

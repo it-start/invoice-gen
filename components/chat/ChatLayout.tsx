@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Search, MoreHorizontal, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -121,6 +122,26 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
         setMessageInput('');
     };
 
+    // --- DATE FORMATTERS ---
+    const formatTime = (timestamp: number) => {
+        if (!timestamp) return '';
+        return new Intl.DateTimeFormat(lang === 'ru' ? 'ru-RU' : 'en-US', {
+            hour: 'numeric',
+            minute: '2-digit'
+        }).format(new Date(timestamp));
+    };
+
+    const formatDateTime = (timestamp: number) => {
+        if (!timestamp) return '';
+        return new Intl.DateTimeFormat(lang === 'ru' ? 'ru-RU' : 'en-US', {
+            day: 'numeric',
+            month: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+        }).format(new Date(timestamp));
+    };
+
     const listClasses = isMobile 
         ? (mobileView === 'list' ? 'w-full flex' : 'hidden') 
         : 'w-80 border-r border-slate-100 flex';
@@ -175,7 +196,9 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                             <div className="flex-1 min-w-0">
                                 <div className="flex justify-between items-baseline mb-1">
                                     <h3 className="font-bold text-slate-800 text-sm truncate">{chat.user.name}</h3>
-                                    <span className="text-xs text-slate-400">{chat.lastMessageTime}</span>
+                                    <span className="text-xs text-slate-400">
+                                        {chat.lastMessageTime > 0 ? formatTime(chat.lastMessageTime) : ''}
+                                    </span>
                                 </div>
                                 <p className="text-xs text-slate-500 truncate">{chat.lastMessage}</p>
                             </div>
@@ -267,7 +290,9 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                                                     {style.icon}
                                                     {style.label}
                                                 </div>
-                                                <span className="text-[10px] text-slate-400">{msg.timestamp}</span>
+                                                <span className="text-[10px] text-slate-400">
+                                                    {formatDateTime(msg.timestamp)}
+                                                </span>
                                             </div>
                                             <p className="text-xs text-slate-500 pl-1">{msg.text}</p>
                                         </div>
@@ -296,7 +321,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                                     <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400">
                                         {isMe && msg.status === 'read' && <CheckCheck size={12} className="text-blue-500" />}
                                         {isMe && msg.status === 'sent' && <Check size={12} />}
-                                        <span>{msg.timestamp}</span>
+                                        <span>{formatTime(msg.timestamp)}</span>
                                     </div>
                                 </div>
                             </div>

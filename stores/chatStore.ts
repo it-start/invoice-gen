@@ -25,8 +25,8 @@ const ntfyToChatMessage = (ntfy: NtfyMessage): ChatMessage => {
         }
     }
     
-    const date = new Date(ntfy.time * 1000);
-    const timestamp = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    // Store as raw timestamp (ms)
+    const timestamp = ntfy.time * 1000;
 
     return {
         id: ntfy.id,
@@ -58,9 +58,7 @@ const historyToChatMessage = (event: HistoryEvent): ChatMessage => {
         statusKey = event.status.toLowerCase().replace('status_', '') as LeaseStatus;
     }
 
-    const date = new Date(event.confirmation_date);
-    const timestamp = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    const fullDate = date.toLocaleDateString();
+    const timestamp = new Date(event.confirmation_date).getTime();
 
     // Friendly text based on status or note
     let text = event.confirmation_note || `Status changed`;
@@ -84,7 +82,7 @@ const historyToChatMessage = (event: HistoryEvent): ChatMessage => {
         id: `hist_${event.confirmation_date}_${Math.random()}`,
         senderId: 'system',
         text,
-        timestamp: `${fullDate} ${timestamp}`,
+        timestamp,
         type: 'system',
         status: 'read',
         metadata: {
@@ -141,14 +139,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
             const ntfyData = await fetchNtfyMessages(topicId);
             
             // 4. Merge & Sort
-            // Combine arrays and sort by timestamp (approximated via ID or parsed Date)
             const allMessages = [
-                ...historyEvents.map(h => ({ msg: historyToChatMessage(h), time: new Date(h.confirmation_date).getTime() })),
-                ...ntfyData.map((n: any) => ({ msg: ntfyToChatMessage(n), time: n.time * 1000 }))
+                ...historyEvents.map(h => historyToChatMessage(h)),
+                ...ntfyData.map((n: any) => ntfyToChatMessage(n))
             ];
             
-            allMessages.sort((a, b) => a.time - b.time);
-            const combined = allMessages.map(item => item.msg);
+            allMessages.sort((a, b) => a.timestamp - b.timestamp);
 
             // 5. Create Session
             const newSession: ChatSession = {
@@ -161,9 +157,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     status: 'online',
                     avatar: ''
                 },
-                messages: combined,
-                lastMessage: combined.length > 0 ? combined[combined.length - 1].text : 'No messages',
-                lastMessageTime: combined.length > 0 ? combined[combined.length - 1].timestamp : '',
+                messages: allMessages,
+                lastMessage: allMessages.length > 0 ? allMessages[allMessages.length - 1].text : 'No messages',
+                lastMessageTime: allMessages.length > 0 ? allMessages[allMessages.length - 1].timestamp : 0,
                 unreadCount: 0
             };
 
@@ -244,11 +240,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
         // Optimistic UI Update
         const tempId = Math.random().toString();
+        const now = Date.now();
         const newMsg: ChatMessage = {
             id: tempId,
             senderId: 'me',
             text: text,
-            timestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+            timestamp: now,
             type: 'text',
             status: 'sent'
         };
@@ -259,7 +256,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     ...session,
                     messages: [...session.messages, newMsg],
                     lastMessage: text,
-                    lastMessageTime: 'Just now'
+                    lastMessageTime: now
                 };
             }
             return session;
