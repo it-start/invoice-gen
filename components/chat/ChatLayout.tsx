@@ -1,10 +1,10 @@
 
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, MoreHorizontal, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, AlertCircle, Clock, CheckCircle2, Target, CircleDashed } from 'lucide-react';
-import { ChatSession, LeaseData, Language, ChatMessage, NtfyMessage, LeaseStatus } from '../../types';
+import { LeaseData, Language, LeaseStatus } from '../../types';
 import { t } from '../../utils/i18n';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useChatStore } from '../../stores/chatStore';
 
 // --- STATUS CONFIGURATION ---
 const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, icon: React.ReactNode, label: string }> = {
@@ -52,209 +52,6 @@ const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, icon: React
     }
 };
 
-// --- MOCK NTFY DATA ---
-const RAW_NTFY_DATA: NtfyMessage[] = [
-    {
-        id: 'msg_1',
-        time: 1701336600, 
-        event: 'message',
-        topic: 'lease-chat-renter',
-        message: 'Oh?',
-        title: 'Helena Hills',
-        tags: ['read'],
-        priority: 3
-    },
-    {
-        id: 'msg_2',
-        time: 1701336660, 
-        event: 'message',
-        topic: 'lease-chat-renter',
-        message: 'Cool',
-        title: 'Helena Hills',
-        tags: ['read']
-    },
-    {
-        id: 'msg_3',
-        time: 1701337260, 
-        event: 'message',
-        topic: 'lease-chat-renter',
-        message: 'How does it work?',
-        title: 'Me',
-        tags: ['read']
-    },
-    // Mocking a previous status event in the chat history
-    {
-        id: 'msg_4',
-        time: 1701337500,
-        event: 'message',
-        topic: 'lease-chat-renter',
-        message: 'Deal is confirmed. Dates booked',
-        title: 'System',
-        tags: ['system', 'status:confirmed']
-    },
-    {
-        id: 'msg_5',
-        time: 1701337800, 
-        event: 'message',
-        topic: 'lease-chat-renter',
-        message: 'You just edit any text to type in the conversation you want to show, and delete any bubbles you don\'t want to use',
-        title: 'Me',
-        tags: ['read']
-    },
-    {
-        id: 'msg_6',
-        time: 1701337860, 
-        event: 'message',
-        topic: 'lease-chat-renter',
-        message: 'Boom!',
-        title: 'Helena Hills',
-        tags: ['read']
-    },
-    {
-        id: 'msg_7',
-        time: 1701250000,
-        event: 'message',
-        topic: 'lease-chat-support',
-        message: 'Let\'s go',
-        title: 'Carlo Emilio',
-        tags: ['sent']
-    },
-    {
-        id: 'msg_8',
-        time: 1701000000,
-        event: 'message',
-        topic: 'lease-chat-owner',
-        message: 'Trueeeeee',
-        title: 'Oscar Davis',
-        tags: ['sent']
-    }
-];
-
-// --- MAPPING LOGIC ---
-
-const ntfyToChatMessage = (ntfy: NtfyMessage): ChatMessage => {
-    let senderId = 'other';
-    if (ntfy.title === 'Me') senderId = 'me';
-    else if (ntfy.title === 'System' || ntfy.tags?.includes('system')) senderId = 'system';
-
-    let type: any = 'text';
-    let statusMetadata: LeaseStatus | undefined = undefined;
-
-    if (ntfy.tags?.includes('system')) {
-        type = 'system';
-        // Extract status from tags like "status:collected"
-        const statusTag = ntfy.tags?.find(t => t.startsWith('status:'));
-        if (statusTag) {
-            statusMetadata = statusTag.split(':')[1] as LeaseStatus;
-        }
-    }
-    
-    const date = new Date(ntfy.time * 1000);
-    const timestamp = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-
-    return {
-        id: ntfy.id,
-        senderId,
-        text: ntfy.message,
-        timestamp,
-        type,
-        status: ntfy.tags?.includes('read') ? 'read' : 'sent',
-        metadata: {
-            status: statusMetadata
-        }
-    };
-};
-
-const hydrateSessionsFromNtfy = (leaseData: LeaseData): ChatSession[] => {
-    const sessions: Record<string, ChatSession> = {
-        'lease-chat-renter': {
-            id: 'lease-chat-renter',
-            user: { 
-                id: 'r1', 
-                name: leaseData.renter.surname || 'Renter', 
-                contact: leaseData.renter.contact,
-                avatar: '', 
-                status: 'online', 
-                role: 'Renter' 
-            },
-            messages: [],
-            lastMessage: '',
-            lastMessageTime: '',
-            unreadCount: 0
-        },
-        'lease-chat-support': {
-             id: 'lease-chat-support',
-             user: { 
-                 id: 's1', 
-                 name: 'Carlo Emilio', 
-                 contact: '+66 123 456 789',
-                 avatar: '', 
-                 status: 'busy', 
-                 role: 'Support' 
-            },
-             messages: [],
-             lastMessage: '',
-             lastMessageTime: '',
-             unreadCount: 0
-        },
-        'lease-chat-owner': {
-             id: 'lease-chat-owner',
-             user: { 
-                 id: 'o1', 
-                 name: 'Oscar Davis', 
-                 contact: leaseData.owner.contact,
-                 avatar: '', 
-                 status: 'offline', 
-                 role: 'Owner' 
-            },
-             messages: [],
-             lastMessage: '',
-             lastMessageTime: '',
-             unreadCount: 0
-        }
-    };
-
-    const sorted = [...RAW_NTFY_DATA].sort((a, b) => a.time - b.time);
-
-    sorted.forEach(ntfy => {
-        if (sessions[ntfy.topic]) {
-            const msg = ntfyToChatMessage(ntfy);
-            sessions[ntfy.topic].messages.push(msg);
-            sessions[ntfy.topic].lastMessage = msg.text;
-            sessions[ntfy.topic].lastMessageTime = msg.timestamp;
-            if (msg.senderId === 'other' && msg.status !== 'read') {
-                 sessions[ntfy.topic].unreadCount += 1;
-            }
-        }
-    });
-
-    // --- INJECT DYNAMIC SYSTEM MESSAGE WITH LEASE INFO ---
-    if (sessions['lease-chat-renter']) {
-        const vehicleName = leaseData.vehicle.name || 'Vehicle';
-        // This simulates the "Collected" status message from the screenshot
-        const systemMsg: ChatMessage = {
-            id: 'sys-lease-status',
-            senderId: 'system',
-            text: `${vehicleName} is in use by Rider`,
-            timestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
-            type: 'system',
-            status: 'read',
-            metadata: {
-                status: 'collected'
-            }
-        };
-        const msgs = sessions['lease-chat-renter'].messages;
-        if (msgs.length > 2) {
-            msgs.splice(msgs.length - 2, 0, systemMsg);
-        } else {
-            msgs.push(systemMsg);
-        }
-    }
-
-    return Object.values(sessions);
-};
-
-
 interface ChatLayoutProps {
     leaseData: LeaseData;
     lang: Language;
@@ -263,16 +60,20 @@ interface ChatLayoutProps {
 export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
     const isMobile = useIsMobile();
     const [mobileView, setMobileView] = useState<'list' | 'room'>('list');
-
-    const initialSessions = useMemo(() => hydrateSessionsFromNtfy(leaseData), [leaseData]);
-    const [chats, setChats] = useState<ChatSession[]>(initialSessions);
-    const [activeChatId, setActiveChatId] = useState<string>('lease-chat-renter');
     const [messageInput, setMessageInput] = useState('');
 
-    const activeChat = chats.find(c => c.id === activeChatId) || chats[0];
+    // --- ZUSTAND STORE ---
+    const { sessions, activeSessionId, initialize, syncLeaseData, setActiveSession, sendMessage } = useChatStore();
+    
+    // Initialize & Sync Data on Mount/Change
+    useEffect(() => {
+        syncLeaseData(leaseData);
+    }, [leaseData, syncLeaseData]);
+
+    const activeChat = sessions.find(c => c.id === activeSessionId) || sessions[0];
 
     const handleChatSelect = (chatId: string) => {
-        setActiveChatId(chatId);
+        setActiveSession(chatId);
         if (isMobile) {
             setMobileView('room');
         }
@@ -282,32 +83,14 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
         setMobileView('list');
     };
 
-    const handleSendMessage = () => {
+    const handleSend = () => {
         if (!messageInput.trim()) return;
-        
-        const newMsg: ChatMessage = {
-            id: Math.random().toString(),
-            senderId: 'me',
-            text: messageInput,
-            timestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
-            type: 'text',
-            status: 'sent'
-        };
-
-        setChats(prev => prev.map(c => {
-            if (c.id === activeChatId) {
-                return {
-                    ...c,
-                    messages: [...c.messages, newMsg],
-                    lastMessage: messageInput,
-                    lastMessageTime: 'Just now'
-                };
-            }
-            return c;
-        }));
-
+        sendMessage(messageInput);
         setMessageInput('');
     };
+
+    // Ensure we have data to render
+    if (!activeChat) return null;
 
     const listClasses = isMobile 
         ? (mobileView === 'list' ? 'w-full flex' : 'hidden') 
@@ -334,11 +117,11 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
-                    {chats.map(chat => (
+                    {sessions.map(chat => (
                         <div 
                             key={chat.id}
                             onClick={() => handleChatSelect(chat.id)}
-                            className={`p-4 flex gap-3 cursor-pointer transition-colors border-b border-slate-50 hover:bg-slate-100 ${activeChatId === chat.id && !isMobile ? 'bg-white shadow-sm' : ''}`}
+                            className={`p-4 flex gap-3 cursor-pointer transition-colors border-b border-slate-50 hover:bg-slate-100 ${activeSessionId === chat.id && !isMobile ? 'bg-white shadow-sm' : ''}`}
                         >
                             <div className="relative">
                                 <div className="w-10 h-10 rounded-full bg-slate-300 flex items-center justify-center text-slate-600 font-bold overflow-hidden">
@@ -421,14 +204,12 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                         // --- SYSTEM MESSAGE RENDERER ---
                         if (msg.type === 'system') {
                             const status = msg.metadata?.status;
-                            // Default styling if no specific status is found
                             const style = status ? STATUS_CONFIG[status] : { bg: 'bg-slate-100', text: 'text-slate-600', icon: <CheckCheck size={12} />, label: 'System' };
                             
                             return (
                                 <div key={msg.id} className="flex flex-col gap-1 my-2">
                                     <div className="flex items-start gap-3">
                                         <div className="w-8 flex-shrink-0 flex justify-center">
-                                            {/* Optional: Checkmark icon next to system messages to align with screenshot style */}
                                             <div className="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-300">
                                                 <Check size={10} />
                                             </div>
@@ -482,14 +263,14 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                             placeholder={t('chat_type_message', lang)}
                             value={messageInput}
                             onChange={(e) => setMessageInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                         />
                         <div className="absolute right-14 flex gap-2 text-slate-400">
                              <button className="hover:text-slate-600 hidden sm:block"><ImageIcon size={18} /></button>
                              <button className="hover:text-slate-600"><Smile size={18} /></button>
                         </div>
                         <button 
-                            onClick={handleSendMessage}
+                            onClick={handleSend}
                             className="bg-blue-600 text-white p-2.5 rounded-full hover:bg-blue-700 transition-colors shadow-md flex-shrink-0"
                         >
                             <Send size={18} />
