@@ -1,5 +1,4 @@
 
-
 import { useState } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { Download, Wand2, Loader2, RotateCcw, FileText, Car, Globe, Share2, MessageCircle } from 'lucide-react';
@@ -21,11 +20,12 @@ import { useAiAssistant } from '../hooks/useAiAssistant';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { Language, InvoiceData, LeaseData } from '../types';
 import { t } from '../utils/i18n';
+import { BrandLogo } from '../components/ui/BrandLogo';
 
 type DocType = 'invoice' | 'lease' | 'chat';
 
 export default function EditorPage() {
-  const [docType, setDocType] = useState<DocType>('invoice');
+  const [docType, setDocType] = useState<DocType>('chat');
   const [lang, setLang] = useState<Language>('en');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -114,215 +114,213 @@ export default function EditorPage() {
       return link;
   };
 
-  // CHAT VIEW RENDERER (Takes full screen)
-  if (docType === 'chat') {
-    return (
-        <div className="h-screen bg-slate-100 p-4 font-sans flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-                 <div className="flex gap-2">
-                    <button 
-                        onClick={() => setDocType('invoice')} 
-                        className="bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm border border-slate-200 transition-all"
-                    >
-                        <FileText size={16} /> {t('switch_invoice', lang)}
-                    </button>
-                    <button 
-                        onClick={() => setDocType('lease')} 
-                        className="bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm border border-slate-200 transition-all"
-                    >
-                        <Car size={16} /> {t('switch_lease', lang)}
-                    </button>
-                    <button 
-                        onClick={() => setDocType('chat')} 
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-lg transition-all"
-                    >
-                        <MessageCircle size={16} /> {t('switch_chat', lang)}
-                    </button>
-                 </div>
-                 <button
-                    onClick={toggleLang}
-                    className="text-slate-400 hover:text-blue-500 transition-colors bg-white p-2 rounded-lg shadow-sm"
-                    title="Switch Language"
-                >
-                    <Globe size={18} />
-                </button>
-            </div>
-            <div className="flex-1 overflow-hidden">
-                <ChatLayout leaseData={lease.data} lang={lang} />
-            </div>
-        </div>
-    );
-  }
+  const NavPills = () => (
+     <div className="flex bg-slate-100 p-1 rounded-xl">
+        <button 
+            onClick={() => setDocType('chat')} 
+            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${docType === 'chat' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+            <MessageCircle size={16} /> {t('switch_chat', lang)}
+        </button>
+        <button 
+            onClick={() => setDocType('lease')} 
+            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${docType === 'lease' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+            <Car size={16} /> {t('switch_lease', lang)}
+        </button>
+         <button 
+            onClick={() => setDocType('invoice')} 
+            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${docType === 'invoice' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+            <FileText size={16} /> {t('switch_invoice', lang)}
+        </button>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col md:flex-row font-sans">
-      
-      {/* MOBILE TABS */}
-      {isMobile && (
-        <div className="sticky top-0 z-50 bg-slate-900 text-white flex shadow-lg border-b border-slate-700">
-            <button 
-                onClick={() => setMobileTab('edit')}
-                className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider transition-colors border-b-2 ${mobileTab === 'edit' ? 'border-blue-500 bg-slate-800 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
-            >
-                {t('mobile_editor_tab', lang)}
-            </button>
-             <button 
-                onClick={() => setMobileTab('preview')}
-                className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider transition-colors border-b-2 ${mobileTab === 'preview' ? 'border-blue-500 bg-slate-800 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
-            >
-                {t('mobile_preview_tab', lang)}
-            </button>
-        </div>
-      )}
-
-      {/* SIDEBAR: Sticky/Scroll on Desktop, Auto-height on Mobile */}
-      <div className={`w-full md:w-1/3 bg-white border-r border-gray-200 h-auto md:h-screen md:overflow-y-auto md:sticky md:top-0 shadow-xl z-10 flex-col ${isMobile && mobileTab !== 'edit' ? 'hidden' : 'flex'}`}>
-        {/* BRANDING & TYPE SWITCHER */}
-        <div className="bg-slate-900 p-4 pb-0 flex flex-col gap-4 sticky top-0 z-20 md:static">
-             
-             {/* Document Switcher */}
-             <div className="p-1 pb-4 flex gap-2">
-                <button 
-                    onClick={() => setDocType('invoice')} 
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded text-sm font-medium transition-all ${docType === 'invoice' ? 'bg-blue-600 shadow-lg text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'}`}
-                >
-                    <FileText size={16} /> <span className="hidden sm:inline">{t('switch_invoice', lang)}</span>
-                </button>
-                <button 
-                    onClick={() => setDocType('lease')} 
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded text-sm font-medium transition-all ${docType === 'lease' ? 'bg-blue-600 shadow-lg text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'}`}
-                >
-                    <Car size={16} /> <span className="hidden sm:inline">{t('switch_lease', lang)}</span>
-                </button>
-                <button 
-                    onClick={() => setDocType('chat')} 
-                    className="flex items-center justify-center gap-2 py-2 px-3 rounded text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 transition-all"
-                >
-                    <MessageCircle size={16} />
-                </button>
+    <div className="h-screen bg-slate-50 flex flex-col font-sans overflow-hidden text-slate-900">
+        
+        {/* UNIFIED APP HEADER */}
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 shrink-0 z-30 shadow-sm">
+             {/* Left: Logo + Nav (Desktop) */}
+             <div className="flex items-center gap-6">
+                 <BrandLogo className="text-slate-800 h-6" />
+                 <div className="hidden md:block">
+                     <NavPills />
+                 </div>
              </div>
-        </div>
 
-        {/* Editor Content */}
-        <div className="p-6 flex-1 md:overflow-y-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-slate-800">
-                {docType === 'invoice' ? t('invoice_editor', lang) : t('lease_editor', lang)}
-            </h2>
-            
-            <div className="flex gap-2">
-                <button
+             {/* Right: Actions */}
+             <div className="flex items-center gap-3">
+                 {/* Mobile Nav Icons (Simple) */}
+                 <div className="md:hidden flex gap-1 bg-slate-100 p-1 rounded-lg">
+                    <button onClick={() => setDocType('chat')} className={`p-2 rounded-md ${docType === 'chat' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}><MessageCircle size={18} /></button>
+                    <button onClick={() => setDocType('lease')} className={`p-2 rounded-md ${docType === 'lease' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}><Car size={18} /></button>
+                    <button onClick={() => setDocType('invoice')} className={`p-2 rounded-md ${docType === 'invoice' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}><FileText size={18} /></button>
+                 </div>
+
+                 <button
                     onClick={toggleLang}
-                    className="text-slate-400 hover:text-blue-500 transition-colors p-1"
+                    className="text-slate-400 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-slate-100"
                     title="Switch Language"
                 >
-                    <Globe size={16} />
+                    <Globe size={20} />
                 </button>
-                {docType === 'invoice' && (
-                    <button 
-                        onClick={invoice.reset} 
-                        className="text-slate-400 hover:text-red-500 transition-colors p-1"
-                        title={t('reset', lang)}
+                
+                {/* AI Button (only for editor modes) */}
+                {docType !== 'chat' && (
+                     <button 
+                        onClick={ai.open}
+                        className="flex items-center gap-2 text-xs bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full hover:bg-purple-200 font-bold tracking-wide"
                     >
-                        <RotateCcw size={16} />
+                        <Wand2 size={14} /> AI
                     </button>
                 )}
-                <button 
-                    onClick={ai.open}
-                    className="flex items-center gap-2 text-xs bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full hover:bg-purple-200 font-medium"
-                >
-                    <Wand2 size={14} /> AI
-                </button>
-            </div>
-          </div>
-
-          {/* DYNAMIC FORM RENDER */}
-          {docType === 'invoice' ? (
-              <InvoiceForm data={invoice.data} handlers={invoice} lang={lang} />
-          ) : (
-              <LeaseForm 
-                data={lease.data} 
-                handlers={{
-                    ...lease,
-                    loadFromApi: handleLeaseLoad // Intercept loadFromApi to handle auth errors
-                }} 
-                lang={lang}
-              />
-          )}
-        
-        </div>
-      </div>
-
-      {/* PREVIEW AREA: Scroll on Desktop, Auto on Mobile */}
-      <div className={`w-full md:w-2/3 bg-slate-800 p-4 md:p-8 flex-col items-center md:h-screen md:overflow-hidden relative min-h-[50vh] ${isMobile && mobileTab !== 'preview' ? 'hidden' : 'flex'}`}>
-        <div className="w-full max-w-[210mm] flex justify-between items-center mb-4">
-             <div className="text-white">
-                <h1 className="text-xl font-bold">
-                    {t('preview', lang)}
-                </h1>
-                <p className="text-slate-400 text-sm">
-                   {docType === 'invoice' ? t('doc_invoice', lang) : t('doc_lease', lang)}
-                </p>
              </div>
-             
-             <div className="flex gap-2">
-                {docType === 'lease' && lease.data.reservationId && (
-                     <Link 
-                        to={getLeasePreviewLink()}
-                        target="_blank"
-                        className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow transition-all"
-                        title={t('open_shareable_link', lang)}
-                    >
-                        <Share2 size={18} />
-                    </Link>
-                )}
+        </header>
 
-                <button 
-                    onClick={handleDownloadPdf}
-                    disabled={isGeneratingPdf}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 shadow-lg transition-all transform hover:scale-105 active:scale-95 disabled:opacity-70 disabled:cursor-wait"
-                >
-                    {isGeneratingPdf ? (
-                        <> <Loader2 className="animate-spin" size={18} /> {t('processing', lang)} </>
-                    ) : (
-                        <> <Download size={18} /> {t('download_pdf', lang)} </>
-                    )}
-                </button>
-            </div>
+        {/* CONTENT AREA */}
+        <div className="flex-1 flex overflow-hidden relative">
+            
+            {docType === 'chat' ? (
+                 <div className="w-full h-full p-0 md:p-6 overflow-hidden">
+                     <div className="h-full max-w-[1600px] mx-auto">
+                        <ChatLayout leaseData={lease.data} lang={lang} />
+                     </div>
+                 </div>
+            ) : (
+                 /* EDITOR SPLIT VIEW */
+                 <div className="w-full h-full flex flex-col md:flex-row relative">
+                      
+                      {/* Mobile Tabs for Editor/Preview */}
+                      {isMobile && (
+                        <div className="sticky top-0 z-20 bg-white border-b border-slate-200 flex shadow-sm">
+                            <button 
+                                onClick={() => setMobileTab('edit')}
+                                className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider transition-colors border-b-2 ${mobileTab === 'edit' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-400'}`}
+                            >
+                                {t('mobile_editor_tab', lang)}
+                            </button>
+                            <button 
+                                onClick={() => setMobileTab('preview')}
+                                className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider transition-colors border-b-2 ${mobileTab === 'preview' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-400'}`}
+                            >
+                                {t('mobile_preview_tab', lang)}
+                            </button>
+                        </div>
+                      )}
+
+                      {/* SIDEBAR (Form) */}
+                      <div className={`w-full md:w-1/3 bg-white border-r border-slate-200 h-full flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10 ${isMobile && mobileTab !== 'edit' ? 'hidden' : 'flex'}`}>
+                           <div className="p-4 md:p-8 overflow-y-auto h-full custom-scrollbar">
+                               {/* Title & Reset */}
+                               <div className="flex justify-between items-center mb-8">
+                                   <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
+                                       {docType === 'invoice' ? t('invoice_editor', lang) : t('lease_editor', lang)}
+                                   </h2>
+                                   
+                                   {docType === 'invoice' && (
+                                        <button 
+                                            onClick={invoice.reset} 
+                                            className="text-slate-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-slate-50"
+                                            title={t('reset', lang)}
+                                        >
+                                            <RotateCcw size={18} />
+                                        </button>
+                                   )}
+                               </div>
+                               
+                               {/* Dynamic Form */}
+                               {docType === 'invoice' ? (
+                                  <InvoiceForm data={invoice.data} handlers={invoice} lang={lang} />
+                               ) : (
+                                  <LeaseForm 
+                                    data={lease.data} 
+                                    handlers={{
+                                        ...lease,
+                                        loadFromApi: handleLeaseLoad
+                                    }} 
+                                    lang={lang}
+                                  />
+                               )}
+                           </div>
+                      </div>
+
+                      {/* PREVIEW */}
+                      <div className={`w-full md:w-2/3 bg-slate-800 p-4 md:p-8 flex-col items-center overflow-hidden relative ${isMobile && mobileTab !== 'preview' ? 'hidden' : 'flex'}`}>
+                           
+                           {/* Preview Header */}
+                           <div className="w-full max-w-[210mm] flex justify-between items-center mb-6 z-10 shrink-0">
+                                <div className="text-white">
+                                    <h1 className="text-lg font-bold opacity-90">
+                                        {t('preview', lang)}
+                                    </h1>
+                                    <p className="text-slate-400 text-xs">
+                                    {docType === 'invoice' ? t('doc_invoice', lang) : t('doc_lease', lang)}
+                                    </p>
+                                </div>
+                                
+                                <div className="flex gap-2">
+                                    {docType === 'lease' && lease.data.reservationId && (
+                                        <Link 
+                                            to={getLeasePreviewLink()}
+                                            target="_blank"
+                                            className="bg-slate-700/50 hover:bg-slate-700 text-white px-3 py-2 rounded-lg font-medium flex items-center gap-2 transition-all backdrop-blur-sm"
+                                            title={t('open_shareable_link', lang)}
+                                        >
+                                            <Share2 size={18} />
+                                        </Link>
+                                    )}
+
+                                    <button 
+                                        onClick={handleDownloadPdf}
+                                        disabled={isGeneratingPdf}
+                                        className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-blue-900/20 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-70 disabled:cursor-wait"
+                                    >
+                                        {isGeneratingPdf ? (
+                                            <> <Loader2 className="animate-spin" size={18} /> {t('processing', lang)} </>
+                                        ) : (
+                                            <> <Download size={18} /> {t('download_pdf', lang)} </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Preview Canvas */}
+                            <div className="flex-1 w-full md:overflow-y-auto custom-scrollbar pb-20 flex justify-center">
+                                {/* Adjusted scaling for better visibility */}
+                                <div className="transform scale-[0.42] sm:scale-[0.6] md:scale-[0.85] lg:scale-[0.9] origin-top transition-transform duration-300 shadow-2xl">
+                                    {docType === 'invoice' ? (
+                                        <InvoicePreview data={invoice.data} />
+                                    ) : (
+                                        <LeasePreview data={lease.data} lang={lang} />
+                                    )}
+                                </div>
+                            </div>
+                      </div>
+                 </div>
+            )}
         </div>
 
-        <div className="flex-1 w-full md:overflow-y-auto custom-scrollbar pb-20">
-             {/* Adjusted scaling for mobile: 0.42 fits 210mm (~793px) into ~333px, safe for 360px+ screens */}
-             <div className="transform scale-[0.42] sm:scale-[0.6] md:scale-[0.85] lg:scale-[0.9] origin-top transition-transform duration-300">
-                {/* DYNAMIC PREVIEW RENDER */}
-                {docType === 'invoice' ? (
-                    <InvoicePreview data={invoice.data} />
-                ) : (
-                    <LeasePreview data={lease.data} lang={lang} />
-                )}
-            </div>
-        </div>
-      </div>
+        {/* MODALS */}
+        <LoginModal 
+            isOpen={showLoginModal} 
+            onClose={() => setShowLoginModal(false)}
+            onSuccess={() => handleLeaseLoad()}
+            lang={lang}
+        />
 
-      {/* MODALS */}
-      <LoginModal 
-        isOpen={showLoginModal} 
-        onClose={() => setShowLoginModal(false)}
-        onSuccess={() => handleLeaseLoad()}
-        lang={lang}
-      />
-
-      <AiModal 
-        isOpen={ai.isOpen}
-        onClose={ai.close}
-        onParse={handleSmartImport}
-        input={ai.input}
-        setInput={ai.setInput}
-        isLoading={ai.isLoading}
-        error={ai.error}
-        apiKeyMissing={ai.apiKeyMissing}
-        lang={lang}
-      />
+        <AiModal 
+            isOpen={ai.isOpen}
+            onClose={ai.close}
+            onParse={handleSmartImport}
+            input={ai.input}
+            setInput={ai.setInput}
+            isLoading={ai.isLoading}
+            error={ai.error}
+            apiKeyMissing={ai.apiKeyMissing}
+            lang={lang}
+        />
 
     </div>
   );

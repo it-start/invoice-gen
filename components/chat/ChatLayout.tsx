@@ -1,9 +1,9 @@
 
-
 import React, { useState, useMemo } from 'react';
-import { Search, MoreHorizontal, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check } from 'lucide-react';
+import { Search, MoreHorizontal, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft } from 'lucide-react';
 import { ChatSession, LeaseData, Language, ChatMessage, NtfyMessage } from '../../types';
 import { t } from '../../utils/i18n';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 // --- MOCK NTFY DATA ---
 // This follows the ntfy.sh JSON message format strictly.
@@ -172,6 +172,9 @@ interface ChatLayoutProps {
 }
 
 export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
+    const isMobile = useIsMobile();
+    const [mobileView, setMobileView] = useState<'list' | 'room'>('list');
+
     // Initialize sessions from Ntfy Mock Data
     const initialSessions = useMemo(() => hydrateSessionsFromNtfy(leaseData), [leaseData]);
     const [chats, setChats] = useState<ChatSession[]>(initialSessions);
@@ -179,6 +182,17 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
     const [messageInput, setMessageInput] = useState('');
 
     const activeChat = chats.find(c => c.id === activeChatId) || chats[0];
+
+    const handleChatSelect = (chatId: string) => {
+        setActiveChatId(chatId);
+        if (isMobile) {
+            setMobileView('room');
+        }
+    };
+
+    const handleBackToList = () => {
+        setMobileView('list');
+    };
 
     const handleSendMessage = () => {
         if (!messageInput.trim()) return;
@@ -208,11 +222,20 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
         setMessageInput('');
     };
 
+    // Determine layout visibility classes based on mobile state
+    const listClasses = isMobile 
+        ? (mobileView === 'list' ? 'w-full flex' : 'hidden') 
+        : 'w-80 border-r border-slate-100 flex';
+        
+    const roomClasses = isMobile 
+        ? (mobileView === 'room' ? 'flex w-full' : 'hidden') 
+        : 'flex-1 flex';
+
     return (
         <div className="flex h-full bg-white rounded-lg overflow-hidden border border-slate-200 shadow-sm">
             
             {/* LEFT SIDEBAR: Chat List */}
-            <div className="w-80 border-r border-slate-100 flex flex-col bg-slate-50">
+            <div className={`${listClasses} flex-col bg-slate-50`}>
                 <div className="p-4 border-b border-slate-100 bg-white">
                     <h2 className="text-lg font-bold text-slate-800 mb-4">{t('switch_chat', lang)}</h2>
                     <div className="relative">
@@ -228,8 +251,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                     {chats.map(chat => (
                         <div 
                             key={chat.id}
-                            onClick={() => setActiveChatId(chat.id)}
-                            className={`p-4 flex gap-3 cursor-pointer transition-colors border-b border-slate-50 hover:bg-slate-100 ${activeChatId === chat.id ? 'bg-white shadow-sm' : ''}`}
+                            onClick={() => handleChatSelect(chat.id)}
+                            className={`p-4 flex gap-3 cursor-pointer transition-colors border-b border-slate-50 hover:bg-slate-100 ${activeChatId === chat.id && !isMobile ? 'bg-white shadow-sm' : ''}`}
                         >
                             <div className="relative">
                                 <div className="w-10 h-10 rounded-full bg-slate-300 flex items-center justify-center text-slate-600 font-bold overflow-hidden">
@@ -257,10 +280,15 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
             </div>
 
             {/* MIDDLE: Chat Room */}
-            <div className="flex-1 flex flex-col bg-white">
+            <div className={`${roomClasses} flex-col bg-white`}>
                 {/* Header */}
-                <div className="h-16 border-b border-slate-100 flex justify-between items-center px-6">
+                <div className="h-16 border-b border-slate-100 flex justify-between items-center px-4 md:px-6">
                     <div className="flex items-center gap-3">
+                         {isMobile && (
+                            <button onClick={handleBackToList} className="-ml-2 p-2 hover:bg-slate-100 rounded-full text-slate-600">
+                                <ArrowLeft size={20} />
+                            </button>
+                         )}
                          <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold">
                              {activeChat.user.name[0]}
                          </div>
@@ -279,7 +307,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 p-6 overflow-y-auto space-y-6 flex flex-col">
+                <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6 flex flex-col">
                     <div className="text-center text-xs text-slate-400 my-4">Nov 30, 2023</div>
                     
                     {activeChat.messages.map((msg) => {
@@ -295,7 +323,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
 
                         const isMe = msg.senderId === 'me';
                         return (
-                            <div key={msg.id} className={`flex gap-3 max-w-[80%] ${isMe ? 'self-end flex-row-reverse' : 'self-start'}`}>
+                            <div key={msg.id} className={`flex gap-3 max-w-[85%] md:max-w-[80%] ${isMe ? 'self-end flex-row-reverse' : 'self-start'}`}>
                                 {!isMe && (
                                     <div className="w-8 h-8 rounded-full bg-slate-200 flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-600">
                                         {activeChat.user.name[0]}
@@ -332,12 +360,12 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                         />
                         <div className="absolute right-14 flex gap-2 text-slate-400">
-                             <button className="hover:text-slate-600"><ImageIcon size={18} /></button>
+                             <button className="hover:text-slate-600 hidden sm:block"><ImageIcon size={18} /></button>
                              <button className="hover:text-slate-600"><Smile size={18} /></button>
                         </div>
                         <button 
                             onClick={handleSendMessage}
-                            className="bg-blue-600 text-white p-2.5 rounded-full hover:bg-blue-700 transition-colors shadow-md"
+                            className="bg-blue-600 text-white p-2.5 rounded-full hover:bg-blue-700 transition-colors shadow-md flex-shrink-0"
                         >
                             <Send size={18} />
                         </button>
