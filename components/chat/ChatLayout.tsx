@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
-import { Search, MoreHorizontal, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, AlertCircle, Clock, CheckCircle2, Target, CircleDashed } from 'lucide-react';
-import { LeaseData, Language, LeaseStatus } from '../../types';
+import { Search, MoreHorizontal, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed } from 'lucide-react';
+import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage } from '../../types';
 import { t } from '../../utils/i18n';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useChatStore } from '../../stores/chatStore';
@@ -63,14 +62,14 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
     const [messageInput, setMessageInput] = useState('');
 
     // --- ZUSTAND STORE ---
-    const { sessions, activeSessionId, initialize, syncLeaseData, setActiveSession, sendMessage } = useChatStore();
+    const { sessions, activeSessionId, syncLeaseData, setActiveSession, sendMessage } = useChatStore();
     
     // Initialize & Sync Data on Mount/Change
     useEffect(() => {
         syncLeaseData(leaseData);
     }, [leaseData, syncLeaseData]);
 
-    const activeChat = sessions.find(c => c.id === activeSessionId) || sessions[0];
+    const activeChat = sessions.find((c: ChatSession) => c.id === activeSessionId) || sessions[0];
 
     const handleChatSelect = (chatId: string) => {
         setActiveSession(chatId);
@@ -117,7 +116,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
-                    {sessions.map(chat => (
+                    {sessions.map((chat: ChatSession) => (
                         <div 
                             key={chat.id}
                             onClick={() => handleChatSelect(chat.id)}
@@ -200,7 +199,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                 <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6 flex flex-col dark-scrollbar">
                     <div className="text-center text-xs text-slate-400 my-4">Today</div>
                     
-                    {activeChat.messages.map((msg) => {
+                    {activeChat.messages.map((msg: ChatMessage) => {
                         // --- SYSTEM MESSAGE RENDERER ---
                         if (msg.type === 'system') {
                             const status = msg.metadata?.status;
