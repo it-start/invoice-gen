@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { Language } from '../../types';
 import { t } from '../../utils/i18n';
 
@@ -19,52 +19,106 @@ interface WizardContainerProps {
 export const WizardContainer: React.FC<WizardContainerProps> = ({ steps, lang = 'en', compact = false }) => {
     const isMobile = useIsMobile();
     const [currentStep, setCurrentStep] = useState(0);
+    const [expandedSteps, setExpandedSteps] = useState<number[]>([]);
 
     // Reset step if switching back to desktop or if steps change
     useEffect(() => {
         if (!isMobile) {
             setCurrentStep(0);
+            // Default to all expanded on desktop/sidebar
+            setExpandedSteps(steps.map((_, i) => i));
         }
-    }, [isMobile]);
+    }, [isMobile, steps.length]);
 
-    // Desktop: Render all steps stacked
+    const toggleStep = (index: number) => {
+        setExpandedSteps(prev => 
+            prev.includes(index) 
+                ? prev.filter(i => i !== index) 
+                : [...prev, index]
+        );
+    };
+
+    // Desktop: Render all steps stacked (Accordion Style)
     if (!isMobile) {
         if (compact) {
             return (
-                <div className="space-y-8 pb-20">
-                    {steps.map((step, index) => (
-                        <div key={index} className="px-1">
-                            {step.title && (
-                                <h3 className="font-bold text-[11px] text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                    <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold">
-                                        {index + 1}
-                                    </span>
-                                    {step.title}
-                                </h3>
-                            )}
-                            <div className="pl-1">
-                                {step.content}
+                <div className="space-y-4 pb-20">
+                    {steps.map((step, index) => {
+                        const isExpanded = expandedSteps.includes(index);
+                        return (
+                            <div key={index} className="px-1">
+                                <button 
+                                    onClick={() => toggleStep(index)}
+                                    className="w-full flex items-center justify-between group mb-2 focus:outline-none"
+                                >
+                                    {step.title && (
+                                        <h3 className="font-bold text-[11px] text-slate-400 uppercase tracking-wider flex items-center gap-2 group-hover:text-slate-600 transition-colors">
+                                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${isExpanded ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
+                                                {index + 1}
+                                            </span>
+                                            {step.title}
+                                        </h3>
+                                    )}
+                                    <ChevronDown 
+                                        size={14} 
+                                        className={`text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''} group-hover:text-slate-600`} 
+                                    />
+                                </button>
+                                
+                                <div 
+                                    className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+                                >
+                                    <div className="overflow-hidden">
+                                        <div className="pl-1 pb-4">
+                                            {step.content}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {index < steps.length - 1 && (
+                                    <div className="border-b border-slate-100/80 mb-4"></div>
+                                )}
                             </div>
-                            {index < steps.length - 1 && (
-                                <div className="my-8 border-b border-slate-100/80"></div>
-                            )}
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             );
         }
 
         return (
-            <div className="space-y-8 pb-20">
-                {steps.map((step, index) => (
-                    <div key={index} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                        {step.title && <h3 className="font-bold text-sm text-slate-800 mb-6 pb-2 border-b border-slate-50 flex items-center gap-2">
-                            <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs">{index + 1}</span>
-                            {step.title}
-                        </h3>}
-                        {step.content}
-                    </div>
-                ))}
+            <div className="space-y-6 pb-20">
+                {steps.map((step, index) => {
+                    const isExpanded = expandedSteps.includes(index);
+                    return (
+                        <div key={index} className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                             <button 
+                                onClick={() => toggleStep(index)}
+                                className="w-full p-6 flex items-center justify-between group bg-white z-10 relative"
+                            >
+                                {step.title && <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2">
+                                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors ${isExpanded ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
+                                        {index + 1}
+                                    </span>
+                                    {step.title}
+                                </h3>}
+                                <ChevronDown 
+                                    size={18} 
+                                    className={`text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''} group-hover:text-slate-600`} 
+                                />
+                            </button>
+                            
+                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                                <div className="overflow-hidden">
+                                    <div className="px-6 pb-6 pt-0 border-t border-slate-50">
+                                        {/* Spacer to separate content from header visual */}
+                                        <div className="h-4"></div>
+                                        {step.content}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
         );
     }
