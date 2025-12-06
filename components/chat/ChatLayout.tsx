@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, MoreHorizontal, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2 } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage } from '../../types';
 import { t } from '../../utils/i18n';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -59,47 +60,59 @@ interface ChatLayoutProps {
 
 export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
     const isMobile = useIsMobile();
+    const navigate = useNavigate();
+    const { id: routeId } = useParams<{ id: string }>(); // Get ID from URL
+    
     const [mobileView, setMobileView] = useState<'list' | 'room'>('list');
     const [messageInput, setMessageInput] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
 
     // --- ZUSTAND STORE ---
-    const { sessions, activeSessionId, isLoading, setActiveSession, sendMessage, loadChatSession, leaseContext } = useChatStore();
+    const { sessions, activeSessionId, isLoading, sendMessage, leaseContext } = useChatStore();
     
-    // Auto-load session if leaseData has a valid UUID (id)
+    // Sync mobile view when route changes
     useEffect(() => {
-        const targetId = leaseData.id;
-        if (targetId && !sessions.find(s => s.id === targetId)) {
-             loadChatSession(targetId);
+        if (routeId) {
+            if (isMobile) setMobileView('room');
+        } else {
+            setMobileView('list');
         }
-    }, [leaseData.id, loadChatSession, sessions]);
+    }, [routeId, isMobile]);
 
-    const activeChat = sessions.find((c: ChatSession) => c.id === activeSessionId);
+    // Determine Active Chat based on Route ID or Store State
+    // The Route ID is the source of truth for navigation.
+    const currentActiveId = routeId || activeSessionId;
+    const activeChat = sessions.find((c: ChatSession) => c.id === currentActiveId);
     
     // DETERMINE ACTIVE LEASE CONTEXT FOR DISPLAY
-    // If the currently edited lease (from EditorPage props) matches the active chat ID,
-    // we use the 'leaseData' prop because it contains the latest local edits from the form.
-    // Otherwise, we use the 'leaseContext' from the store (raw API data) for viewing other chats.
+    // If the currently edited lease (from props) matches the active chat ID, use local data (editor state).
+    // Otherwise use the store's context (API state) for the viewed chat.
     const isEditingActiveChat = activeChat && activeChat.id === leaseData.id;
     const currentLeaseData = isEditingActiveChat ? leaseData : (leaseContext || leaseData);
 
     const handleChatSelect = (chatId: string) => {
-        setActiveSession(chatId);
-        if (isMobile) {
-            setMobileView('room');
-        }
+        // Navigate to the specific route. 
+        // The parent EditorPage listens to the URL and handles data loading.
+        navigate(`/chat/detail/${chatId}`);
     };
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            loadChatSession(searchQuery.trim());
+            navigate(`/chat/detail/${searchQuery.trim()}`);
             setSearchQuery('');
         }
     };
 
     const handleBackToList = () => {
-        setMobileView('list');
+        navigate('/'); // Go back to root or just switch view? 
+        // For standard "App" feel, maybe just visual switch, but here we are routing-driven.
+        // If we are at /chat/detail/:id, "Back" implies going to chat list.
+        if (isMobile) {
+            setMobileView('list');
+        } else {
+            navigate('/');
+        }
     };
 
     const handleSend = () => {
@@ -151,7 +164,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                         <div 
                             key={chat.id}
                             onClick={() => handleChatSelect(chat.id)}
-                            className={`p-4 flex gap-3 cursor-pointer transition-colors border-b border-slate-50 hover:bg-slate-100 ${activeSessionId === chat.id && !isMobile ? 'bg-white shadow-sm' : ''}`}
+                            className={`p-4 flex gap-3 cursor-pointer transition-colors border-b border-slate-50 hover:bg-slate-100 ${currentActiveId === chat.id && !isMobile ? 'bg-white shadow-sm' : ''}`}
                         >
                             <div className="relative">
                                 <div className="w-10 h-10 rounded-full bg-slate-300 flex items-center justify-center text-slate-600 font-bold overflow-hidden">
