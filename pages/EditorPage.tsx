@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { Download, Wand2, Loader2, RotateCcw, FileText, Car, Globe, Share2, MessageCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 
 import InvoicePreview from '../components/InvoicePreview';
 import LeasePreview from '../components/LeasePreview';
@@ -26,6 +25,7 @@ import { BrandLogo } from '../components/ui/BrandLogo';
 type DocType = 'invoice' | 'lease' | 'chat';
 
 export default function EditorPage() {
+  const { id } = useParams<{ id: string }>();
   const [docType, setDocType] = useState<DocType>('chat');
   const [lang, setLang] = useState<Language>('en');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -40,6 +40,14 @@ export default function EditorPage() {
   const lease = useLease();
   const ai = useAiAssistant(lang);
   const chatStore = useChatStore();
+
+  // Load chat session if ID is present in URL
+  useEffect(() => {
+    if (id) {
+        setDocType('chat');
+        chatStore.loadChatSession(id);
+    }
+  }, [id]);
 
   // Sync Lease Editor with Active Chat Session
   useEffect(() => {
