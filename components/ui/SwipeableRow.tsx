@@ -5,10 +5,9 @@ interface SwipeableRowProps {
     children: React.ReactNode;
     onArchive: () => void;
     className?: string;
-    isArchived?: boolean;
 }
 
-export const SwipeableRow: React.FC<SwipeableRowProps> = ({ children, onArchive, className = '', isArchived = false }) => {
+export const SwipeableRow: React.FC<SwipeableRowProps> = ({ children, onArchive, className = '' }) => {
     const [offset, setOffset] = useState(0);
     const startX = useRef<number>(0);
     const currentOffset = useRef<number>(0);

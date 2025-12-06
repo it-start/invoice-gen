@@ -433,31 +433,49 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                     </div>
                 </div>
 
-                {/* Reservation Summary Pinned Bar (Optimized for Mobile) */}
-                <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 px-3 md:px-4 py-2 md:py-3 flex justify-between items-center shadow-sm shrink-0 z-10 sticky top-0">
-                    <div className="flex items-center gap-2 md:gap-3 overflow-hidden">
-                         {/* Hide Icon on Mobile to save space */}
-                         <div className="hidden md:block bg-blue-50 p-2 rounded-lg border border-blue-100 text-blue-600">
-                             <Car size={18} />
-                         </div>
-                         <div className="min-w-0">
-                             <h4 className="text-xs md:text-sm font-bold text-slate-800 truncate">{currentLeaseData.vehicle.name}</h4>
-                             <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs text-slate-500">
-                                 <span className="bg-slate-100 border border-slate-200 px-1.5 rounded text-slate-600 font-mono whitespace-nowrap">{currentLeaseData.vehicle.plate}</span>
-                                 <span className="text-slate-300">•</span>
-                                 <span className="truncate font-medium text-slate-600">
-                                     {formatShortDate(currentLeaseData.pickup.date, lang)} - {formatShortDate(currentLeaseData.dropoff.date, lang)}
-                                 </span>
-                             </div>
-                         </div>
+                {/* Reservation Summary Pinned Bar */}
+                <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex justify-between items-start shadow-sm shrink-0 z-10 sticky top-0 transition-all">
+                    
+                    {/* Left: Vehicle Info */}
+                    <div className="flex items-center gap-3 min-w-0 mr-2">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-sm">
+                             <Car size={20} />
+                        </div>
+                        <div className="flex flex-col min-w-0 justify-center">
+                            <div className="flex items-center gap-2">
+                                <h4 className="text-sm font-bold text-slate-900 truncate leading-snug">
+                                    {currentLeaseData.vehicle.name}
+                                </h4>
+                                <span className="hidden sm:flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-slate-100 text-slate-600 border border-slate-200 leading-none">
+                                    {currentLeaseData.vehicle.plate}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 leading-tight">
+                                <span className="sm:hidden font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px] text-slate-600 border border-slate-200 leading-none">
+                                    {currentLeaseData.vehicle.plate}
+                                </span>
+                                <div className="flex items-center gap-1 overflow-hidden">
+                                    <Clock size={11} className="text-slate-400 shrink-0" />
+                                    <span className="truncate font-medium text-[11px]">
+                                        {formatShortDate(currentLeaseData.pickup.date, lang)} - {formatShortDate(currentLeaseData.dropoff.date, lang)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div className="text-right shrink-0 ml-2 flex flex-col items-end gap-1">
+
+                    {/* Right: Status & Financials */}
+                    <div className="flex flex-col items-end gap-1 shrink-0">
                          {currentLeaseData.status && (
-                             <StatusBadge status={currentLeaseData.status} className="mb-0.5" />
+                             <StatusBadge status={currentLeaseData.status} />
                          )}
-                         <div>
-                             <span className="text-xs md:text-sm font-bold text-slate-800 bg-slate-100 px-2 rounded whitespace-nowrap">{currentLeaseData.pricing.total} THB</span>
-                             <span className="text-[9px] md:text-[10px] text-slate-400 ml-1">#{currentLeaseData.reservationId}</span>
+                         <div className="flex flex-col items-end leading-none pt-0.5">
+                             <span className="text-sm font-bold text-slate-900">
+                                {currentLeaseData.pricing.total.toLocaleString()} THB
+                             </span>
+                             <span className="text-[9px] text-slate-400 font-mono mt-0.5">
+                                #{currentLeaseData.reservationId}
+                             </span>
                          </div>
                     </div>
                 </div>
