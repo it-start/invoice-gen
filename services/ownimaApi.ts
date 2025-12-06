@@ -287,10 +287,16 @@ export const fetchInvoicePdfBlob = async (reservationId: string, templateId: str
 // --- CHAT & HISTORY API ---
 
 export interface HistoryEvent {
-    id: string;
-    created_date: string; // ISO
-    status: string; // e.g. "STATUS_COLLECTED"
-    // add other fields if necessary from the API response
+    // Assuming structure based on "confirmations" array item
+    confirmation_date: string;
+    confirmation_note?: string;
+    status: number | string;
+    meta?: {
+        reason_hint?: string;
+        confirmed_by?: string;
+        [key: string]: any;
+    };
+    [key: string]: any;
 }
 
 export const fetchReservationHistory = async (id: string): Promise<HistoryEvent[]> => {
@@ -300,8 +306,19 @@ export const fetchReservationHistory = async (id: string): Promise<HistoryEvent[
         });
         if (response.status === 401) throw new Error("Unauthorized");
         if (!response.ok) return [];
+        
         const data = await response.json();
-        return Array.isArray(data) ? data : (data.history || []);
+        
+        // Handle nested structure: { history: { confirmations: [] } }
+        if (data.history && Array.isArray(data.history.confirmations)) {
+            return data.history.confirmations;
+        }
+        
+        // Fallback or legacy support
+        if (Array.isArray(data.history)) return data.history;
+        if (Array.isArray(data)) return data;
+
+        return [];
     } catch (e) {
         console.error("History fetch error", e);
         return [];
@@ -314,10 +331,13 @@ export const fetchNtfyMessages = async (topicId: string) => {
         const response = await fetch(`${CHAT_BASE_URL}/chat-${topicId}/json?poll=1&since=all`);
         if (!response.ok) return [];
         const text = await response.text();
+        
         // Parse NDJSON (Newline Delimited JSON)
-        return text.trim().split('\n').map(line => {
-            try { return JSON.parse(line); } catch(e) { return null; }
-        }).filter(Boolean);
+        return text.trim().split('\n')
+            .map(line => {
+                try { return JSON.parse(line); } catch(e) { return null; }
+            })
+            .filter((msg: any) => msg && msg.event === 'message'); // Filter for chat messages only
     } catch (e) {
         console.error("Chat fetch error", e);
         return [];

@@ -8,9 +8,6 @@ import { fetchReservationHistory, fetchNtfyMessages, sendNtfyMessage, loadLeaseD
 const ntfyToChatMessage = (ntfy: NtfyMessage): ChatMessage => {
     let senderId = 'other';
     // Assume user is 'Me' if title matches, or logic can be improved based on Auth
-    // Since Ntfy is anonymous mostly, we rely on Title.
-    // However, when *we* send, we don't see our own messages immediately unless we read back.
-    // For now, treat unknown titles as 'other'.
     if (ntfy.title === 'Me') senderId = 'me';
     
     // System messages detection
@@ -44,24 +41,44 @@ const ntfyToChatMessage = (ntfy: NtfyMessage): ChatMessage => {
 };
 
 const historyToChatMessage = (event: HistoryEvent): ChatMessage => {
-    // Map API status format (STATUS_COLLECTED) to LeaseStatus (collected)
-    const rawStatus = event.status || '';
-    const statusKey = rawStatus.toLowerCase().replace('status_', '') as LeaseStatus;
+    // Map API confirmation event to System Message
+    // Use meta.reason_hint as status key if available
+    let statusKey: LeaseStatus | undefined = undefined;
     
-    const date = new Date(event.created_date);
-    const timestamp = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    if (event.meta?.reason_hint) {
+        // Map "reservation_pending" -> "pending"
+        const hint = event.meta.reason_hint.replace('reservation_', '');
+        // Validate against known statuses or cast if dynamic
+        statusKey = hint as LeaseStatus; 
+    } else if (typeof event.status === 'string') {
+        statusKey = event.status.toLowerCase().replace('status_', '') as LeaseStatus;
+    }
 
-    // Friendly text based on status
-    let text = `Status changed to ${statusKey}`;
-    if (statusKey === 'collected') text = 'Vehicle collected by Rider';
-    if (statusKey === 'completed') text = 'Lease completed successfully';
-    if (statusKey === 'confirmed') text = 'Reservation confirmed';
+    const date = new Date(event.confirmation_date);
+    const timestamp = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const fullDate = date.toLocaleDateString();
+
+    // Friendly text based on status or note
+    let text = event.confirmation_note || `Status changed`;
+    
+    // Clean up "Reason:" prefix if present
+    if (text.startsWith('Reason: ')) {
+        text = text.substring(8);
+    }
+    
+    // Provide nice defaults if note is empty
+    if (!event.confirmation_note && statusKey) {
+        if (statusKey === 'collected') text = 'Vehicle collected by Rider';
+        if (statusKey === 'completed') text = 'Lease completed successfully';
+        if (statusKey === 'confirmed') text = 'Reservation confirmed';
+        if (statusKey === 'pending') text = 'Reservation is pending';
+    }
 
     return {
-        id: `hist_${event.id || Math.random()}`,
+        id: `hist_${event.confirmation_date}_${Math.random()}`,
         senderId: 'system',
         text,
-        timestamp,
+        timestamp: `${fullDate} ${timestamp}`,
         type: 'system',
         status: 'read',
         metadata: {
@@ -97,7 +114,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
         set({ isLoading: true, error: null });
         try {
             // 1. Fetch Lease Data to get Renter/Owner context
-            // This is crucial to know who we are talking to.
             const leaseData = await loadLeaseData(reservationId);
             set({ leaseContext: leaseData });
 
@@ -106,15 +122,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
             const historyMessages = historyEvents.map(historyToChatMessage);
 
             // 3. Fetch Ntfy Messages (User Chat)
-            // We use the reservation UUID as the topic ID
             const ntfyData = await fetchNtfyMessages(reservationId);
             const chatMessages = ntfyData.map((n: any) => ntfyToChatMessage(n));
 
-            // 4. Merge
-            // History timestamps are ISO strings, Ntfy are unix epoch.
-            // Concatenate them. Sorting would require parsing timestamps to comparable objects, 
-            // but ChatMessage currently only holds a string representation.
-            const combined = [...historyMessages, ...chatMessages];
+            // 4. Merge & Sort
+            // Combine arrays and sort by timestamp (approximated via ID or parsed Date)
+            // historyMessages have timestamp string, chatMessages have timestamp string.
+            // Ideally we should keep raw Date objects for sorting, but for now we concatenate.
+            // Since API history is usually chronological and chat log is chronological, 
+            // a simple concat might put history first, then chat. 
+            // Better: We should sort based on the original time values if available.
+            // Re-mapping for sort:
+            const allMessages = [
+                ...historyEvents.map(h => ({ msg: historyToChatMessage(h), time: new Date(h.confirmation_date).getTime() })),
+                ...ntfyData.map((n: any) => ({ msg: ntfyToChatMessage(n), time: n.time * 1000 }))
+            ];
+            
+            allMessages.sort((a, b) => a.time - b.time);
+            const combined = allMessages.map(item => item.msg);
 
             // 5. Create Session
             const newSession: ChatSession = {
