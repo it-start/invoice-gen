@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, MapPin, BadgeCheck } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage } from '../../types';
 import { t } from '../../utils/i18n';
@@ -491,7 +491,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                                     }`}>
                                                         {msg.text}
                                                     </div>
-                                                    <div className="flex items-center gap-1.5 mt-1 px-1 text-[9px] md:text-[10px] text-slate-400 font-medium select-none">
+                                                    <div className="flex items-center gap-1.5 mt-1 px-1 text-[9px] md:text-xs text-slate-400 font-medium select-none">
                                                         {isMe && msg.status === 'read' && <CheckCheck size={12} className="text-blue-500" />}
                                                         {isMe && msg.status === 'sent' && <Check size={12} />}
                                                         <span>{formatTime(msg.timestamp)}</span>
@@ -598,57 +598,88 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
 
                         {/* PROFILE TAB */}
                         {sidebarTab === 'profile' && (
-                            <div className="p-6">
-                                <div className="flex flex-col items-center mb-6">
-                                    <div className="w-24 h-24 rounded-full bg-white mb-5 overflow-hidden flex items-center justify-center font-bold text-4xl text-slate-300 border-4 border-slate-100 shadow-md relative group">
+                            <div className="p-4 space-y-6">
+                                {/* Header: The Person we are talking to */}
+                                <div className="flex flex-col items-center">
+                                    <div className="w-20 h-20 rounded-full bg-white mb-3 overflow-hidden flex items-center justify-center font-bold text-3xl text-slate-300 border-4 border-slate-50 shadow-md relative">
                                         {activeChat.user.avatar ? (
                                             <img src={activeChat.user.avatar} alt="Profile" className="w-full h-full object-cover" />
                                         ) : activeChat.user.name[0]}
                                     </div>
-                                    <h3 className="font-bold text-2xl text-slate-800 mb-1 text-center">{activeChat.user.name}</h3>
-                                    <div className="flex gap-2">
-                                        <span className="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full font-bold border border-green-200 shadow-sm">
+                                    <h3 className="font-bold text-xl text-slate-800 text-center">{activeChat.user.name}</h3>
+                                    <div className="flex gap-2 mt-2">
+                                        <span className="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded-full font-bold border border-green-200">
                                             {t('chat_active', lang)}
                                         </span>
-                                        <span className="bg-slate-100 text-slate-600 text-xs px-3 py-1 rounded-full font-bold border border-slate-200">
+                                        <span className="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded-full font-bold border border-slate-200">
                                             {activeChat.user.role}
                                         </span>
                                     </div>
                                 </div>
-                                
-                                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-2">
-                                    <h4 className="text-lg font-bold text-slate-800 mb-4">Contact info</h4>
-                                    
-                                    <InputGroup 
-                                        label="Rent service name *"
-                                        value={currentLeaseData.owner.surname}
-                                        onChange={() => {}}
-                                        readOnly={false} 
-                                        helperText="Will be shown on your booking website"
-                                    />
 
-                                    <InputGroup 
-                                        label="First name *"
-                                        value={activeChat.user.name.split(' ')[0] || ''}
-                                        onChange={() => {}}
-                                        readOnly={true}
-                                        helperText="Will be shown for Riders with confirmed reservations"
-                                    />
+                                {/* SECTION 1: RIDER / RENTER (Customer) */}
+                                <div>
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-2 px-1 flex items-center gap-1.5">
+                                        <UserIcon size={12} /> Rider (Customer)
+                                    </h4>
+                                    <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-sm relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-16 h-16 bg-blue-50 rounded-bl-full -mr-8 -mt-8 z-0"></div>
+                                        
+                                        <InputGroup 
+                                            label="Full Name *"
+                                            value={currentLeaseData.renter.surname || activeChat.user.name}
+                                            onChange={(v) => leaseHandlers.updateLease('renter', 'surname', v)}
+                                            placeholder="Enter Rider Name"
+                                        />
 
-                                    <InputGroup 
-                                        label="Family name *"
-                                        value={activeChat.user.name.split(' ').slice(1).join(' ') || ''}
-                                        onChange={() => {}}
-                                        readOnly={true}
-                                        helperText="Will be shown for Riders with confirmed reservations"
-                                    />
+                                        <InputGroup 
+                                            label="Contact Info *"
+                                            value={currentLeaseData.renter.contact || ''}
+                                            onChange={(v) => leaseHandlers.updateLease('renter', 'contact', v)}
+                                            placeholder="Phone or Email"
+                                        />
 
-                                    <InputGroup 
-                                        label="Phone number *"
-                                        value={activeChat.user.contact || ''}
-                                        onChange={() => {}}
-                                    />
+                                        <InputGroup 
+                                            label="Passport / ID"
+                                            value={currentLeaseData.renter.passport || ''}
+                                            onChange={(v) => leaseHandlers.updateLease('renter', 'passport', v)}
+                                            placeholder="Passport Number"
+                                        />
+                                    </div>
                                 </div>
+
+                                {/* SECTION 2: OWNER (Business/You) */}
+                                <div>
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-2 px-1 flex items-center gap-1.5">
+                                        <BadgeCheck size={12} className="text-blue-500" /> Owner (Business)
+                                    </h4>
+                                    <div className="bg-slate-50/80 rounded-xl border border-slate-200 p-4 space-y-3">
+                                        <InputGroup 
+                                            label="Rent Service Name *"
+                                            value={currentLeaseData.owner.surname}
+                                            onChange={(v) => leaseHandlers.updateLease('owner', 'surname', v)}
+                                            helperText="Shown on contract header"
+                                            className="bg-white"
+                                        />
+
+                                        <InputGroup 
+                                            label="Business Address"
+                                            value={currentLeaseData.owner.address}
+                                            onChange={(v) => leaseHandlers.updateLease('owner', 'address', v)}
+                                            placeholder="Full Address"
+                                            className="bg-white"
+                                        />
+
+                                         <InputGroup 
+                                            label="Contact Info"
+                                            value={currentLeaseData.owner.contact}
+                                            onChange={(v) => leaseHandlers.updateLease('owner', 'contact', v)}
+                                            placeholder="Phone / Email"
+                                            className="bg-white"
+                                        />
+                                    </div>
+                                </div>
+
                             </div>
                         )}
                     </div>
