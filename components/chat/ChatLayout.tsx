@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -16,74 +15,73 @@ const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, icon: React
     collected: {
         bg: 'bg-green-100',
         text: 'text-green-700',
-        icon: <Play size={12} fill="currentColor" />,
+        icon: <Play size={10} fill="currentColor" />,
         label: 'Collected'
     },
     completed: {
         bg: 'bg-slate-200',
         text: 'text-slate-600',
-        icon: <Check size={12} strokeWidth={3} />,
+        icon: <Check size={10} strokeWidth={3} />,
         label: 'Completed'
     },
     overdue: {
         bg: 'bg-red-100',
         text: 'text-red-600',
-        icon: <Clock size={12} />,
+        icon: <Clock size={10} />,
         label: 'Overdue'
     },
     confirmed: {
         bg: 'bg-purple-100',
         text: 'text-purple-700',
-        icon: <Target size={12} />,
+        icon: <Target size={10} />,
         label: 'Confirmed'
     },
     pending: {
         bg: 'bg-orange-50',
         text: 'text-orange-600',
-        icon: <CircleDashed size={12} />,
+        icon: <CircleDashed size={10} />,
         label: 'Pending'
     },
     confirmation_owner: {
         bg: 'bg-indigo-50',
         text: 'text-indigo-600',
-        icon: <CheckCheck size={12} />,
-        label: 'Conf. by Owner'
+        icon: <CheckCheck size={10} />,
+        label: 'Wait Owner'
     },
     confirmation_rider: {
         bg: 'bg-purple-50',
         text: 'text-purple-600',
-        icon: <Check size={12} />,
-        label: 'Conf. by Rider'
+        icon: <Check size={10} />,
+        label: 'Wait Rider'
     },
     rejected: {
         bg: 'bg-red-50',
         text: 'text-red-600',
-        icon: <X size={12} />,
+        icon: <X size={10} />,
         label: 'Rejected'
     },
-    // New Statuses mapping
     maintenance: {
         bg: 'bg-gray-100',
         text: 'text-gray-600',
-        icon: <Wrench size={12} />,
+        icon: <Wrench size={10} />,
         label: 'Maintenance'
     },
     cancelled: {
         bg: 'bg-red-50',
         text: 'text-red-600',
-        icon: <Ban size={12} />,
+        icon: <Ban size={10} />,
         label: 'Cancelled'
     },
     conflict: {
         bg: 'bg-amber-100',
         text: 'text-amber-700',
-        icon: <AlertTriangle size={12} />,
+        icon: <AlertTriangle size={10} />,
         label: 'Conflict'
     },
     no_response: {
         bg: 'bg-slate-100',
         text: 'text-slate-500',
-        icon: <HelpCircle size={12} />,
+        icon: <HelpCircle size={10} />,
         label: 'No Response'
     }
 };
@@ -283,6 +281,17 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         ? (mobileView === 'room' ? 'flex w-full' : 'hidden') 
         : 'flex-1 flex';
 
+    // Status Badge Component
+    const StatusBadge = ({ status, className = "" }: { status: LeaseStatus, className?: string }) => {
+        const config = STATUS_CONFIG[status] || STATUS_CONFIG['pending'];
+        return (
+            <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border border-black/5 ${config.bg} ${config.text} ${className}`}>
+                {config.icon}
+                <span>{config.label}</span>
+            </div>
+        );
+    };
+
     return (
         <div className="flex h-full bg-white md:rounded-xl overflow-hidden md:border border-slate-200 md:shadow-sm">
             
@@ -318,9 +327,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
 
                     {sessions.map((chat: ChatSession) => {
                         const isActive = currentActiveId === chat.id;
-                        const statusColor = chat.reservationSummary?.status ? STATUS_CONFIG[chat.reservationSummary.status]?.text : 'text-slate-400';
-                        const statusLabel = chat.reservationSummary?.status ? STATUS_CONFIG[chat.reservationSummary.status]?.label : 'Unknown';
-
+                        
                         return (
                             <div 
                                 key={chat.id}
@@ -342,7 +349,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                     <div className="flex justify-between items-baseline mb-0.5">
                                         <h3 className={`font-bold text-sm truncate ${isActive ? 'text-blue-900' : 'text-slate-800'}`}>{chat.user.name}</h3>
                                         <span className={`text-[10px] font-medium whitespace-nowrap ml-2 ${isActive ? 'text-blue-600' : 'text-slate-400'}`}>
-                                            {/* USE HUMANIZED TIME HERE */}
                                             {chat.lastMessageTime > 0 ? humanizeTime(chat.lastMessageTime, lang) : ''}
                                         </span>
                                     </div>
@@ -359,15 +365,14 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
 
                                     {/* ENHANCED METADATA ROW */}
                                     {chat.reservationSummary && (
-                                        <div className="flex items-center gap-2 mt-auto pt-1 border-t border-slate-100/50">
-                                            <div className="flex items-center gap-1 text-[10px] text-slate-500 font-medium bg-slate-100 px-1.5 py-0.5 rounded max-w-[50%]">
-                                                <Car size={10} />
+                                        <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-100/80">
+                                            <div className="flex items-center gap-1.5 text-[10px] text-slate-600 font-medium bg-slate-100 px-2 py-0.5 rounded-md max-w-[55%]">
+                                                <Car size={10} className="text-slate-400 shrink-0" />
                                                 <span className="truncate">{chat.reservationSummary.vehicleName}</span>
                                             </div>
-                                            <div className={`flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider ${statusColor}`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full bg-current opacity-70`}></span>
-                                                {statusLabel}
-                                            </div>
+                                            {chat.reservationSummary.status && (
+                                                <StatusBadge status={chat.reservationSummary.status} />
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -435,9 +440,14 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                              </div>
                          </div>
                     </div>
-                    <div className="text-right shrink-0 ml-2">
-                         <span className="block text-xs md:text-sm font-bold text-slate-800 bg-slate-100 px-2 rounded whitespace-nowrap">{currentLeaseData.pricing.total} THB</span>
-                         <span className="block text-[9px] md:text-[10px] text-slate-400 mt-0.5">#{currentLeaseData.reservationId}</span>
+                    <div className="text-right shrink-0 ml-2 flex flex-col items-end gap-1">
+                         {currentLeaseData.status && (
+                             <StatusBadge status={currentLeaseData.status} className="mb-0.5" />
+                         )}
+                         <div>
+                             <span className="text-xs md:text-sm font-bold text-slate-800 bg-slate-100 px-2 rounded whitespace-nowrap">{currentLeaseData.pricing.total} THB</span>
+                             <span className="text-[9px] md:text-[10px] text-slate-400 ml-1">#{currentLeaseData.reservationId}</span>
+                         </div>
                     </div>
                 </div>
 
