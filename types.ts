@@ -152,6 +152,7 @@ export interface ChatSession {
   lastMessageTime: number; // Unix timestamp in ms
   unreadCount: number;
   messages: ChatMessage[];
+  isArchived?: boolean; // New flag for swipe-to-archive
   // Cached summary for list view
   reservationSummary?: {
     vehicleName: string;

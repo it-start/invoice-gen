@@ -123,6 +123,7 @@ interface ChatState {
     markAsRead: (sessionId: string) => void;
     markMessageAsRead: (sessionId: string, messageId: string) => void;
     setupBackgroundSync: () => void;
+    archiveSession: (sessionId: string) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -245,6 +246,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 lastMessage: allMessages.length > 0 ? allMessages[allMessages.length - 1].text : 'No messages',
                 lastMessageTime: allMessages.length > 0 ? allMessages[allMessages.length - 1].timestamp : 0,
                 unreadCount: unreadCount,
+                isArchived: existingSession?.isArchived || false, // Preserve archive status
                 // CACHE RESERVATION SUMMARY FOR LIST VIEW
                 reservationSummary: {
                     vehicleName: leaseData.vehicle.name,
@@ -346,6 +348,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     setActiveSession: (id: string) => {
         set({ activeSessionId: id });
+    },
+
+    archiveSession: (sessionId: string) => {
+        set(state => {
+            const session = state.sessions.find(s => s.id === sessionId);
+            if (!session) return {};
+
+            const updatedSession = { ...session, isArchived: !session.isArchived }; // Toggle behavior
+            const newSessions = state.sessions.map(s => s.id === sessionId ? updatedSession : s);
+
+            dbService.saveSession(updatedSession);
+            return { sessions: newSessions };
+        });
     },
 
     markAsRead: (sessionId: string) => {
