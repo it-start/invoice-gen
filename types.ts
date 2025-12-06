@@ -1,4 +1,5 @@
 
+
 export interface InvoiceItem {
   id: string;
   name: string;
@@ -77,6 +78,36 @@ export interface LeaseData {
     passport: string;
   };
   qrCodeUrl?: string;
+}
+
+// --- CHAT TYPES ---
+
+export type MessageType = 'text' | 'system' | 'image';
+
+export interface ChatMessage {
+  id: string;
+  senderId: string; // 'me' or 'other'
+  text: string;
+  timestamp: string;
+  type: MessageType;
+  status: 'sent' | 'read';
+}
+
+export interface ChatUser {
+  id: string;
+  name: string;
+  avatar: string; // url or initials
+  status: 'online' | 'offline' | 'busy';
+  role: 'Owner' | 'Renter' | 'Support';
+}
+
+export interface ChatSession {
+  id: string;
+  user: ChatUser;
+  lastMessage: string;
+  lastMessageTime: string;
+  unreadCount: number;
+  messages: ChatMessage[];
 }
 
 export const VAT_RATES = [

@@ -1,7 +1,8 @@
 
+
 import { useState } from 'react';
 import { pdf } from '@react-pdf/renderer';
-import { Download, Wand2, Loader2, RotateCcw, FileText, Car, Globe, Share2 } from 'lucide-react';
+import { Download, Wand2, Loader2, RotateCcw, FileText, Car, Globe, Share2, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import InvoicePreview from '../components/InvoicePreview';
@@ -12,6 +13,7 @@ import InvoiceForm from '../components/forms/InvoiceForm';
 import LeaseForm from '../components/forms/LeaseForm';
 import { LoginModal } from '../components/modals/LoginModal';
 import { AiModal } from '../components/modals/AiModal';
+import { ChatLayout } from '../components/chat/ChatLayout';
 
 import { useInvoice } from '../hooks/useInvoice';
 import { useLease } from '../hooks/useLease';
@@ -20,7 +22,7 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { Language, InvoiceData, LeaseData } from '../types';
 import { t } from '../utils/i18n';
 
-type DocType = 'invoice' | 'lease';
+type DocType = 'invoice' | 'lease' | 'chat';
 
 export default function EditorPage() {
   const [docType, setDocType] = useState<DocType>('invoice');
@@ -38,7 +40,7 @@ export default function EditorPage() {
   const ai = useAiAssistant(lang);
 
   const handleSmartImport = async () => {
-    const result = await ai.parse(docType);
+    const result = await ai.parse(docType === 'chat' ? 'lease' : docType); // Fallback for chat
     if (!result) return;
 
     if (docType === 'invoice') {
@@ -112,6 +114,46 @@ export default function EditorPage() {
       return link;
   };
 
+  // CHAT VIEW RENDERER (Takes full screen)
+  if (docType === 'chat') {
+    return (
+        <div className="h-screen bg-slate-100 p-4 font-sans flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+                 <div className="flex gap-2">
+                    <button 
+                        onClick={() => setDocType('invoice')} 
+                        className="bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm border border-slate-200 transition-all"
+                    >
+                        <FileText size={16} /> {t('switch_invoice', lang)}
+                    </button>
+                    <button 
+                        onClick={() => setDocType('lease')} 
+                        className="bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm border border-slate-200 transition-all"
+                    >
+                        <Car size={16} /> {t('switch_lease', lang)}
+                    </button>
+                    <button 
+                        onClick={() => setDocType('chat')} 
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-lg transition-all"
+                    >
+                        <MessageCircle size={16} /> {t('switch_chat', lang)}
+                    </button>
+                 </div>
+                 <button
+                    onClick={toggleLang}
+                    className="text-slate-400 hover:text-blue-500 transition-colors bg-white p-2 rounded-lg shadow-sm"
+                    title="Switch Language"
+                >
+                    <Globe size={18} />
+                </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+                <ChatLayout leaseData={lease.data} lang={lang} />
+            </div>
+        </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col md:flex-row font-sans">
       
@@ -144,13 +186,19 @@ export default function EditorPage() {
                     onClick={() => setDocType('invoice')} 
                     className={`flex-1 flex items-center justify-center gap-2 py-2 rounded text-sm font-medium transition-all ${docType === 'invoice' ? 'bg-blue-600 shadow-lg text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'}`}
                 >
-                    <FileText size={16} /> {t('switch_invoice', lang)}
+                    <FileText size={16} /> <span className="hidden sm:inline">{t('switch_invoice', lang)}</span>
                 </button>
                 <button 
                     onClick={() => setDocType('lease')} 
                     className={`flex-1 flex items-center justify-center gap-2 py-2 rounded text-sm font-medium transition-all ${docType === 'lease' ? 'bg-blue-600 shadow-lg text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'}`}
                 >
-                    <Car size={16} /> {t('switch_lease', lang)}
+                    <Car size={16} /> <span className="hidden sm:inline">{t('switch_lease', lang)}</span>
+                </button>
+                <button 
+                    onClick={() => setDocType('chat')} 
+                    className="flex items-center justify-center gap-2 py-2 px-3 rounded text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 transition-all"
+                >
+                    <MessageCircle size={16} />
                 </button>
              </div>
         </div>

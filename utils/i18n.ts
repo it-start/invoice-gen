@@ -1,4 +1,5 @@
 
+
 import { Language } from '../types';
 
 export type TranslationKey =
@@ -12,6 +13,7 @@ export type TranslationKey =
   | 'ai_import'
   | 'switch_invoice'
   | 'switch_lease'
+  | 'switch_chat'
   | 'doc_invoice'
   | 'doc_lease'
   | 'ai_modal_title'
@@ -125,7 +127,13 @@ export type TranslationKey =
   | 'lp_tenant'
   | 'lp_passport'
   | 'lp_pickup_fee'
-  | 'lp_return_fee';
+  | 'lp_return_fee'
+  // Chat
+  | 'chat_search'
+  | 'chat_type_message'
+  | 'chat_active'
+  | 'chat_view_profile'
+  | 'chat_search_history';
 
 const dictionary: Record<Language, Record<TranslationKey, string>> = {
   ru: {
@@ -138,7 +146,8 @@ const dictionary: Record<Language, Record<TranslationKey, string>> = {
     reset: 'Сброс',
     ai_import: 'AI Импорт',
     switch_invoice: 'Счет (РФ)',
-    switch_lease: 'Аренда (Lease)',
+    switch_lease: 'Аренда',
+    switch_chat: 'Чат',
     doc_invoice: 'A4 PDF • Стандарт РФ',
     doc_lease: 'A4 PDF • Договор аренды',
     ai_modal_title: 'Импорт данных через AI',
@@ -258,7 +267,14 @@ const dictionary: Record<Language, Record<TranslationKey, string>> = {
     lp_tenant: 'Арендатор',
     lp_passport: 'Паспорт',
     lp_pickup_fee: 'Сбор за выдачу',
-    lp_return_fee: 'Сбор за возврат'
+    lp_return_fee: 'Сбор за возврат',
+    
+    // Chat
+    chat_search: 'Поиск чатов',
+    chat_type_message: 'Введите сообщение...',
+    chat_active: 'Активен',
+    chat_view_profile: 'Профиль',
+    chat_search_history: 'Поиск в истории'
   },
   en: {
     invoice_editor: 'Invoice Editor',
@@ -270,7 +286,8 @@ const dictionary: Record<Language, Record<TranslationKey, string>> = {
     reset: 'Reset',
     ai_import: 'AI Import',
     switch_invoice: 'Invoice (RU)',
-    switch_lease: 'Lease Agreement',
+    switch_lease: 'Lease',
+    switch_chat: 'Chat',
     doc_invoice: 'A4 PDF • Russian Standard',
     doc_lease: 'A4 PDF • Rental Agreement',
     ai_modal_title: 'AI Data Import',
@@ -390,7 +407,14 @@ const dictionary: Record<Language, Record<TranslationKey, string>> = {
     lp_tenant: 'Tenant',
     lp_passport: 'Passport',
     lp_pickup_fee: 'Pick-up fee',
-    lp_return_fee: 'Return fee'
+    lp_return_fee: 'Return fee',
+
+    // Chat
+    chat_search: 'Search chats',
+    chat_type_message: 'Type a message...',
+    chat_active: 'Active now',
+    chat_view_profile: 'View profile',
+    chat_search_history: 'Search history'
   },
 };
 
