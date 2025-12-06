@@ -1,6 +1,6 @@
 
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, MoreHorizontal, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage } from '../../types';
@@ -68,6 +68,10 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
     const [messageInput, setMessageInput] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
 
+    // --- REFS FOR SCROLLING ---
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const prevChatIdRef = useRef<string | null>(null);
+
     // --- ZUSTAND STORE ---
     const { sessions, activeSessionId, isLoading, sendMessage, leaseContext } = useChatStore();
     
@@ -90,6 +94,22 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
     // Otherwise use the store's context (API state) for the viewed chat.
     const isEditingActiveChat = activeChat && activeChat.id === leaseData.id;
     const currentLeaseData = isEditingActiveChat ? leaseData : (leaseContext || leaseData);
+
+    // --- AUTO SCROLL EFFECT ---
+    useEffect(() => {
+        if (activeChat && messagesEndRef.current) {
+            // Instant scroll if chat ID changed (switched rooms)
+            // Smooth scroll if chat ID is same (new message)
+            const isChatSwitch = activeChat.id !== prevChatIdRef.current;
+            
+            messagesEndRef.current.scrollIntoView({ 
+                behavior: isChatSwitch ? "auto" : "smooth",
+                block: "end"
+            });
+            
+            prevChatIdRef.current = activeChat.id;
+        }
+    }, [activeChat?.id, activeChat?.messages]);
 
     const handleChatSelect = (chatId: string) => {
         // Navigate to the specific route. 
@@ -327,6 +347,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                             </div>
                         );
                     })}
+                    {/* Dummy div for scrolling to bottom */}
+                    <div ref={messagesEndRef} />
                 </div>
 
                 {/* Input Area */}
