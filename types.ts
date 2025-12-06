@@ -118,6 +118,8 @@ export interface ChatUser {
   avatar: string; // url or initials
   status: 'online' | 'offline' | 'busy';
   role: 'Owner' | 'Renter' | 'Support';
+  contact?: string;
+  email?: string;
 }
 
 export interface ChatSession {

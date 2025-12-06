@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Search, MoreHorizontal, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft } from 'lucide-react';
 import { ChatSession, LeaseData, Language, ChatMessage, NtfyMessage } from '../../types';
@@ -120,7 +121,14 @@ const hydrateSessionsFromNtfy = (leaseData: LeaseData): ChatSession[] => {
     const sessions: Record<string, ChatSession> = {
         'lease-chat-renter': {
             id: 'lease-chat-renter',
-            user: { id: 'r1', name: leaseData.renter.surname || 'Renter', avatar: '', status: 'online', role: 'Renter' },
+            user: { 
+                id: 'r1', 
+                name: leaseData.renter.surname || 'Renter', 
+                contact: leaseData.renter.contact,
+                avatar: '', 
+                status: 'online', 
+                role: 'Renter' 
+            },
             messages: [],
             lastMessage: '',
             lastMessageTime: '',
@@ -128,7 +136,14 @@ const hydrateSessionsFromNtfy = (leaseData: LeaseData): ChatSession[] => {
         },
         'lease-chat-support': {
              id: 'lease-chat-support',
-             user: { id: 's1', name: 'Carlo Emilio', avatar: '', status: 'busy', role: 'Support' },
+             user: { 
+                 id: 's1', 
+                 name: 'Carlo Emilio', 
+                 contact: '+66 123 456 789',
+                 avatar: '', 
+                 status: 'busy', 
+                 role: 'Support' 
+            },
              messages: [],
              lastMessage: '',
              lastMessageTime: '',
@@ -136,7 +151,14 @@ const hydrateSessionsFromNtfy = (leaseData: LeaseData): ChatSession[] => {
         },
         'lease-chat-owner': {
              id: 'lease-chat-owner',
-             user: { id: 'o1', name: 'Oscar Davis', avatar: '', status: 'offline', role: 'Owner' },
+             user: { 
+                 id: 'o1', 
+                 name: 'Oscar Davis', 
+                 contact: leaseData.owner.contact,
+                 avatar: '', 
+                 status: 'offline', 
+                 role: 'Owner' 
+            },
              messages: [],
              lastMessage: '',
              lastMessageTime: '',
@@ -307,7 +329,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
 
                 {/* Messages */}
                 <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6 flex flex-col dark-scrollbar">
-                    <div className="text-center text-xs text-slate-400 my-4">Nov 30, 2023</div>
+                    <div className="text-center text-xs text-slate-400 my-4">Today</div>
                     
                     {activeChat.messages.map((msg) => {
                         if (msg.type === 'system') {
@@ -375,15 +397,31 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
             {/* RIGHT SIDEBAR: Profile */}
             <div className="w-72 border-l border-slate-100 bg-white p-6 hidden xl:block">
                  <div className="flex flex-col items-center mb-8">
-                     <div className="w-20 h-20 rounded-full bg-slate-200 mb-4 overflow-hidden">
-                        <img 
-                            src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150&h=150" 
-                            alt="Profile" 
-                            className="w-full h-full object-cover"
-                        />
+                     <div className="w-20 h-20 rounded-full bg-slate-200 mb-4 overflow-hidden flex items-center justify-center font-bold text-2xl text-slate-500">
+                        {activeChat.user.avatar ? (
+                            <img src={activeChat.user.avatar} alt="Profile" className="w-full h-full object-cover" />
+                        ) : activeChat.user.name[0]}
                      </div>
                      <h3 className="font-bold text-lg text-slate-800">{activeChat.user.name}</h3>
-                     <p className="text-sm text-slate-400">{t('chat_active', lang)}</p>
+                     <p className="text-sm text-slate-400 mb-2">{t('chat_active', lang)}</p>
+                     
+                     {/* Lease Context Info */}
+                     <div className="w-full bg-slate-50 rounded-lg p-3 mb-6">
+                         <div className="flex justify-between text-xs mb-1">
+                             <span className="text-slate-500">Role</span>
+                             <span className="font-medium">{activeChat.user.role}</span>
+                         </div>
+                         {activeChat.user.contact && (
+                             <div className="flex justify-between text-xs mb-1">
+                                 <span className="text-slate-500">Contact</span>
+                                 <span className="font-medium truncate max-w-[120px]" title={activeChat.user.contact}>{activeChat.user.contact}</span>
+                             </div>
+                         )}
+                          <div className="flex justify-between text-xs">
+                             <span className="text-slate-500">Ref</span>
+                             <span className="font-medium">{leaseData.reservationId}</span>
+                         </div>
+                     </div>
                  </div>
                  
                  <button className="w-full bg-black text-white py-2.5 rounded-lg text-sm font-medium mb-6 hover:bg-slate-800 transition-colors">
