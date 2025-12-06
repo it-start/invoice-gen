@@ -86,6 +86,7 @@ export const useLease = () => {
 
   return {
       data,
+      setData,
       isLoading,
       updateLease,
       addExtraOption,

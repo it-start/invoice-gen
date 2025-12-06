@@ -78,11 +78,12 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
 
     const activeChat = sessions.find((c: ChatSession) => c.id === activeSessionId);
     
-    // Use leaseContext from store if available (real data), otherwise fallback to props (editor data)
-    // This allows the Chat UI to display details for loaded chats even if they differ from Editor form
-    const currentLeaseData = (activeChat && leaseContext && activeChat.id === leaseContext.reservationId) 
-        ? leaseContext 
-        : leaseData;
+    // DETERMINE ACTIVE LEASE CONTEXT FOR DISPLAY
+    // If the currently edited lease (from EditorPage props) matches the active chat ID,
+    // we use the 'leaseData' prop because it contains the latest local edits from the form.
+    // Otherwise, we use the 'leaseContext' from the store (raw API data) for viewing other chats.
+    const isEditingActiveChat = activeChat && activeChat.id === leaseData.reservationId;
+    const currentLeaseData = isEditingActiveChat ? leaseData : (leaseContext || leaseData);
 
     const handleChatSelect = (chatId: string) => {
         setActiveSession(chatId);

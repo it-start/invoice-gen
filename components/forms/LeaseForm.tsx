@@ -2,7 +2,7 @@
 import React from 'react';
 import { LeaseData, Language } from '../../types';
 import InputGroup from '../ui/InputGroup';
-import { Plus, Trash2, CloudDownload, Loader2 } from 'lucide-react';
+import { Plus, Trash2, MessageCircle } from 'lucide-react';
 import { WizardContainer } from '../ui/WizardContainer';
 import { t } from '../../utils/i18n';
 
@@ -14,28 +14,33 @@ interface LeaseFormProps {
       addExtraOption: () => void;
       updateExtraOption: (index: number, field: 'name' | 'price', value: any) => void;
       removeExtraOption: (index: number) => void;
-      loadFromApi: () => void;
+      // loadFromApi removed as we load via chat context
       isLoading: boolean;
   }
 }
 
 const LeaseForm: React.FC<LeaseFormProps> = ({ data, lang, handlers }) => {
-  const { updateLease, addExtraOption, updateExtraOption, removeExtraOption, loadFromApi, isLoading } = handlers;
+  const { updateLease, addExtraOption, updateExtraOption, removeExtraOption } = handlers;
 
   // Step 1: Info & Vehicle
   const VehicleStep = (
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-           <InputGroup label={t('lbl_res_id', lang)} value={data.reservationId} onChange={(v) => updateLease(null, 'reservationId', v)}>
-               <button 
-                  onClick={loadFromApi}
-                  disabled={isLoading}
-                  className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                  title="Load from Ownima"
-               >
-                   {isLoading ? <Loader2 size={16} className="animate-spin" /> : <CloudDownload size={16} />}
-               </button>
-           </InputGroup>
+           <div>
+               <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1 tracking-wide">{t('lbl_res_id', lang)}</label>
+               <div className="relative group">
+                   <input 
+                      disabled
+                      value={data.reservationId} 
+                      className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed"
+                   />
+                   <div className="absolute right-3 top-3 text-slate-400">
+                       <MessageCircle size={16} />
+                   </div>
+               </div>
+               <p className="text-[10px] text-slate-400 mt-1 ml-1">Select chat to change reservation</p>
+           </div>
+           
            <InputGroup label={t('lbl_template_id', lang)} value={data.contractTemplateId || ''} onChange={(v) => updateLease(null, 'contractTemplateId', v)} placeholder={t('lbl_optional', lang)} />
         </div>
         <div className="grid grid-cols-2 gap-3">

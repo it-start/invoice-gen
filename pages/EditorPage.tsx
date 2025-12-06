@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { Download, Wand2, Loader2, RotateCcw, FileText, Car, Globe, Share2, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -18,6 +18,7 @@ import { useInvoice } from '../hooks/useInvoice';
 import { useLease } from '../hooks/useLease';
 import { useAiAssistant } from '../hooks/useAiAssistant';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useChatStore } from '../stores/chatStore';
 import { Language, InvoiceData, LeaseData } from '../types';
 import { t } from '../utils/i18n';
 import { BrandLogo } from '../components/ui/BrandLogo';
@@ -38,6 +39,15 @@ export default function EditorPage() {
   const invoice = useInvoice();
   const lease = useLease();
   const ai = useAiAssistant(lang);
+  const chatStore = useChatStore();
+
+  // Sync Lease Editor with Active Chat Session
+  useEffect(() => {
+      if (chatStore.leaseContext) {
+          // If a chat is loaded, update the lease form with its data
+          lease.setData(chatStore.leaseContext);
+      }
+  }, [chatStore.leaseContext]);
 
   const handleSmartImport = async () => {
     const result = await ai.parse(docType === 'chat' ? 'lease' : docType); // Fallback for chat
@@ -56,18 +66,6 @@ export default function EditorPage() {
         const parsedData = result as Partial<LeaseData>;
         lease.updateLease(null, 'reservationId', parsedData.reservationId || lease.data.reservationId);
         if (parsedData.vehicle) lease.updateLease('vehicle', 'name', parsedData.vehicle.name);
-    }
-  };
-
-  const handleLeaseLoad = async () => {
-    try {
-      await lease.loadFromApi();
-    } catch (error: any) {
-      if (error.message === 'Unauthorized') {
-        setShowLoginModal(true);
-      } else {
-        alert(t('preview_not_found', lang));
-      }
     }
   };
 
@@ -236,10 +234,7 @@ export default function EditorPage() {
                                ) : (
                                   <LeaseForm 
                                     data={lease.data} 
-                                    handlers={{
-                                        ...lease,
-                                        loadFromApi: handleLeaseLoad
-                                    }} 
+                                    handlers={lease} 
                                     lang={lang}
                                   />
                                )}
@@ -306,7 +301,7 @@ export default function EditorPage() {
         <LoginModal 
             isOpen={showLoginModal} 
             onClose={() => setShowLoginModal(false)}
-            onSuccess={() => handleLeaseLoad()}
+            onSuccess={() => {/* Auth refresh handled via state */}}
             lang={lang}
         />
 
