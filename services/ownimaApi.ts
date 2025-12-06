@@ -364,3 +364,5 @@ export const sendNtfyMessage = async (topicId: string, message: string) => {
         console.error("Send chat error", e);
     }
 };
+
+export const getChatSseUrl = (topicId: string) => `${CHAT_BASE_URL}/chat-${topicId}/sse`;

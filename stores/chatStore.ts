@@ -1,7 +1,8 @@
 
+
 import { create } from 'zustand';
 import { ChatSession, ChatMessage, LeaseData, NtfyMessage, LeaseStatus } from '../types';
-import { fetchReservationHistory, fetchNtfyMessages, sendNtfyMessage, loadLeaseData, HistoryEvent } from '../services/ownimaApi';
+import { fetchReservationHistory, fetchNtfyMessages, sendNtfyMessage, loadLeaseData, HistoryEvent, getChatSseUrl } from '../services/ownimaApi';
 
 // --- HELPERS ---
 
@@ -100,6 +101,7 @@ interface ChatState {
     isLoading: boolean;
     error: string | null;
     leaseContext: LeaseData | null; // Store the lease data associated with current chat
+    activeEventSource: EventSource | null; // Track active SSE connection
     
     // Actions
     loadChatSession: (reservationId: string) => Promise<void>;
@@ -114,8 +116,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
     isLoading: false,
     error: null,
     leaseContext: null,
+    activeEventSource: null,
 
     loadChatSession: async (reservationId: string) => {
+        // Close existing connection if switching
+        const { activeEventSource } = get();
+        if (activeEventSource) {
+            activeEventSource.close();
+            set({ activeEventSource: null });
+        }
+
         set({ isLoading: true, error: null });
         try {
             // 1. Fetch Lease Data to get Renter/Owner context
@@ -157,24 +167,66 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 unreadCount: 0
             };
 
-            // 6. Update Store
+            // 6. Update Store with Session
             set(state => {
-                // Check if session exists
                 const existingIdx = state.sessions.findIndex(s => s.id === topicId);
                 let newSessions = [...state.sessions];
-                
                 if (existingIdx >= 0) {
                     newSessions[existingIdx] = newSession;
                 } else {
                     newSessions.push(newSession);
                 }
-                
                 return {
                     sessions: newSessions,
                     activeSessionId: topicId,
                     isLoading: false
                 };
             });
+
+            // 7. Establish SSE Connection for Live Updates
+            const sseUrl = getChatSseUrl(topicId);
+            const eventSource = new EventSource(sseUrl);
+            
+            eventSource.onmessage = (event) => {
+                try {
+                    const ntfyMsg = JSON.parse(event.data);
+                    if (ntfyMsg.event !== 'message') return;
+                    
+                    const chatMsg = ntfyToChatMessage(ntfyMsg);
+                    
+                    set(state => {
+                        const sessionIndex = state.sessions.findIndex(s => s.id === topicId);
+                        if (sessionIndex === -1) return {};
+
+                        const session = state.sessions[sessionIndex];
+                        // Deduplicate based on ID
+                        if (session.messages.some(m => m.id === chatMsg.id)) return {};
+
+                        const updatedMessages = [...session.messages, chatMsg];
+                        const updatedSession = {
+                            ...session,
+                            messages: updatedMessages,
+                            lastMessage: chatMsg.text,
+                            lastMessageTime: chatMsg.timestamp
+                        };
+                        
+                        const newSessions = [...state.sessions];
+                        newSessions[sessionIndex] = updatedSession;
+                        
+                        return { sessions: newSessions };
+                    });
+                } catch (e) {
+                    console.error("SSE Parse Error", e);
+                }
+            };
+            
+            eventSource.onerror = (err) => {
+                console.error("SSE Connection Error", err);
+                // Standard browser behavior handles many reconnects, 
+                // but we could implement backoff here if needed.
+            };
+
+            set({ activeEventSource: eventSource });
 
         } catch (e: any) {
             console.error("Load Chat Error", e);
@@ -218,10 +270,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
         // Send to API
         try {
             await sendNtfyMessage(activeSessionId, text);
-            // Optionally: re-fetch messages to confirm receipt and get real timestamp/ID
+            // Re-fetching is handled by the live SSE stream which will eventually bring the confirmed message
         } catch (e) {
             console.error("Failed to send message", e);
-            // Could add error state to message here
         }
     },
 
