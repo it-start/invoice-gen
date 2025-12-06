@@ -4,7 +4,7 @@ import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Chec
 import { useNavigate, useParams } from 'react-router-dom';
 import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage } from '../../types';
 import { t } from '../../utils/i18n';
-import { humanizeTime } from '../../utils/dateUtils';
+import { humanizeTime, formatShortDate } from '../../utils/dateUtils';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useChatStore } from '../../stores/chatStore';
 import LeaseForm from '../forms/LeaseForm';
@@ -307,17 +307,19 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
 
                 {/* Reservation Summary Pinned Bar (Optimized for Mobile) */}
                 <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 px-3 md:px-4 py-2 md:py-3 flex justify-between items-center shadow-sm shrink-0 z-10 sticky top-0">
-                    <div className="flex items-center gap-2 md:gap-3">
+                    <div className="flex items-center gap-2 md:gap-3 overflow-hidden">
                          {/* Hide Icon on Mobile to save space */}
                          <div className="hidden md:block bg-blue-50 p-2 rounded-lg border border-blue-100 text-blue-600">
                              <Car size={18} />
                          </div>
                          <div className="min-w-0">
                              <h4 className="text-xs md:text-sm font-bold text-slate-800 truncate">{currentLeaseData.vehicle.name}</h4>
-                             <div className="flex items-center gap-2 text-[10px] md:text-xs text-slate-500">
+                             <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs text-slate-500">
                                  <span className="bg-slate-100 border border-slate-200 px-1.5 rounded text-slate-600 font-mono whitespace-nowrap">{currentLeaseData.vehicle.plate}</span>
-                                 <span className="hidden sm:inline">•</span>
-                                 <span className="hidden sm:inline truncate">{currentLeaseData.pickup.date} - {currentLeaseData.dropoff.date}</span>
+                                 <span className="text-slate-300">•</span>
+                                 <span className="truncate font-medium text-slate-600">
+                                     {formatShortDate(currentLeaseData.pickup.date, lang)} - {formatShortDate(currentLeaseData.dropoff.date, lang)}
+                                 </span>
                              </div>
                          </div>
                     </div>

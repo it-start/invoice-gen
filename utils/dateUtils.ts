@@ -55,3 +55,16 @@ export const humanizeTime = (timestamp: number, lang: Language): string => {
     month: 'short'
   }).format(date);
 };
+
+export const formatShortDate = (dateStr: string, lang: Language): string => {
+    if (!dateStr) return '';
+    try {
+        const date = new Date(dateStr);
+        return new Intl.DateTimeFormat(lang === 'ru' ? 'ru-RU' : 'en-US', {
+            day: 'numeric',
+            month: 'short'
+        }).format(date);
+    } catch {
+        return dateStr;
+    }
+};
