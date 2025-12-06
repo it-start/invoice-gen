@@ -61,6 +61,7 @@ export type TranslationKey =
   | 'step_schedule'
   | 'step_financials'
   | 'step_parties'
+  | 'step_signatures'
   | 'lbl_res_id'
   | 'lbl_template_id'
   | 'lbl_optional'
@@ -86,6 +87,11 @@ export type TranslationKey =
   | 'lbl_passport'
   | 'lbl_terms'
   | 'lbl_fee'
+  | 'lbl_sign_owner'
+  | 'lbl_sign_renter'
+  | 'btn_clear'
+  | 'btn_save_sign'
+  | 'msg_sign_saved'
   // Login
   | 'login_title'
   | 'login_desc'
@@ -198,6 +204,7 @@ const dictionary: Record<Language, Record<TranslationKey, string>> = {
     step_schedule: 'Расписание',
     step_financials: 'Финансы',
     step_parties: 'Стороны и Условия',
+    step_signatures: 'Подписи',
     lbl_res_id: 'ID Брони',
     lbl_template_id: 'ID Шаблона',
     lbl_optional: 'Опционально',
@@ -223,6 +230,11 @@ const dictionary: Record<Language, Record<TranslationKey, string>> = {
     lbl_passport: 'Паспорт',
     lbl_terms: 'Юридические условия',
     lbl_fee: 'Сбор (Fee)',
+    lbl_sign_owner: 'Подпись Владельца',
+    lbl_sign_renter: 'Подпись Райдера',
+    btn_clear: 'Очистить',
+    btn_save_sign: 'Сохранить подпись',
+    msg_sign_saved: 'Подпись сохранена',
 
     // Login
     login_title: 'Ограниченный доступ',
@@ -338,6 +350,7 @@ const dictionary: Record<Language, Record<TranslationKey, string>> = {
     step_schedule: 'Schedule',
     step_financials: 'Financials',
     step_parties: 'Parties & Terms',
+    step_signatures: 'Signatures',
     lbl_res_id: 'Res ID',
     lbl_template_id: 'Template ID',
     lbl_optional: 'Optional',
@@ -363,6 +376,11 @@ const dictionary: Record<Language, Record<TranslationKey, string>> = {
     lbl_passport: 'Passport No',
     lbl_terms: 'Legal Terms',
     lbl_fee: 'Extra Fee',
+    lbl_sign_owner: 'Owner Signature',
+    lbl_sign_renter: 'Rider Signature',
+    btn_clear: 'Clear',
+    btn_save_sign: 'Save Signature',
+    msg_sign_saved: 'Signature Saved',
 
     // Login
     login_title: 'Restricted Access',

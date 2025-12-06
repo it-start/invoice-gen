@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { Page, Text, View, Document, StyleSheet, Image, Svg, Path, Ellipse } from '@react-pdf/renderer';
 import { LeaseData } from '../types';
@@ -129,6 +130,12 @@ const styles = StyleSheet.create({
   },
   signatureBlock: {
     flex: 1,
+  },
+  signatureImage: {
+    height: 40,
+    width: 100,
+    objectFit: 'contain',
+    marginBottom: 2
   },
   
   // Metadata line at very bottom
@@ -313,6 +320,11 @@ export const LeasePdf: React.FC<LeasePdfProps> = ({ data }) => {
 
                     <View style={{ marginTop: 15 }}>
                         <Text style={[styles.h3, { fontSize: 9 }]}>Owner (Lessor)</Text>
+                        {data.owner.signature ? (
+                           <Image src={data.owner.signature} style={styles.signatureImage} />
+                        ) : (
+                           <View style={{ height: 42 }} /> // Spacer
+                        )}
                         <View style={styles.borderBottom} />
                         <Text style={[styles.label, { marginTop: 2, textAlign: 'left' }]}>Date, signature</Text>
                     </View>
@@ -324,6 +336,11 @@ export const LeasePdf: React.FC<LeasePdfProps> = ({ data }) => {
                     
                     <View style={{ marginTop: 15 }}>
                         <Text style={[styles.h3, { fontSize: 9 }]}>Rider (Tenant)</Text>
+                         {data.renter.signature ? (
+                           <Image src={data.renter.signature} style={styles.signatureImage} />
+                        ) : (
+                           <View style={{ height: 42 }} /> // Spacer
+                        )}
                         <View style={styles.borderBottom} />
                         <Text style={[styles.label, { marginTop: 2, textAlign: 'left' }]}>Date, signature</Text>
                     </View>

@@ -73,11 +73,13 @@ export interface LeaseData {
     surname: string;
     contact: string;
     address: string;
+    signature?: string; // Base64 data URL
   };
   renter: {
     surname: string;
     contact: string;
     passport: string;
+    signature?: string; // Base64 data URL
   };
   qrCodeUrl?: string;
 }

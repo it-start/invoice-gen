@@ -1,7 +1,9 @@
 
+
 import React from 'react';
 import { LeaseData, Language } from '../../types';
 import InputGroup from '../ui/InputGroup';
+import SignaturePad from '../ui/SignaturePad';
 import { Plus, Trash2, MessageCircle } from 'lucide-react';
 import { WizardContainer } from '../ui/WizardContainer';
 import { t } from '../../utils/i18n';
@@ -138,11 +140,36 @@ const LeaseForm: React.FC<LeaseFormProps> = ({ data, lang, handlers }) => {
       </div>
   );
 
+  // Step 5: Signatures
+  const SignaturesStep = (
+      <div className="space-y-6">
+          <SignaturePad 
+              label={t('lbl_sign_owner', lang)} 
+              value={data.owner.signature} 
+              onChange={(dataUrl) => updateLease('owner', 'signature', dataUrl)}
+              onClear={() => updateLease('owner', 'signature', undefined)}
+              savedLabel={t('msg_sign_saved', lang)}
+              clearLabel={t('btn_clear', lang)}
+              saveLabel={t('btn_save_sign', lang)}
+          />
+          <SignaturePad 
+              label={t('lbl_sign_renter', lang)} 
+              value={data.renter.signature} 
+              onChange={(dataUrl) => updateLease('renter', 'signature', dataUrl)}
+              onClear={() => updateLease('renter', 'signature', undefined)}
+              savedLabel={t('msg_sign_saved', lang)}
+              clearLabel={t('btn_clear', lang)}
+              saveLabel={t('btn_save_sign', lang)}
+          />
+      </div>
+  );
+
   const steps = [
       { title: t('step_vehicle', lang), content: VehicleStep },
       { title: t('step_schedule', lang), content: ScheduleStep },
       { title: t('step_financials', lang), content: FinancialsStep },
       { title: t('step_parties', lang), content: PartiesStep },
+      { title: t('step_signatures', lang), content: SignaturesStep },
   ];
 
   return <WizardContainer steps={steps} lang={lang} />;

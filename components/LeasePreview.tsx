@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { LeaseData, Language } from '../types';
 import { t } from '../utils/i18n';
@@ -154,7 +155,12 @@ const LeasePreview: React.FC<LeasePreviewProps> = ({ data, lang = 'en' }) => {
             <div className="text-xs text-gray-500 mb-6">{data.owner.address}</div>
             
             <div className="mb-8">
-                <div className="font-bold mb-8">{t('lp_owner', lang)} <span className="font-normal text-gray-400 text-xs ml-2">{t('lp_lessor', lang)}</span></div>
+                <div className="font-bold mb-2">{t('lp_owner', lang)} <span className="font-normal text-gray-400 text-xs ml-2">{t('lp_lessor', lang)}</span></div>
+                {data.owner.signature ? (
+                   <img src={data.owner.signature} alt="Owner Signature" className="h-12 w-auto object-contain mb-2" />
+                ) : (
+                    <div className="h-12 w-full"></div>
+                )}
                 <div className="border-b border-gray-300 mb-1"></div>
                 <div className="text-xs text-gray-400">{t('lp_date_signature', lang)}</div>
             </div>
@@ -165,7 +171,12 @@ const LeasePreview: React.FC<LeasePreviewProps> = ({ data, lang = 'en' }) => {
             <div className="text-xs text-gray-500 mb-6">{t('lp_passport', lang)}: {data.renter.passport || '______________'}</div>
 
             <div className="mb-8">
-                <div className="font-bold mb-8">{t('lp_rider', lang)} <span className="font-normal text-gray-400 text-xs ml-2">{t('lp_tenant', lang)}</span></div>
+                <div className="font-bold mb-2">{t('lp_rider', lang)} <span className="font-normal text-gray-400 text-xs ml-2">{t('lp_tenant', lang)}</span></div>
+                {data.renter.signature ? (
+                   <img src={data.renter.signature} alt="Renter Signature" className="h-12 w-auto object-contain mb-2" />
+                ) : (
+                    <div className="h-12 w-full"></div>
+                )}
                  <div className="border-b border-gray-300 mb-1"></div>
                 <div className="text-xs text-gray-400">{t('lp_date_signature', lang)}</div>
             </div>

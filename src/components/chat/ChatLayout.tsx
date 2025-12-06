@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit } from 'lucide-react';
+import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage } from '../../types';
 import { t } from '../../utils/i18n';
@@ -50,6 +50,12 @@ const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, icon: React
         text: 'text-purple-600',
         icon: <Check size={12} />,
         label: 'Confirmation by Rider'
+    },
+    rejected: {
+        bg: 'bg-red-50',
+        text: 'text-red-600',
+        icon: <X size={12} />,
+        label: 'Rejected'
     }
 };
 
@@ -75,7 +81,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     const prevMessageCountRef = useRef<number>(0);
 
     // --- ZUSTAND STORE ---
-    const { sessions, activeSessionId, isLoading, sendMessage, leaseContext } = useChatStore();
+    const { sessions, activeSessionId, isLoading, sendMessage, confirmReservation, rejectReservation, leaseContext } = useChatStore();
     
     // Sync mobile view when route changes
     useEffect(() => {
@@ -318,6 +324,11 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                     
                                     if (!style) return null;
 
+                                    // Interactive Logic: Is this message actionable?
+                                    // For now, only 'confirmation_owner' is interactive and only if it matches current state (roughly)
+                                    // To keep it simple, we allow interaction if it is the specific status type
+                                    const isActionable = status === 'confirmation_owner' && currentLeaseData.status !== 'confirmed' && currentLeaseData.status !== 'rejected';
+
                                     return (
                                         <div className="flex flex-col gap-1 my-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                             <div className="flex items-start gap-3">
@@ -337,6 +348,26 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                                         </span>
                                                     </div>
                                                     {msg.text && <p className="text-xs text-slate-600 pl-1 italic">{msg.text}</p>}
+                                                    
+                                                    {/* INTERACTIVE ACTIONS BUBBLE */}
+                                                    {isActionable && (
+                                                        <div className="mt-2 flex gap-3">
+                                                            <button 
+                                                                onClick={() => confirmReservation()}
+                                                                className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all active:scale-95"
+                                                            >
+                                                                <ThumbsUp size={12} />
+                                                                Confirm Reservation
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => rejectReservation()}
+                                                                className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-100 rounded-lg text-xs font-bold shadow-sm transition-all active:scale-95"
+                                                            >
+                                                                <ThumbsDown size={12} />
+                                                                Reject
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
