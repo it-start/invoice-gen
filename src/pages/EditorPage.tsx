@@ -34,6 +34,7 @@ export default function EditorPage() {
   // Mobile UI State
   const isMobile = useIsMobile();
   const [mobileTab, setMobileTab] = useState<'edit' | 'preview'>('edit');
+  const [mobileScale, setMobileScale] = useState(0.42);
   
   // Hooks
   const invoice = useInvoice();
@@ -56,6 +57,23 @@ export default function EditorPage() {
           lease.setData(chatStore.leaseContext);
       }
   }, [chatStore.leaseContext]);
+
+  // Dynamic Scale Calculation for Mobile
+  useEffect(() => {
+    const updateScale = () => {
+      if (window.innerWidth < 768) {
+        // Calculate scale to fit width with small margin (e.g. 16px total)
+        // A4 width is approx 794px (210mm * 3.78)
+        const availableWidth = window.innerWidth - 16;
+        const scale = availableWidth / 794;
+        setMobileScale(scale);
+      }
+    };
+
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, []);
 
   const handleSmartImport = async () => {
     const result = await ai.parse(docType === 'chat' ? 'lease' : docType); // Fallback for chat
@@ -150,8 +168,7 @@ export default function EditorPage() {
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 shrink-0 z-30 shadow-sm">
              {/* Left: Logo + Nav (Desktop) */}
              <div className="flex items-center gap-6">
-                 {/* Updated Logo Color to Brand Purple */}
-                 <BrandLogo className="text-[#8263FF] h-6" />
+                 <BrandLogo className="text-slate-800 h-6" />
                  <div className="hidden md:block">
                      <NavPills />
                  </div>
@@ -192,11 +209,7 @@ export default function EditorPage() {
             {docType === 'chat' ? (
                  <div className="w-full h-full p-0 md:p-6 overflow-hidden">
                      <div className="h-full max-w-[1600px] mx-auto">
-                        <ChatLayout 
-                            leaseData={lease.data} 
-                            lang={lang} 
-                            leaseHandlers={lease}
-                        />
+                        <ChatLayout leaseData={lease.data} lang={lang} leaseHandlers={lease} />
                      </div>
                  </div>
             ) : (
@@ -255,10 +268,10 @@ export default function EditorPage() {
                       </div>
 
                       {/* PREVIEW */}
-                      <div className={`w-full md:w-2/3 bg-slate-800 p-4 md:p-8 flex-col items-center overflow-hidden relative ${isMobile && mobileTab !== 'preview' ? 'hidden' : 'flex'}`}>
+                      <div className={`w-full md:w-2/3 bg-slate-800 md:p-8 flex-col items-center overflow-hidden relative ${isMobile ? (mobileTab !== 'preview' ? 'hidden' : 'flex p-2 bg-slate-200') : 'flex p-4'}`}>
                            
                            {/* Preview Header */}
-                           <div className="w-full max-w-[210mm] flex justify-between items-center mb-6 z-10 shrink-0">
+                           <div className="w-full max-w-[210mm] flex justify-between items-center mb-6 z-10 shrink-0 px-2 md:px-0">
                                 <div className="text-white">
                                     <h1 className="text-lg font-bold opacity-90">
                                         {t('preview', lang)}
@@ -295,9 +308,12 @@ export default function EditorPage() {
                             </div>
 
                             {/* Preview Canvas */}
-                            <div className="flex-1 w-full md:overflow-y-auto custom-scrollbar pb-20 flex justify-center">
-                                {/* Adjusted scaling for better visibility */}
-                                <div className="transform scale-[0.42] sm:scale-[0.6] md:scale-[0.85] lg:scale-[0.9] origin-top transition-transform duration-300 shadow-2xl">
+                            <div className="flex-1 w-full md:overflow-y-auto custom-scrollbar pb-20 flex justify-center pt-2 md:pt-0">
+                                {/* Adjusted scaling for better visibility. On mobile, we use dynamic scale style. */}
+                                <div 
+                                    className={`origin-top transition-transform duration-300 shadow-2xl ${!isMobile ? 'scale-[0.85] lg:scale-[0.9]' : ''}`}
+                                    style={isMobile ? { transform: `scale(${mobileScale})` } : {}}
+                                >
                                     {docType === 'invoice' ? (
                                         <InvoicePreview data={invoice.data} />
                                     ) : (
