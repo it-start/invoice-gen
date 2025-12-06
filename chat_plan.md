@@ -1,77 +1,71 @@
-# 🧠 Chat Architecture Strategy: Research, Collapse, Predict, Believe
 
-> **Status:** Draft / Living Document
-> **Context:** Evolution of `InvoiceGen Pro` from a static generator to a dynamic conversational platform.
+# 🧠 Chat Architecture & Roadmap
 
----
-
-## 1. 🔍 Research (The Current State)
-
-We have successfully hybridized three distinct data sources into a single "Timeline" view.
-
-*   **The Trinity of Data:**
-    1.  **Static State:** The `LeaseData` (Vehicle, Pricing, Dates) fetched via REST.
-    2.  **System History:** Immutable events (`historyToChatMessage`) fetched via REST. These are the "Truth" of the contract lifecycle (e.g., "Confirmed by Owner").
-    3.  **Ephemeral Talk:** Human communication (`ntfyToChatMessage`) streamed via SSE. These are the "Context" around the truth.
-
-*   **Observations:**
-    *   **Ntfy is fast but loose:** It relies on topics. Currently, we use the `reservationId` (UUID) as the topic. This is secure enough for now but relies on "Security by Obscurity".
-    *   **Date Grouping is critical:** Users lose context in long history streams. The new "Date Separator" component solves this.
-    *   **Mobile Fragmentation:** On mobile, users switch between "Edit Form" and "Chat". They feel like two different apps.
+> **Status:** Phase 3.5 (Robustness & Sync)
+> **Context:** `InvoiceGen Pro` has evolved into a collaborative workspace merging real-time chat, document editing, and state management.
 
 ---
 
-## 2. 📉 Collapse (The Simplification)
+## 1. ✅ Implemented Architecture (The "Hybrid Timeline")
 
-We need to reduce cognitive load by merging concepts.
+We have successfully implemented the **"Trinity of Data"** architecture, merging three distinct sources into a single, coherent timeline:
 
-*   **Collapse Form & Profile:**
-    *   *Current:* The Right Sidebar shows a read-only "Profile" and "Lease Context".
-    *   *Collapse:* The Right Sidebar *should be* the `LeaseForm`. Why have a separate "Editor" mode? On Desktop, the Chat and the Form should live side-by-side. Editing the form sends a "System Message" to the chat (e.g., "Price updated to 5000").
-*   **Collapse Status & Message:**
-    *   *Current:* Messages have `metadata.status`.
-    *   *Collapse:* We should treat **Actions as Messages**. A "Confirm" button isn't UI outside the chat; it's a message waiting to be sent. When clicked, it morphs into a System Message.
-*   **Collapse "Me" vs "Other":**
-    *   Currently, we infer "Me" based on the Ntfy title.
-    *   *Collapse:* We need strict Auth ID matching. `authService` should provide a `currentUserId`, and message alignment should strictly follow `msg.senderId === currentUserId`.
+1.  **Static State:** `LeaseData` (Vehicle, Pricing) is the "Context".
+2.  **System History:** Immutable events (e.g., "Confirmed by Owner") fetched via REST are the "Truth".
+3.  **Ephemeral Talk:** Human communication streamed via Ntfy/SSE is the "Color".
 
----
-
-## 3. 🔮 Predict (The Roadmap)
-
-Where is this ecosystem going?
-
-*   **Prediction 1: The "Actionable" Chat**
-    *   Users will stop using the "Form" to change states.
-    *   Instead, the AI or System will inject **Interactive Widgets** into the chat stream.
-    *   *Example:* System posts: "Vehicle due for return in 1 hour." -> User sees buttons: [Extend 1 Day] [Confirm Return].
-*   **Prediction 2: AI as a Mediator**
-    *   The `useAiAssistant` hook will move from a "Modal" to a "Chat Participant".
-    *   User types: "@AI, draft an invoice for damage repair."
-    *   AI responds with a generated PDF attachment directly in the stream.
-*   **Prediction 3: Offline Sync will be hard but necessary**
-    *   Ntfy/SSE requires a connection.
-    *   We will predict a move to **Local-First Architecture** (using `RxDB` or `TanStack Query` with persistence) so the chat works offline and syncs when back online.
+### Key Technical Achievements
+*   **Strict Identity:** Users are identified via `authService`, enabling strict "Me" vs "Other" message alignment.
+*   **IndexedDB Persistence:** Chat sessions use `IndexedDB` via `dbService` to store large chat histories locally, enabling robust offline capabilities and faster loads.
+*   **Reactive Store:** `chatStore` (Zustand) manages optimistic UI updates for instant feedback (e.g., sending messages, changing status).
+*   **Mobile-First Routing:** Navigation logic handles deep linking (`/chat/detail/:id`) and back-button behavior seamlessly on small screens.
 
 ---
 
-## 4. 🧘 Believe (The Philosophy)
+## 2. ✅ Completed Milestones
 
-These are the core tenets driving the UX decisions:
+### 📱 Mobile Experience
+*   **Compact UI:** Humanized dates ("Just now", "Yesterday") and optimized headers for small screens.
+*   **Wizard Mode:** Complex Lease Forms transform into a step-by-step wizard on mobile.
+*   **Smart Navigation:** URL-based routing ensures the "Back" button works intuitively between List and Room views.
 
-1.  **The Timeline is the Source of Truth:**
-    *   If it didn't happen in the chat stream, it didn't happen. The "Document" is just a snapshot of the timeline at a specific moment.
-2.  **UI/UX/AIX Convergence:**
-    *   **UI:** Clean, readable, timestamped.
-    *   **UX:** Auto-scrolls, highlights urgent status.
-    *   **AIX (AI Experience):** The system anticipates needs (e.g., prompting for a signature when status becomes `pending`).
-3.  **Transparency Builds Trust:**
-    *   By mixing "System Logs" (Server) with "User Chat" (Human), we create a verifiable audit trail that looks friendly. It prevents "I never said that" disputes in rental scenarios.
+### ✍️ Digital Signatures (Phase 6 Complete)
+*   **Capture:** `SignaturePad` component allows touch/mouse drawing.
+*   **Storage:** Signatures are stored as Base64 strings within `LeaseData`.
+*   **Output:** PDF (`@react-pdf`) and HTML previews render signatures in the correct footer blocks.
+
+### 💬 Interactive Chat
+*   **Action Bubbles:** Status changes (Confirm/Reject) are rendered as interactive system messages within the chat stream.
+*   **Read Receipts:** Logic to track and reset unread counts based on active session focus.
+*   **Mini-Editor:** The Right Sidebar allows editing the Lease details alongside the conversation.
+
+### 💾 Robust Persistence (Phase 7 Part 1)
+*   **IndexedDB:** Migrated `chatStore` from `localStorage` to `IndexedDB` to handle larger datasets and prevent storage limits.
+*   **Hydration:** Implemented async hydration logic to ensure smooth startup.
 
 ---
 
-## 5. 🛠 Action Plan (Next Steps)
+## 3. 🚧 Current Focus: Intelligence & Media
 
-1.  **Refactor Right Sidebar:** Turn the static Profile view into a functional Mini-Editor.
-2.  **Interactive Bubbles:** Create a `ChatMessage` variant that renders buttons (Accept/Reject) for lease status changes.
-3.  **Persist Chat:** Implement `idb` (IndexedDB) caching for messages to prevent the "loading spinner" on every page refresh.
+### A. Media Sharing 📸
+*   **Goal:** Allow users to upload images (car condition, ID photos) directly in chat.
+*   **Implementation:** 
+    *   Hook up the `ImageIcon` button in `ChatLayout`.
+    *   Integrate with Ntfy attachment API or a separate object storage.
+    *   Render `image` type messages in the stream.
+
+### B. AI Participant 🤖
+*   **Goal:** Move AI from a "Modal" to a "Chat Participant".
+*   **Scenario:** User types: *"@AI, summarize the deposit terms"* or *"@AI, draft an invoice for scratch repair"*.
+*   **Implementation:**
+    *   Detect `@AI` trigger in `sendMessage`.
+    *   Route prompt to `geminiService`.
+    *   Inject AI response as a message into the stream.
+
+---
+
+## 4. 🔮 Future: Offline & Sync
+
+### A. Background Sync
+*   **Problem:** Messages only arrive when the tab is open.
+*   **Solution:** Implement a Service Worker to handle Push Notifications and background synchronization when the app is closed.

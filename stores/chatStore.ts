@@ -3,8 +3,7 @@ import { create } from 'zustand';
 import { ChatSession, ChatMessage, LeaseData, NtfyMessage, LeaseStatus } from '../types';
 import { fetchReservationHistory, fetchNtfyMessages, sendNtfyMessage, loadLeaseData, HistoryEvent, getChatSseUrl } from '../services/ownimaApi';
 import { authService } from '../services/authService';
-
-const PERSIST_KEY = 'chat_sessions_v1';
+import { dbService } from '../services/dbService';
 
 // --- HELPERS ---
 
@@ -101,29 +100,11 @@ const historyToChatMessage = (event: HistoryEvent): ChatMessage => {
     };
 };
 
-const loadFromStorage = (): ChatSession[] => {
-    try {
-        const stored = localStorage.getItem(PERSIST_KEY);
-        return stored ? JSON.parse(stored) : [];
-    } catch (e) {
-        console.warn("Failed to load chat sessions from storage", e);
-        return [];
-    }
-};
-
-const saveToStorage = (sessions: ChatSession[]) => {
-    try {
-        // Optional: Limit storage size here if needed in future
-        localStorage.setItem(PERSIST_KEY, JSON.stringify(sessions));
-    } catch (e) {
-        console.warn("Failed to save chat sessions to storage", e);
-    }
-};
-
 // --- STORE DEFINITION ---
 
 interface ChatState {
     sessions: ChatSession[];
+    isHydrated: boolean;
     activeSessionId: string | null;
     isLoading: boolean;
     error: string | null;
@@ -131,6 +112,7 @@ interface ChatState {
     activeEventSource: EventSource | null; // Track active SSE connection
     
     // Actions
+    hydrate: () => Promise<void>;
     loadChatSession: (reservationId: string) => Promise<void>;
     setActiveSession: (id: string) => void;
     sendMessage: (text: string) => Promise<void>;
@@ -141,14 +123,32 @@ interface ChatState {
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
-    sessions: loadFromStorage(),
+    sessions: [],
+    isHydrated: false,
     activeSessionId: null,
     isLoading: false,
     error: null,
     leaseContext: null,
     activeEventSource: null,
 
+    hydrate: async () => {
+        if (get().isHydrated) return;
+        
+        try {
+            const storedSessions = await dbService.getAllSessions();
+            set({ sessions: storedSessions, isHydrated: true });
+        } catch (e) {
+            console.error("Hydration failed", e);
+            set({ isHydrated: true }); // Mark as hydrated anyway so we don't block
+        }
+    },
+
     loadChatSession: async (reservationId: string) => {
+        // Ensure store is hydrated first to check for existing data
+        if (!get().isHydrated) {
+            await get().hydrate();
+        }
+
         // Close existing connection if switching
         const { activeEventSource, sessions } = get();
         if (activeEventSource) {
@@ -214,8 +214,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     newSessions.push(newSession);
                 }
                 
-                saveToStorage(newSessions);
-
                 return {
                     sessions: newSessions,
                     // Ensure activeSessionId is set (in case we did SWR update or full load)
@@ -223,6 +221,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     isLoading: false
                 };
             });
+            
+            // Async Save to DB
+            await dbService.saveSession(newSession);
 
             // 7. Establish SSE Connection for Live Updates
             const sseUrl = getChatSseUrl(topicId);
@@ -264,7 +265,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
                         const newSessions = [...state.sessions];
                         newSessions[sessionIndex] = updatedSession;
                         
-                        saveToStorage(newSessions);
+                        // Async Save (fire and forget for UI responsiveness)
+                        dbService.saveSession(updatedSession);
                         
                         return { sessions: newSessions };
                     });
@@ -299,14 +301,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     markAsRead: (sessionId: string) => {
         set(state => {
+            let sessionToUpdate: ChatSession | undefined;
+            
             const sessions = state.sessions.map(s => {
                 if (s.id === sessionId) {
                     // Reset unread count to 0
-                    return { ...s, unreadCount: 0 };
+                    sessionToUpdate = { ...s, unreadCount: 0 };
+                    return sessionToUpdate;
                 }
                 return s;
             });
-            saveToStorage(sessions);
+            
+            if (sessionToUpdate) {
+                dbService.saveSession(sessionToUpdate);
+            }
+            
             return { sessions };
         });
     },
@@ -327,20 +336,26 @@ export const useChatStore = create<ChatState>((set, get) => ({
             status: 'sent'
         };
 
+        let updatedSession: ChatSession | undefined;
+
         const updatedSessions = sessions.map(session => {
             if (session.id === activeSessionId) {
-                return {
+                updatedSession = {
                     ...session,
                     messages: [...session.messages, newMsg],
                     lastMessage: text,
                     lastMessageTime: now
                 };
+                return updatedSession;
             }
             return session;
         });
 
         set({ sessions: updatedSessions });
-        saveToStorage(updatedSessions);
+        
+        if (updatedSession) {
+            await dbService.saveSession(updatedSession);
+        }
 
         // Send to API
         try {

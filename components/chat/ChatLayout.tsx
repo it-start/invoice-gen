@@ -92,8 +92,17 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         markAsRead,
         confirmReservation, 
         rejectReservation, 
-        leaseContext 
+        leaseContext,
+        hydrate,
+        isHydrated
     } = useChatStore();
+
+    // Hydrate store on mount
+    useEffect(() => {
+        if (!isHydrated) {
+            hydrate();
+        }
+    }, [isHydrated, hydrate]);
     
     // Sync mobile view when route changes
     useEffect(() => {
