@@ -1,4 +1,5 @@
 
+
 import { LeaseData, INITIAL_LEASE } from "../types";
 import { authService } from "./authService";
 import QRCode from 'qrcode';
@@ -98,7 +99,8 @@ const mapResponseToLeaseData = (json: any, ownerProfile?: OwnerProfile | null): 
         const dropoffFee = (d.asked_early_return || d.asked_late_return) ? (d.extra_price || 0) : 0;
 
         return {
-            reservationId: reservationId,
+            id: r.id, // Store real UUID for API calls
+            reservationId: reservationId, // Store humanized ID for Display
             source: humanizeSource(r.humanized?.source),
             createdDate: r.created_date ? r.created_date.split('T').join(' ').slice(0, 16) : '',
             vehicle: {

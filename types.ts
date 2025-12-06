@@ -38,7 +38,8 @@ export interface InvoiceData {
 // --- NEW LEASE TYPES ---
 
 export interface LeaseData {
-  reservationId: string;
+  id?: string; // UUID for API calls
+  reservationId: string; // Display ID (e.g. humanized "123-456")
   contractTemplateId?: string; // New field for Server-Side Preview
   source: string;
   createdDate: string; // DateTime string

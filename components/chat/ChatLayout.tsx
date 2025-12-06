@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Search, MoreHorizontal, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2 } from 'lucide-react';
 import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage } from '../../types';
@@ -66,15 +67,13 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
     // --- ZUSTAND STORE ---
     const { sessions, activeSessionId, isLoading, setActiveSession, sendMessage, loadChatSession, leaseContext } = useChatStore();
     
-    // Auto-load session if leaseData has ID and we haven't loaded it yet
+    // Auto-load session if leaseData has a valid UUID (id)
     useEffect(() => {
-        if (leaseData.reservationId && !sessions.find(s => s.id === leaseData.reservationId)) {
-            // Avoid auto-loading if it's the default placeholder ID unless explicit
-            if (leaseData.reservationId !== '9048') {
-                 loadChatSession(leaseData.reservationId);
-            }
+        const targetId = leaseData.id;
+        if (targetId && !sessions.find(s => s.id === targetId)) {
+             loadChatSession(targetId);
         }
-    }, [leaseData.reservationId, loadChatSession, sessions]);
+    }, [leaseData.id, loadChatSession, sessions]);
 
     const activeChat = sessions.find((c: ChatSession) => c.id === activeSessionId);
     
@@ -82,7 +81,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
     // If the currently edited lease (from EditorPage props) matches the active chat ID,
     // we use the 'leaseData' prop because it contains the latest local edits from the form.
     // Otherwise, we use the 'leaseContext' from the store (raw API data) for viewing other chats.
-    const isEditingActiveChat = activeChat && activeChat.id === leaseData.reservationId;
+    const isEditingActiveChat = activeChat && activeChat.id === leaseData.id;
     const currentLeaseData = isEditingActiveChat ? leaseData : (leaseContext || leaseData);
 
     const handleChatSelect = (chatId: string) => {
