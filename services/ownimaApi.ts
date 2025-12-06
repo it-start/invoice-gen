@@ -12,6 +12,7 @@ const API_V1_ROOT = BASE_RESERVATION_URL.replace(/\/reservation\/?$/, '');
 const INVOICE_ENDPOINT = `${API_V1_ROOT}/finance/invoice`;
 const OWNER_PROFILE_ENDPOINT = `${API_V1_ROOT}/rider/owner`;
 const CHAT_BASE_URL = 'https://stage.ownima.com'; // Dedicated Chat/Ntfy domain
+const AVATAR_BASE_URL = 'https://stage.ownima.com';
 
 interface OwnerProfile {
     id: string;
@@ -129,6 +130,10 @@ const mapResponseToLeaseData = (json: any, ownerProfile?: OwnerProfile | null): 
         const pickupFee = (p.asked_early_pickup || p.asked_late_pickup) ? (p.extra_price || 0) : 0;
         const dropoffFee = (d.asked_early_return || d.asked_late_return) ? (d.extra_price || 0) : 0;
 
+        // Avatar Mapping
+        const avatarPath = rider.avatar;
+        const avatarUrl = avatarPath ? `${AVATAR_BASE_URL}${avatarPath}` : undefined;
+
         return {
             id: r.id, // Store real UUID for API calls
             reservationId: reservationId, // Store humanized ID for Display
@@ -163,7 +168,8 @@ const mapResponseToLeaseData = (json: any, ownerProfile?: OwnerProfile | null): 
             renter: {
                 surname: rider.name || '',
                 contact: [rider.phone, rider.email].filter(Boolean).join(' • '),
-                passport: '' 
+                passport: '',
+                avatar: avatarUrl
             },
             owner: {
                 surname: ownerSurname,

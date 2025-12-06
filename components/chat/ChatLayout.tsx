@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -333,7 +334,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                 <div className="relative shrink-0 self-start">
                                     <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-lg overflow-hidden transition-all
                                         ${isActive ? 'bg-blue-200 text-blue-700 ring-2 ring-white shadow-md' : 'bg-slate-200 text-slate-500 group-hover:bg-slate-300'}`}>
-                                        {chat.user.avatar ? <img src={chat.user.avatar} alt={chat.user.name} /> : chat.user.name[0]}
+                                        {chat.user.avatar ? <img src={chat.user.avatar} alt={chat.user.name} className="w-full h-full object-cover" /> : chat.user.name[0]}
                                     </div>
                                     <div className={`absolute bottom-0 right-0 w-3 h-3 md:w-3.5 md:h-3.5 rounded-full border-2 border-white ${chat.user.status === 'online' ? 'bg-green-500' : 'bg-slate-400'}`}></div>
                                 </div>
@@ -387,8 +388,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                 <ArrowLeft size={20} />
                             </button>
                          )}
-                         <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold border border-slate-100">
-                             {activeChat.user.name[0]}
+                         <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold border border-slate-100 overflow-hidden">
+                             {activeChat.user.avatar ? <img src={activeChat.user.avatar} alt={activeChat.user.name} className="w-full h-full object-cover" /> : activeChat.user.name[0]}
                          </div>
                          <div>
                              <h3 className="font-bold text-slate-800 text-sm">{activeChat.user.name}</h3>
@@ -521,8 +522,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                                 data-sender={msg.senderId}
                                             >
                                                 {!isMe && (
-                                                    <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-white border border-slate-200 flex-shrink-0 flex items-center justify-center text-[10px] md:text-xs font-bold text-slate-600 shadow-sm mt-auto">
-                                                        {activeChat.user.name[0]}
+                                                    <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-white border border-slate-200 flex-shrink-0 flex items-center justify-center text-[10px] md:text-xs font-bold text-slate-600 shadow-sm mt-auto overflow-hidden">
+                                                        {activeChat.user.avatar ? <img src={activeChat.user.avatar} alt={activeChat.user.name} className="w-full h-full object-cover" /> : activeChat.user.name[0]}
                                                     </div>
                                                 )}
                                                 <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>

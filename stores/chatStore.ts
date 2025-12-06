@@ -1,3 +1,5 @@
+
+
 import { create } from 'zustand';
 import { ChatSession, ChatMessage, LeaseData, NtfyMessage, LeaseStatus } from '../types';
 import { fetchReservationHistory, fetchNtfyMessages, sendNtfyMessage, loadLeaseData, HistoryEvent, getChatSseUrl } from '../services/ownimaApi';
@@ -237,7 +239,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     contact: leaseData.renter.contact,
                     role: 'Renter',
                     status: 'online',
-                    avatar: ''
+                    avatar: leaseData.renter.avatar || ''
                 },
                 messages: allMessages,
                 lastMessage: allMessages.length > 0 ? allMessages[allMessages.length - 1].text : 'No messages',

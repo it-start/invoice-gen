@@ -80,6 +80,7 @@ export interface LeaseData {
     contact: string;
     passport: string;
     signature?: string; // Base64 data URL
+    avatar?: string; // Avatar URL
   };
   qrCodeUrl?: string;
 }
