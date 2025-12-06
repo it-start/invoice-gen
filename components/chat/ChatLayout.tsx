@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Search, MoreHorizontal, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed } from 'lucide-react';
+import { Search, MoreHorizontal, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2 } from 'lucide-react';
 import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage } from '../../types';
 import { t } from '../../utils/i18n';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -60,21 +61,41 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
     const isMobile = useIsMobile();
     const [mobileView, setMobileView] = useState<'list' | 'room'>('list');
     const [messageInput, setMessageInput] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
 
     // --- ZUSTAND STORE ---
-    const { sessions, activeSessionId, syncLeaseData, setActiveSession, sendMessage } = useChatStore();
+    const { sessions, activeSessionId, isLoading, setActiveSession, sendMessage, loadChatSession, leaseContext } = useChatStore();
     
-    // Initialize & Sync Data on Mount/Change
+    // Auto-load session if leaseData has ID and we haven't loaded it yet
     useEffect(() => {
-        syncLeaseData(leaseData);
-    }, [leaseData, syncLeaseData]);
+        if (leaseData.reservationId && !sessions.find(s => s.id === leaseData.reservationId)) {
+            // Avoid auto-loading if it's the default placeholder ID unless explicit
+            if (leaseData.reservationId !== '9048') {
+                 loadChatSession(leaseData.reservationId);
+            }
+        }
+    }, [leaseData.reservationId, loadChatSession, sessions]);
 
-    const activeChat = sessions.find((c: ChatSession) => c.id === activeSessionId) || sessions[0];
+    const activeChat = sessions.find((c: ChatSession) => c.id === activeSessionId);
+    
+    // Use leaseContext from store if available (real data), otherwise fallback to props (editor data)
+    // This allows the Chat UI to display details for loaded chats even if they differ from Editor form
+    const currentLeaseData = (activeChat && leaseContext && activeChat.id === leaseContext.reservationId) 
+        ? leaseContext 
+        : leaseData;
 
     const handleChatSelect = (chatId: string) => {
         setActiveSession(chatId);
         if (isMobile) {
             setMobileView('room');
+        }
+    };
+
+    const handleSearchSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            loadChatSession(searchQuery.trim());
+            setSearchQuery('');
         }
     };
 
@@ -87,9 +108,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
         sendMessage(messageInput);
         setMessageInput('');
     };
-
-    // Ensure we have data to render
-    if (!activeChat) return null;
 
     const listClasses = isMobile 
         ? (mobileView === 'list' ? 'w-full flex' : 'hidden') 
@@ -106,16 +124,30 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
             <div className={`${listClasses} flex-col bg-slate-50`}>
                 <div className="p-4 border-b border-slate-100 bg-white">
                     <h2 className="text-lg font-bold text-slate-800 mb-4">{t('switch_chat', lang)}</h2>
-                    <div className="relative">
+                    <form onSubmit={handleSearchSubmit} className="relative">
                         <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
                         <input 
                             type="text" 
-                            placeholder={t('chat_search', lang)}
+                            placeholder="Enter Reservation ID..."
                             className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-200 outline-none"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                         />
-                    </div>
+                    </form>
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
+                    {isLoading && sessions.length === 0 && (
+                        <div className="p-8 flex justify-center text-slate-400">
+                            <Loader2 className="animate-spin" />
+                        </div>
+                    )}
+                    
+                    {sessions.length === 0 && !isLoading && (
+                        <div className="p-8 text-center text-xs text-slate-400">
+                            No active chats.<br/>Search by ID to load.
+                        </div>
+                    )}
+
                     {sessions.map((chat: ChatSession) => (
                         <div 
                             key={chat.id}
@@ -148,6 +180,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
             </div>
 
             {/* MIDDLE: Chat Room */}
+            {activeChat ? (
             <div className={`${roomClasses} flex-col bg-white`}>
                 {/* Header */}
                 <div className="h-16 border-b border-slate-100 flex justify-between items-center px-4 md:px-6 shrink-0">
@@ -181,23 +214,23 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                              <Car size={18} />
                          </div>
                          <div>
-                             <h4 className="text-sm font-bold text-slate-800">{leaseData.vehicle.name}</h4>
+                             <h4 className="text-sm font-bold text-slate-800">{currentLeaseData.vehicle.name}</h4>
                              <div className="flex items-center gap-2 text-xs text-slate-500">
-                                 <span className="bg-slate-200 px-1.5 rounded text-slate-600 font-mono">{leaseData.vehicle.plate}</span>
+                                 <span className="bg-slate-200 px-1.5 rounded text-slate-600 font-mono">{currentLeaseData.vehicle.plate}</span>
                                  <span>•</span>
-                                 <span>{leaseData.pickup.date} - {leaseData.dropoff.date}</span>
+                                 <span>{currentLeaseData.pickup.date} - {currentLeaseData.dropoff.date}</span>
                              </div>
                          </div>
                     </div>
                     <div className="text-right">
-                         <span className="block text-sm font-bold text-slate-800">{leaseData.pricing.total} THB</span>
-                         <span className="block text-[10px] text-slate-400">#{leaseData.reservationId}</span>
+                         <span className="block text-sm font-bold text-slate-800">{currentLeaseData.pricing.total} THB</span>
+                         <span className="block text-[10px] text-slate-400">#{currentLeaseData.reservationId}</span>
                     </div>
                 </div>
 
                 {/* Messages */}
                 <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6 flex flex-col dark-scrollbar">
-                    <div className="text-center text-xs text-slate-400 my-4">Today</div>
+                    <div className="text-center text-xs text-slate-400 my-4">History</div>
                     
                     {activeChat.messages.map((msg: ChatMessage) => {
                         // --- SYSTEM MESSAGE RENDERER ---
@@ -205,6 +238,9 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                             const status = msg.metadata?.status;
                             const style = status ? STATUS_CONFIG[status] : { bg: 'bg-slate-100', text: 'text-slate-600', icon: <CheckCheck size={12} />, label: 'System' };
                             
+                            // Fallback if status config missing
+                            if (!style) return null; 
+
                             return (
                                 <div key={msg.id} className="flex flex-col gap-1 my-2">
                                     <div className="flex items-start gap-3">
@@ -277,8 +313,14 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                     </div>
                 </div>
             </div>
+            ) : (
+                <div className={`${roomClasses} items-center justify-center text-slate-400 text-sm`}>
+                    Select a chat or search by ID
+                </div>
+            )}
 
             {/* RIGHT SIDEBAR: Profile */}
+            {activeChat && (
             <div className="w-72 border-l border-slate-100 bg-white p-6 hidden xl:block">
                  <div className="flex flex-col items-center mb-8">
                      <div className="w-20 h-20 rounded-full bg-slate-200 mb-4 overflow-hidden flex items-center justify-center font-bold text-2xl text-slate-500">
@@ -303,7 +345,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                          )}
                           <div className="flex justify-between text-xs">
                              <span className="text-slate-500">Ref</span>
-                             <span className="font-medium">{leaseData.reservationId}</span>
+                             <span className="font-medium">{currentLeaseData.reservationId}</span>
                          </div>
                      </div>
                  </div>
@@ -327,6 +369,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang }) => {
                      </div>
                  </div>
             </div>
+            )}
         </div>
     );
 };
