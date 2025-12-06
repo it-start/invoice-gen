@@ -563,8 +563,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
 
             {/* RIGHT SIDEBAR: Lease Mini-Editor & Profile */}
             {activeChat && (
-            <div className={`bg-white border-l border-slate-100 hidden xl:flex flex-col h-full shadow-lg z-20 transition-all duration-300 ease-in-out overflow-hidden ${isSidebarOpen ? 'w-[340px] opacity-100' : 'w-0 opacity-0 border-none'}`}>
-                 <div className="w-[340px] h-full flex flex-col">
+            <div className={`bg-white border-l border-slate-100 hidden xl:flex flex-col h-full shadow-lg z-20 transition-all duration-300 ease-in-out overflow-hidden ${isSidebarOpen ? 'w-[320px] opacity-100' : 'w-0 opacity-0 border-none'}`}>
+                 <div className="w-[320px] h-full flex flex-col">
                     {/* Sidebar Tabs */}
                     <div className="flex border-b border-slate-200 bg-slate-50/50 p-1 gap-1 m-2 rounded-xl shrink-0">
                         <button 
@@ -582,7 +582,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                     </div>
 
                     {/* Tab Content */}
-                    <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar bg-white">
                         
                         {/* DETAILS TAB (Mini-Editor) */}
                         {sidebarTab === 'details' && (
@@ -590,16 +590,17 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                 <LeaseForm 
                                     data={currentLeaseData} 
                                     handlers={leaseHandlers} 
-                                    lang={lang} 
+                                    lang={lang}
+                                    compact={true} 
                                 />
                             </div>
                         )}
 
                         {/* PROFILE TAB */}
                         {sidebarTab === 'profile' && (
-                            <div className="p-8">
+                            <div className="p-6">
                                 <div className="flex flex-col items-center mb-6">
-                                    <div className="w-28 h-28 rounded-full bg-white mb-5 overflow-hidden flex items-center justify-center font-bold text-4xl text-slate-300 border-4 border-slate-100 shadow-md relative group">
+                                    <div className="w-24 h-24 rounded-full bg-white mb-5 overflow-hidden flex items-center justify-center font-bold text-4xl text-slate-300 border-4 border-slate-100 shadow-md relative group">
                                         {activeChat.user.avatar ? (
                                             <img src={activeChat.user.avatar} alt="Profile" className="w-full h-full object-cover" />
                                         ) : activeChat.user.name[0]}

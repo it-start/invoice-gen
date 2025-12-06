@@ -13,9 +13,10 @@ interface Step {
 interface WizardContainerProps {
     steps: Step[];
     lang?: Language;
+    compact?: boolean;
 }
 
-export const WizardContainer: React.FC<WizardContainerProps> = ({ steps, lang = 'en' }) => {
+export const WizardContainer: React.FC<WizardContainerProps> = ({ steps, lang = 'en', compact = false }) => {
     const isMobile = useIsMobile();
     const [currentStep, setCurrentStep] = useState(0);
 
@@ -28,6 +29,31 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({ steps, lang = 
 
     // Desktop: Render all steps stacked
     if (!isMobile) {
+        if (compact) {
+            return (
+                <div className="space-y-8 pb-20">
+                    {steps.map((step, index) => (
+                        <div key={index} className="px-1">
+                            {step.title && (
+                                <h3 className="font-bold text-[11px] text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                    <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold">
+                                        {index + 1}
+                                    </span>
+                                    {step.title}
+                                </h3>
+                            )}
+                            <div className="pl-1">
+                                {step.content}
+                            </div>
+                            {index < steps.length - 1 && (
+                                <div className="my-8 border-b border-slate-100/80"></div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
         return (
             <div className="space-y-8 pb-20">
                 {steps.map((step, index) => (

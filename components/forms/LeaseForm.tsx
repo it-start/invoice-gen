@@ -15,12 +15,12 @@ interface LeaseFormProps {
       addExtraOption: () => void;
       updateExtraOption: (index: number, field: 'name' | 'price', value: any) => void;
       removeExtraOption: (index: number) => void;
-      // loadFromApi removed as we load via chat context
       isLoading: boolean;
-  }
+  };
+  compact?: boolean;
 }
 
-const LeaseForm: React.FC<LeaseFormProps> = ({ data, lang, handlers }) => {
+const LeaseForm: React.FC<LeaseFormProps> = ({ data, lang, handlers, compact = false }) => {
   const { updateLease, addExtraOption, updateExtraOption, removeExtraOption } = handlers;
 
   // Step 1: Info & Vehicle
@@ -49,7 +49,7 @@ const LeaseForm: React.FC<LeaseFormProps> = ({ data, lang, handlers }) => {
         </div>
         
         <div className="pt-4 border-t border-slate-200 mt-4">
-             <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 bg-slate-100 p-1 pl-2 rounded">{t('grp_vehicle', lang)}</h4>
+             <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 bg-slate-50 p-1.5 rounded">{t('grp_vehicle', lang)}</h4>
              <InputGroup label={t('lbl_model', lang)} value={data.vehicle.name} onChange={(v) => updateLease('vehicle', 'name', v)} />
              <InputGroup label={t('lbl_details', lang)} value={data.vehicle.details} onChange={(v) => updateLease('vehicle', 'details', v)} />
              <InputGroup label={t('lbl_plate', lang)} value={data.vehicle.plate} onChange={(v) => updateLease('vehicle', 'plate', v)} />
@@ -168,7 +168,7 @@ const LeaseForm: React.FC<LeaseFormProps> = ({ data, lang, handlers }) => {
       { title: t('step_signatures', lang), content: SignaturesStep },
   ];
 
-  return <WizardContainer steps={steps} lang={lang} />;
+  return <WizardContainer steps={steps} lang={lang} compact={compact} />;
 };
 
 export default LeaseForm;
