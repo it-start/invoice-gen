@@ -242,7 +242,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 messages: allMessages,
                 lastMessage: allMessages.length > 0 ? allMessages[allMessages.length - 1].text : 'No messages',
                 lastMessageTime: allMessages.length > 0 ? allMessages[allMessages.length - 1].timestamp : 0,
-                unreadCount: unreadCount 
+                unreadCount: unreadCount,
+                // CACHE RESERVATION SUMMARY FOR LIST VIEW
+                reservationSummary: {
+                    vehicleName: leaseData.vehicle.name,
+                    plateNumber: leaseData.vehicle.plate,
+                    status: leaseData.status || 'pending',
+                    price: leaseData.pricing.total
+                }
             };
 
             // 6. Update Store with Session & Persist

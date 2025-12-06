@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -292,6 +291,9 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
 
                     {sessions.map((chat: ChatSession) => {
                         const isActive = currentActiveId === chat.id;
+                        const statusColor = chat.reservationSummary?.status ? STATUS_CONFIG[chat.reservationSummary.status]?.text : 'text-slate-400';
+                        const statusLabel = chat.reservationSummary?.status ? STATUS_CONFIG[chat.reservationSummary.status]?.label : 'Unknown';
+
                         return (
                             <div 
                                 key={chat.id}
@@ -302,14 +304,14 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                         : 'hover:bg-slate-50 border-l-4 border-l-transparent'
                                     }`}
                             >
-                                <div className="relative shrink-0">
+                                <div className="relative shrink-0 self-start">
                                     <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-lg overflow-hidden transition-all
                                         ${isActive ? 'bg-blue-200 text-blue-700 ring-2 ring-white shadow-md' : 'bg-slate-200 text-slate-500 group-hover:bg-slate-300'}`}>
                                         {chat.user.avatar ? <img src={chat.user.avatar} alt={chat.user.name} /> : chat.user.name[0]}
                                     </div>
                                     <div className={`absolute bottom-0 right-0 w-3 h-3 md:w-3.5 md:h-3.5 rounded-full border-2 border-white ${chat.user.status === 'online' ? 'bg-green-500' : 'bg-slate-400'}`}></div>
                                 </div>
-                                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                <div className="flex-1 min-w-0 flex flex-col justify-start">
                                     <div className="flex justify-between items-baseline mb-0.5">
                                         <h3 className={`font-bold text-sm truncate ${isActive ? 'text-blue-900' : 'text-slate-800'}`}>{chat.user.name}</h3>
                                         <span className={`text-[10px] font-medium whitespace-nowrap ml-2 ${isActive ? 'text-blue-600' : 'text-slate-400'}`}>
@@ -317,7 +319,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                             {chat.lastMessageTime > 0 ? humanizeTime(chat.lastMessageTime, lang) : ''}
                                         </span>
                                     </div>
-                                    <div className="flex justify-between items-center">
+                                    <div className="flex justify-between items-center mb-2">
                                         <p className={`text-xs truncate max-w-[140px] md:max-w-[140px] ${isActive ? 'text-blue-700 font-medium' : 'text-slate-500 group-hover:text-slate-600'}`}>
                                             {chat.lastMessage}
                                         </p>
@@ -327,6 +329,20 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                             </span>
                                         )}
                                     </div>
+
+                                    {/* ENHANCED METADATA ROW */}
+                                    {chat.reservationSummary && (
+                                        <div className="flex items-center gap-2 mt-auto pt-1 border-t border-slate-100/50">
+                                            <div className="flex items-center gap-1 text-[10px] text-slate-500 font-medium bg-slate-100 px-1.5 py-0.5 rounded max-w-[50%]">
+                                                <Car size={10} />
+                                                <span className="truncate">{chat.reservationSummary.vehicleName}</span>
+                                            </div>
+                                            <div className={`flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider ${statusColor}`}>
+                                                <span className={`w-1.5 h-1.5 rounded-full bg-current opacity-70`}></span>
+                                                {statusLabel}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );

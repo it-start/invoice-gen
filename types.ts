@@ -137,6 +137,13 @@ export interface ChatSession {
   lastMessageTime: number; // Unix timestamp in ms
   unreadCount: number;
   messages: ChatMessage[];
+  // Cached summary for list view
+  reservationSummary?: {
+    vehicleName: string;
+    plateNumber: string;
+    status: LeaseStatus;
+    price: number;
+  };
 }
 
 export const VAT_RATES = [
