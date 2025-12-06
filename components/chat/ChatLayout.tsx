@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle } from 'lucide-react';
+import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle, CalendarClock, Hash } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage } from '../../types';
 import { t } from '../../utils/i18n';
@@ -12,79 +12,134 @@ import InputGroup from '../ui/InputGroup';
 import { SwipeableRow } from '../ui/SwipeableRow';
 
 // --- STATUS CONFIGURATION ---
-const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, icon: React.ReactNode, label: string }> = {
+const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, border: string, icon: React.ReactNode, label: string, accent: string }> = {
     collected: {
-        bg: 'bg-green-100',
-        text: 'text-green-700',
+        bg: 'bg-emerald-50',
+        text: 'text-emerald-700',
+        border: 'border-emerald-200',
+        accent: 'bg-emerald-500',
         icon: <Play size={10} fill="currentColor" />,
         label: 'Collected'
     },
     completed: {
-        bg: 'bg-slate-200',
+        bg: 'bg-slate-100',
         text: 'text-slate-600',
+        border: 'border-slate-200',
+        accent: 'bg-slate-500',
         icon: <Check size={10} strokeWidth={3} />,
         label: 'Completed'
     },
     overdue: {
-        bg: 'bg-red-100',
-        text: 'text-red-600',
+        bg: 'bg-rose-50',
+        text: 'text-rose-600',
+        border: 'border-rose-200',
+        accent: 'bg-rose-500',
         icon: <Clock size={10} />,
         label: 'Overdue'
     },
     confirmed: {
-        bg: 'bg-purple-100',
-        text: 'text-purple-700',
+        bg: 'bg-indigo-50',
+        text: 'text-indigo-700',
+        border: 'border-indigo-200',
+        accent: 'bg-indigo-500',
         icon: <Target size={10} />,
         label: 'Confirmed'
     },
     pending: {
-        bg: 'bg-orange-50',
-        text: 'text-orange-600',
+        bg: 'bg-amber-50',
+        text: 'text-amber-600',
+        border: 'border-amber-200',
+        accent: 'bg-amber-500',
         icon: <CircleDashed size={10} />,
         label: 'Pending'
     },
     confirmation_owner: {
-        bg: 'bg-indigo-50',
-        text: 'text-indigo-600',
+        bg: 'bg-blue-50',
+        text: 'text-blue-600',
+        border: 'border-blue-200',
+        accent: 'bg-blue-500',
         icon: <CheckCheck size={10} />,
         label: 'Wait Owner'
     },
     confirmation_rider: {
-        bg: 'bg-purple-50',
-        text: 'text-purple-600',
+        bg: 'bg-violet-50',
+        text: 'text-violet-600',
+        border: 'border-violet-200',
+        accent: 'bg-violet-500',
         icon: <Check size={10} />,
         label: 'Wait Rider'
     },
     rejected: {
         bg: 'bg-red-50',
         text: 'text-red-600',
+        border: 'border-red-200',
+        accent: 'bg-red-500',
         icon: <X size={10} />,
         label: 'Rejected'
     },
     maintenance: {
-        bg: 'bg-gray-100',
+        bg: 'bg-gray-50',
         text: 'text-gray-600',
+        border: 'border-gray-200',
+        accent: 'bg-gray-500',
         icon: <Wrench size={10} />,
         label: 'Maintenance'
     },
     cancelled: {
         bg: 'bg-red-50',
         text: 'text-red-600',
+        border: 'border-red-200',
+        accent: 'bg-red-500',
         icon: <Ban size={10} />,
         label: 'Cancelled'
     },
     conflict: {
-        bg: 'bg-amber-100',
-        text: 'text-amber-700',
+        bg: 'bg-orange-50',
+        text: 'text-orange-700',
+        border: 'border-orange-200',
+        accent: 'bg-orange-500',
         icon: <AlertTriangle size={10} />,
         label: 'Conflict'
     },
     no_response: {
-        bg: 'bg-slate-100',
+        bg: 'bg-slate-50',
         text: 'text-slate-500',
+        border: 'border-slate-200',
+        accent: 'bg-slate-400',
         icon: <HelpCircle size={10} />,
         label: 'No Response'
     }
+};
+
+// --- HELPER: Timeline Progress ---
+const getLeaseProgress = (startStr: string, endStr: string) => {
+    if (!startStr || !endStr) return 0;
+    const start = new Date(startStr).getTime();
+    const end = new Date(endStr).getTime();
+    const now = Date.now();
+    
+    if (now < start) return 0;
+    if (now > end) return 100;
+    
+    const total = end - start;
+    const elapsed = now - start;
+    return Math.min(100, Math.max(0, (elapsed / total) * 100));
+};
+
+// --- HELPER: Smart Time Text ---
+const getTimeRemaining = (endStr: string, status: LeaseStatus) => {
+    if (!endStr) return '';
+    const end = new Date(endStr);
+    const now = new Date();
+    const diffHours = (end.getTime() - now.getTime()) / (1000 * 60 * 60);
+    const diffDays = Math.ceil(diffHours / 24);
+
+    if (status === 'completed' || status === 'cancelled') return 'Ended';
+    if (status === 'overdue') return `Overdue by ${Math.abs(diffDays)}d`;
+    
+    if (diffHours < 0) return 'Ending now';
+    if (diffHours < 24) return `Ends in ${Math.floor(diffHours)}h`;
+    return `${diffDays} days left`;
 };
 
 interface ChatLayoutProps {
@@ -306,7 +361,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     const StatusBadge = ({ status, className = "" }: { status: LeaseStatus, className?: string }) => {
         const config = STATUS_CONFIG[status] || STATUS_CONFIG['pending'];
         return (
-            <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border border-black/5 ${config.bg} ${config.text} ${className}`}>
+            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${config.bg} ${config.text} ${config.border} ${className}`}>
                 {config.icon}
                 <span>{config.label}</span>
             </div>
@@ -321,6 +376,10 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         const isVisible = searchQuery ? true : !s.isArchived;
         return matchesSearch && isVisible;
     });
+
+    const statusConfig = STATUS_CONFIG[currentLeaseData.status || 'pending'] || STATUS_CONFIG['pending'];
+    const timelineProgress = getLeaseProgress(currentLeaseData.pickup.date, currentLeaseData.dropoff.date);
+    const smartTime = getTimeRemaining(currentLeaseData.dropoff.date, currentLeaseData.status || 'pending');
 
     return (
         <div className="flex h-full bg-white md:rounded-xl overflow-hidden md:border border-slate-200 md:shadow-sm">
@@ -462,50 +521,75 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                     </div>
                 </div>
 
-                {/* Reservation Summary Pinned Bar */}
-                <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex justify-between items-start shadow-sm shrink-0 z-10 sticky top-0 transition-all">
-                    
-                    {/* Left: Vehicle Info */}
-                    <div className="flex items-center gap-3 min-w-0 mr-2">
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-sm">
-                             <Car size={20} />
-                        </div>
-                        <div className="flex flex-col min-w-0 justify-center">
-                            <div className="flex items-center gap-2">
-                                <h4 className="text-sm font-bold text-slate-900 truncate leading-snug">
+                {/* --- SMART CONTEXT ISLAND (Future UI Header) --- */}
+                <div className={`backdrop-blur-xl bg-white/90 border-b border-slate-200/50 pt-3 pb-0 shrink-0 z-10 sticky top-0 transition-all shadow-[0_4px_20px_-12px_rgba(0,0,0,0.1)]`}>
+                    <div className="px-4 pb-3 grid grid-cols-[auto_1fr_auto] gap-4 items-center">
+                        
+                        {/* 1. ASSET CLUSTER (Vehicle) */}
+                        <div className="flex items-center gap-3">
+                            <div className="relative">
+                                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 shadow-sm flex items-center justify-center text-slate-500">
+                                    <Car size={20} strokeWidth={1.5} />
+                                </div>
+                                <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-[3px] border-white ${statusConfig.accent}`}></div>
+                            </div>
+                            <div className="flex flex-col">
+                                <h4 className="text-sm font-bold text-slate-900 leading-tight">
                                     {currentLeaseData.vehicle.name}
                                 </h4>
-                                <span className="hidden sm:flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-slate-100 text-slate-600 border border-slate-200 leading-none">
-                                    {currentLeaseData.vehicle.plate}
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 leading-tight">
-                                <span className="sm:hidden font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px] text-slate-600 border border-slate-200 leading-none">
-                                    {currentLeaseData.vehicle.plate}
-                                </span>
-                                <div className="flex items-center gap-1 overflow-hidden">
-                                    <Clock size={11} className="text-slate-400 shrink-0" />
-                                    <span className="truncate font-medium text-[11px]">
-                                        {formatShortDate(currentLeaseData.pickup.date, lang)} - {formatShortDate(currentLeaseData.dropoff.date, lang)}
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/50">
+                                        {currentLeaseData.vehicle.plate}
                                     </span>
                                 </div>
                             </div>
                         </div>
+
+                        {/* 2. SMART TIME CONTEXT (Center/Fluid) */}
+                        <div className="flex flex-col items-start md:items-center justify-center min-w-0 px-2">
+                            <div className="flex items-center gap-1.5 text-slate-500 mb-0.5">
+                                <CalendarClock size={12} />
+                                <span className="text-[10px] font-bold uppercase tracking-wide opacity-80">Timeline</span>
+                            </div>
+                            <div className="flex items-baseline gap-1.5 truncate w-full md:justify-center">
+                                <span className="text-xs font-semibold text-slate-800 truncate">
+                                    {formatShortDate(currentLeaseData.pickup.date, lang)}
+                                    <span className="text-slate-300 mx-1.5">→</span>
+                                    {formatShortDate(currentLeaseData.dropoff.date, lang)}
+                                </span>
+                                <span className={`text-[10px] font-bold px-1.5 rounded-md ${
+                                    (currentLeaseData.status === 'overdue' || currentLeaseData.status === 'cancelled') 
+                                        ? 'bg-red-100 text-red-700' 
+                                        : 'bg-blue-50 text-blue-700'
+                                }`}>
+                                    {smartTime}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* 3. VALUE & ID (Right) */}
+                        <div className="flex flex-col items-end">
+                            <StatusBadge status={currentLeaseData.status || 'pending'} className="mb-1" />
+                            <div className="flex items-center gap-2 text-slate-400 text-[10px] font-mono">
+                                <span className="flex items-center gap-0.5">
+                                    <Hash size={9} />{currentLeaseData.reservationId}
+                                </span>
+                                <span className="w-px h-3 bg-slate-200"></span>
+                                <span className="font-bold text-slate-700 text-xs font-sans">
+                                    {currentLeaseData.pricing.total.toLocaleString()}
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Right: Status & Financials */}
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                         {currentLeaseData.status && (
-                             <StatusBadge status={currentLeaseData.status} />
-                         )}
-                         <div className="flex flex-col items-end leading-none pt-0.5">
-                             <span className="text-sm font-bold text-slate-900">
-                                {currentLeaseData.pricing.total.toLocaleString()} THB
-                             </span>
-                             <span className="text-[9px] text-slate-400 font-mono mt-0.5">
-                                #{currentLeaseData.reservationId}
-                             </span>
-                         </div>
+                    {/* VISUAL TIMELINE PROGRESS BAR */}
+                    <div className="w-full h-[3px] bg-slate-100 relative overflow-hidden">
+                        <div 
+                            className={`h-full transition-all duration-1000 ease-out ${statusConfig.accent}`} 
+                            style={{ width: `${timelineProgress}%` }}
+                        >
+                            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-r from-transparent to-white/50"></div>
+                        </div>
                     </div>
                 </div>
 
