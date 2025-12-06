@@ -110,17 +110,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
             const ntfyData = await fetchNtfyMessages(reservationId);
             const chatMessages = ntfyData.map((n: any) => ntfyToChatMessage(n));
 
-            // 4. Merge and Sort
-            // Sort by ID or Timestamp? Timestamp is safer.
+            // 4. Merge
             // History timestamps are ISO strings, Ntfy are unix epoch.
-            // Let's normalize comparison.
-            const combined = [...historyMessages, ...chatMessages].sort((a, b) => {
-                // This is a rough sort because formatted timestamps 'HH:MM' lose date info if mixed.
-                // ideally we should store raw Date objects in ChatMessage, but for now we trust the source order largely
-                // or just append history if it's older.
-                // For a robust app, we'd add a 'createdAt' Date field to ChatMessage.
-                return 0; 
-            });
+            // Concatenate them. Sorting would require parsing timestamps to comparable objects, 
+            // but ChatMessage currently only holds a string representation.
+            const combined = [...historyMessages, ...chatMessages];
 
             // 5. Create Session
             const newSession: ChatSession = {
