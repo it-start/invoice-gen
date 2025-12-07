@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { Download, Wand2, Loader2, RotateCcw, FileText, Car, Globe, Share2, MessageCircle } from 'lucide-react';
@@ -35,6 +36,9 @@ export default function EditorPage() {
   const isMobile = useIsMobile();
   const [mobileTab, setMobileTab] = useState<'edit' | 'preview'>('edit');
   
+  // Feature Flags
+  const showInvoiceTab = false;
+
   // Hooks
   const invoice = useInvoice();
   const lease = useLease();
@@ -134,12 +138,14 @@ export default function EditorPage() {
         >
             <Car size={16} /> {t('switch_lease', lang)}
         </button>
+        {showInvoiceTab && (
          <button 
             onClick={() => setDocType('invoice')} 
             className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${docType === 'invoice' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
         >
             <FileText size={16} /> {t('switch_invoice', lang)}
         </button>
+        )}
     </div>
   );
 
@@ -162,7 +168,9 @@ export default function EditorPage() {
                  <div className="md:hidden flex gap-1 bg-slate-100 p-1 rounded-lg">
                     <button onClick={() => setDocType('chat')} className={`p-2 rounded-md ${docType === 'chat' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}><MessageCircle size={18} /></button>
                     <button onClick={() => setDocType('lease')} className={`p-2 rounded-md ${docType === 'lease' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}><Car size={18} /></button>
+                    {showInvoiceTab && (
                     <button onClick={() => setDocType('invoice')} className={`p-2 rounded-md ${docType === 'invoice' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}><FileText size={18} /></button>
+                    )}
                  </div>
 
                  <button
