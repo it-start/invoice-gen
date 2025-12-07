@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle, CalendarClock, Hash } from 'lucide-react';
+import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle, CalendarClock, Hash, Sparkles } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage } from '../../types';
 import { t } from '../../utils/i18n';
@@ -394,20 +394,34 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
             />
 
             {/* LEFT SIDEBAR: Chat List */}
-            <div className={`${listClasses} flex-col bg-slate-50`}>
-                <div className="p-4 border-b border-slate-200 bg-white shadow-sm z-10">
-                    <h2 className="text-lg font-bold text-slate-800 mb-4 px-1">{t('switch_chat', lang)}</h2>
-                    <form onSubmit={handleSearchSubmit} className="relative">
-                        <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
-                        <input 
-                            type="text" 
-                            placeholder="Search ID..."
-                            className="w-full pl-10 pr-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+            <div className={`${listClasses} flex-col bg-slate-50 relative`}>
+                
+                {/* --- SMART COMMAND BAR --- */}
+                <div className="p-3 border-b border-slate-200/50 bg-white/80 backdrop-blur-md sticky top-0 z-30">
+                    <form onSubmit={handleSearchSubmit} className="relative group">
+                        {/* Focus Glow Effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500 -m-[1px] blur-[1px]" />
+                        
+                        <div className="relative flex items-center bg-slate-100/50 border border-slate-200 rounded-xl group-focus-within:bg-white group-focus-within:border-transparent group-focus-within:shadow-md transition-all duration-300 overflow-hidden">
+                            <div className="pl-3 text-slate-400 group-focus-within:text-blue-500 transition-colors">
+                                <Search size={16} className="group-focus-within:hidden" />
+                                <Sparkles size={16} className="hidden group-focus-within:block animate-pulse" />
+                            </div>
+                            <input 
+                                type="text" 
+                                placeholder={t('chat_search', lang)}
+                                className="w-full pl-2 pr-3 py-2.5 bg-transparent text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            {/* Command Hint */}
+                            <div className="mr-2 px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-300 opacity-0 group-focus-within:opacity-100 transition-opacity scale-90 hidden sm:block">
+                                <span className="text-[10px] font-bold font-mono">/</span>
+                            </div>
+                        </div>
                     </form>
                 </div>
+
                 <div className="flex-1 overflow-y-auto custom-scrollbar bg-white">
                     {/* Empty State / Loading Initial */}
                     {isLoading && sessions.length === 0 && (
