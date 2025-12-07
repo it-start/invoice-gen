@@ -434,7 +434,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         }
     };
 
-    const handleStatusClick = (status: LeaseStatus) => {
+    const handleStatusClick = () => {
         // Open sidebar/modal to show details
         if (window.innerWidth >= 1280) { // xl breakpoint
             if (!isSidebarOpen) setIsSidebarOpen(true);
@@ -835,7 +835,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 <div className="h-px w-4 md:w-8 bg-slate-200"></div>
                                                                 <div 
-                                                                    onClick={() => status && handleStatusClick(status)}
+                                                                    onClick={() => status && handleStatusClick()}
                                                                     className={`${style.bg} ${style.text} px-2 md:px-3 py-1 rounded-full text-[10px] md:text-xs font-bold flex items-center gap-1.5 border border-black/5 shadow-sm cursor-pointer hover:opacity-80 active:scale-95 transition-all`}
                                                                     role="button"
                                                                 >

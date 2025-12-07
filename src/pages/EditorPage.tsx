@@ -1,5 +1,4 @@
 
-
 import { useState, useEffect } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { Download, Wand2, Loader2, RotateCcw, FileText, Car, Globe, Share2, MessageCircle } from 'lucide-react';
@@ -161,10 +160,21 @@ export default function EditorPage() {
         
         {/* UNIFIED APP HEADER */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 shrink-0 z-30 shadow-sm">
-             {/* Left: Logo + Nav (Desktop) */}
-             <div className="flex items-center gap-6">
+             {/* Left: Logo + AI + Nav (Desktop) */}
+             <div className="flex items-center gap-3 md:gap-6">
                  <BrandLogo className="text-slate-800 h-6" />
-                 <div className="hidden md:block">
+                 
+                 {/* AI Button (only for editor modes) */}
+                 {docType !== 'chat' && (
+                     <button 
+                        onClick={ai.open}
+                        className="flex items-center gap-2 text-xs bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full hover:bg-purple-200 font-bold tracking-wide transition-all shadow-sm active:scale-95"
+                    >
+                        <Wand2 size={14} /> AI
+                    </button>
+                 )}
+
+                 <div className="hidden md:block border-l border-slate-200 pl-6">
                      <NavPills />
                  </div>
              </div>
@@ -187,16 +197,6 @@ export default function EditorPage() {
                 >
                     <Globe size={20} />
                 </button>
-                
-                {/* AI Button (only for editor modes) */}
-                {docType !== 'chat' && (
-                     <button 
-                        onClick={ai.open}
-                        className="flex items-center gap-2 text-xs bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full hover:bg-purple-200 font-bold tracking-wide"
-                    >
-                        <Wand2 size={14} /> AI
-                    </button>
-                )}
              </div>
         </header>
 
