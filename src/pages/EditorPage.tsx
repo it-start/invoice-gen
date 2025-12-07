@@ -156,7 +156,7 @@ export default function EditorPage() {
   );
 
   return (
-    <div className="h-screen bg-slate-50 flex flex-col font-sans overflow-hidden text-slate-900">
+    <div className="h-[100dvh] bg-slate-50 flex flex-col font-sans overflow-hidden text-slate-900">
         
         {/* UNIFIED APP HEADER */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 shrink-0 z-30 shadow-sm">
