@@ -246,7 +246,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
             // Create a map of existing messages to preserve status (read/sent)
             const existingSession = sessions.find(s => s.id === reservationId);
             // Fix: Fallback to empty array to ensure correct Map type inference
-            const localMsgMap = new Map((existingSession?.messages || []).map(m => [m.id, m]));
+            const localMsgMap = new Map<string, ChatMessage>(
+                (existingSession?.messages || []).map(m => [m.id, m] as [string, ChatMessage])
+            );
 
             // 4. Merge & Sort
             const allMessages = [
