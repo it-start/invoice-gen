@@ -231,6 +231,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     const [messageInput, setMessageInput] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [sidebarTab, setSidebarTab] = useState<'profile' | 'details'>('details');
+    const [isMobileDetailsOpen, setIsMobileDetailsOpen] = useState(false);
     
     // Virtual List Dimension State
     const listContainerRef = useRef<HTMLDivElement>(null);
@@ -433,6 +434,17 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         }
     };
 
+    const handleStatusClick = (status: LeaseStatus) => {
+        // Open sidebar/modal to show details
+        if (window.innerWidth >= 1280) { // xl breakpoint
+            if (!isSidebarOpen) setIsSidebarOpen(true);
+            setSidebarTab('details');
+        } else {
+            setIsMobileDetailsOpen(true);
+            setSidebarTab('details');
+        }
+    };
+
     // --- FORMATTERS ---
     const formatTime = (timestamp: number) => {
         if (!timestamp) return '';
@@ -483,10 +495,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     // Calculate Row Item Size
     const getItemSize = (index: number) => {
         const s = filteredSessions[index];
-        // Height estimation:
-        // Desktop Base: 85px, Mobile Base: 75px
-        // Metadata Row adds ~30px
-        const isMobileScreen = window.innerWidth < 768; // Safe approximation
+        const isMobileScreen = window.innerWidth < 768; 
         const base = isMobileScreen ? 75 : 85; 
         const meta = s.reservationSummary ? (isMobileScreen ? 28 : 30) : 0;
         return base + meta;
@@ -495,6 +504,88 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     const statusConfig = STATUS_CONFIG[currentLeaseData.status || 'pending'] || STATUS_CONFIG['pending'];
     const timelineProgress = getLeaseProgress(currentLeaseData.pickup.date, currentLeaseData.dropoff.date);
     const smartTime = getTimeRemaining(currentLeaseData.dropoff.date, currentLeaseData.status || 'pending');
+
+    const renderProfileContent = () => (
+        <div className="space-y-6">
+            <div className="flex flex-col items-center">
+                <div className="w-20 h-20 rounded-full bg-white mb-3 overflow-hidden flex items-center justify-center font-bold text-3xl text-slate-300 border-4 border-slate-50 shadow-md relative">
+                    {activeChat && activeChat.user.avatar ? (
+                        <img src={activeChat.user.avatar} alt="Profile" className="w-full h-full object-cover" />
+                    ) : activeChat?.user.name[0]}
+                </div>
+                <h3 className="font-bold text-xl text-slate-800 text-center">{activeChat?.user.name}</h3>
+                <div className="flex gap-2 mt-2">
+                    <span className="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded-full font-bold border border-green-200">
+                        {t('chat_active', lang)}
+                    </span>
+                    <span className="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded-full font-bold border border-slate-200">
+                        {activeChat?.user.role}
+                    </span>
+                </div>
+            </div>
+
+            <div>
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-2 px-1 flex items-center gap-1.5">
+                    <UserIcon size={12} /> Rider (Customer)
+                </h4>
+                <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-blue-50 rounded-bl-full -mr-8 -mt-8 z-0"></div>
+                    
+                    <InputGroup 
+                        label="Full Name *"
+                        value={currentLeaseData.renter.surname || activeChat?.user.name || ''}
+                        onChange={(v) => leaseHandlers.updateLease('renter', 'surname', v)}
+                        placeholder="Enter Rider Name"
+                    />
+
+                    <InputGroup 
+                        label="Contact Info *"
+                        value={currentLeaseData.renter.contact || ''}
+                        onChange={(v) => leaseHandlers.updateLease('renter', 'contact', v)}
+                        placeholder="Phone or Email"
+                    />
+
+                    <InputGroup 
+                        label="Passport / ID"
+                        value={currentLeaseData.renter.passport || ''}
+                        onChange={(v) => leaseHandlers.updateLease('renter', 'passport', v)}
+                        placeholder="Passport Number"
+                    />
+                </div>
+            </div>
+
+            <div>
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-2 px-1 flex items-center gap-1.5">
+                    <BadgeCheck size={12} className="text-blue-500" /> Owner (Business)
+                </h4>
+                <div className="bg-slate-50/80 rounded-xl border border-slate-200 p-4 space-y-3">
+                    <InputGroup 
+                        label="Rent Service Name *"
+                        value={currentLeaseData.owner.surname}
+                        onChange={(v) => leaseHandlers.updateLease('owner', 'surname', v)}
+                        helperText="Shown on contract header"
+                        className="bg-white"
+                    />
+
+                    <InputGroup 
+                        label="Business Address"
+                        value={currentLeaseData.owner.address}
+                        onChange={(v) => leaseHandlers.updateLease('owner', 'address', v)}
+                        placeholder="Full Address"
+                        className="bg-white"
+                    />
+
+                        <InputGroup 
+                        label="Contact Info"
+                        value={currentLeaseData.owner.contact}
+                        onChange={(v) => leaseHandlers.updateLease('owner', 'contact', v)}
+                        placeholder="Phone / Email"
+                        className="bg-white"
+                    />
+                </div>
+            </div>
+        </div>
+    );
 
     return (
         <div className="flex h-full bg-white md:rounded-xl overflow-hidden md:border border-slate-200 md:shadow-sm relative">
@@ -611,7 +702,12 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                     {isSidebarOpen ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
                                 </button>
 
-                                <button className="p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors xl:hidden"><MoreVertical size={18} /></button>
+                                <button 
+                                    onClick={() => setIsMobileDetailsOpen(true)}
+                                    className="p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors xl:hidden"
+                                >
+                                    <MoreVertical size={18} />
+                                </button>
                             </div>
                         </div>
 
@@ -738,7 +834,11 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                                         <div className="w-full flex flex-col items-center">
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 <div className="h-px w-4 md:w-8 bg-slate-200"></div>
-                                                                <div className={`${style.bg} ${style.text} px-2 md:px-3 py-1 rounded-full text-[10px] md:text-xs font-bold flex items-center gap-1.5 border border-black/5 shadow-sm`}>
+                                                                <div 
+                                                                    onClick={() => status && handleStatusClick(status)}
+                                                                    className={`${style.bg} ${style.text} px-2 md:px-3 py-1 rounded-full text-[10px] md:text-xs font-bold flex items-center gap-1.5 border border-black/5 shadow-sm cursor-pointer hover:opacity-80 active:scale-95 transition-all`}
+                                                                    role="button"
+                                                                >
                                                                     {style.icon}
                                                                     {style.label}
                                                                 </div>
@@ -923,85 +1023,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                             )}
 
                             {sidebarTab === 'profile' && (
-                                <div className="p-4 space-y-6">
-                                    <div className="flex flex-col items-center">
-                                        <div className="w-20 h-20 rounded-full bg-white mb-3 overflow-hidden flex items-center justify-center font-bold text-3xl text-slate-300 border-4 border-slate-50 shadow-md relative">
-                                            {activeChat.user.avatar ? (
-                                                <img src={activeChat.user.avatar} alt="Profile" className="w-full h-full object-cover" />
-                                            ) : activeChat.user.name[0]}
-                                        </div>
-                                        <h3 className="font-bold text-xl text-slate-800 text-center">{activeChat.user.name}</h3>
-                                        <div className="flex gap-2 mt-2">
-                                            <span className="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded-full font-bold border border-green-200">
-                                                {t('chat_active', lang)}
-                                            </span>
-                                            <span className="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded-full font-bold border border-slate-200">
-                                                {activeChat.user.role}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-2 px-1 flex items-center gap-1.5">
-                                            <UserIcon size={12} /> Rider (Customer)
-                                        </h4>
-                                        <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-sm relative overflow-hidden">
-                                            <div className="absolute top-0 right-0 w-16 h-16 bg-blue-50 rounded-bl-full -mr-8 -mt-8 z-0"></div>
-                                            
-                                            <InputGroup 
-                                                label="Full Name *"
-                                                value={currentLeaseData.renter.surname || activeChat.user.name}
-                                                onChange={(v) => leaseHandlers.updateLease('renter', 'surname', v)}
-                                                placeholder="Enter Rider Name"
-                                            />
-
-                                            <InputGroup 
-                                                label="Contact Info *"
-                                                value={currentLeaseData.renter.contact || ''}
-                                                onChange={(v) => leaseHandlers.updateLease('renter', 'contact', v)}
-                                                placeholder="Phone or Email"
-                                            />
-
-                                            <InputGroup 
-                                                label="Passport / ID"
-                                                value={currentLeaseData.renter.passport || ''}
-                                                onChange={(v) => leaseHandlers.updateLease('renter', 'passport', v)}
-                                                placeholder="Passport Number"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-2 px-1 flex items-center gap-1.5">
-                                            <BadgeCheck size={12} className="text-blue-500" /> Owner (Business)
-                                        </h4>
-                                        <div className="bg-slate-50/80 rounded-xl border border-slate-200 p-4 space-y-3">
-                                            <InputGroup 
-                                                label="Rent Service Name *"
-                                                value={currentLeaseData.owner.surname}
-                                                onChange={(v) => leaseHandlers.updateLease('owner', 'surname', v)}
-                                                helperText="Shown on contract header"
-                                                className="bg-white"
-                                            />
-
-                                            <InputGroup 
-                                                label="Business Address"
-                                                value={currentLeaseData.owner.address}
-                                                onChange={(v) => leaseHandlers.updateLease('owner', 'address', v)}
-                                                placeholder="Full Address"
-                                                className="bg-white"
-                                            />
-
-                                             <InputGroup 
-                                                label="Contact Info"
-                                                value={currentLeaseData.owner.contact}
-                                                onChange={(v) => leaseHandlers.updateLease('owner', 'contact', v)}
-                                                placeholder="Phone / Email"
-                                                className="bg-white"
-                                            />
-                                        </div>
-                                    </div>
-
+                                <div className="p-4">
+                                    {renderProfileContent()}
                                 </div>
                             )}
                         </div>
@@ -1009,6 +1032,49 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                 </div>
                 )}
             </div>
+
+            {/* Mobile Details Sheet */}
+            {isMobileDetailsOpen && (
+                <div className="fixed inset-0 z-50 xl:hidden">
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMobileDetailsOpen(false)} />
+                    <div className="absolute right-0 top-0 bottom-0 w-[85%] max-w-[320px] bg-white shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
+                        <div className="flex justify-between items-center p-4 border-b border-slate-100">
+                            <h3 className="font-bold text-slate-800">Details</h3>
+                            <button onClick={() => setIsMobileDetailsOpen(false)} className="p-2 hover:bg-slate-100 rounded-full">
+                                <X size={20} className="text-slate-500" />
+                            </button>
+                        </div>
+                        
+                        {/* Reuse Sidebar Tabs logic */}
+                        <div className="flex border-b border-slate-200 bg-slate-50/50 p-1 gap-1 m-2 rounded-xl shrink-0">
+                            <button 
+                                onClick={() => setSidebarTab('details')}
+                                className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${sidebarTab === 'details' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+                            >
+                                <FileEdit size={14} /> Details
+                            </button>
+                            <button 
+                                onClick={() => setSidebarTab('profile')}
+                                className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${sidebarTab === 'profile' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+                            >
+                                <UserIcon size={14} /> Profile
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                             {sidebarTab === 'details' && (
+                                <LeaseForm 
+                                    data={currentLeaseData} 
+                                    handlers={leaseHandlers} 
+                                    lang={lang}
+                                    compact={true} 
+                                />
+                            )}
+                            {sidebarTab === 'profile' && renderProfileContent()}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
