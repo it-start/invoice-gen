@@ -1,8 +1,8 @@
-
-
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle, CalendarClock, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle, CalendarClock, Hash, Sparkles } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
+// @ts-ignore
+import { VariableSizeList as List, ListChildComponentProps } from 'react-window';
 import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage, INITIAL_LEASE } from '../../types';
 import { t } from '../../utils/i18n';
 import { humanizeTime, formatShortDate } from '../../utils/dateUtils';
@@ -112,6 +112,17 @@ const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, border: str
     }
 };
 
+// Status Badge Component (Moved outside for usage in Row)
+const StatusBadge = ({ status, className = "" }: { status: LeaseStatus, className?: string }) => {
+    const config = STATUS_CONFIG[status] || STATUS_CONFIG['pending'];
+    return (
+        <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${config.bg} ${config.text} ${config.border} ${className}`}>
+            {config.icon}
+            <span>{config.label}</span>
+        </div>
+    );
+};
+
 // --- HELPER: Timeline Progress ---
 const getLeaseProgress = (startStr: string, endStr: string) => {
     if (!startStr || !endStr) return 0;
@@ -143,6 +154,67 @@ const getTimeRemaining = (endStr: string, status: LeaseStatus) => {
     return `${diffDays} days left`;
 };
 
+// --- VIRTUAL ROW COMPONENT ---
+const ChatRow = React.memo(({ index, style, data }: ListChildComponentProps) => {
+    const { sessions, activeSessionId, handleChatSelect, archiveSession, lang } = data;
+    const chat = sessions[index];
+    const isActive = activeSessionId === chat.id;
+
+    return (
+        <div style={style}>
+            <SwipeableRow onArchive={() => archiveSession(chat.id)} className="border-b border-slate-50 h-full">
+                <div 
+                    onClick={() => handleChatSelect(chat.id)}
+                    className={`p-3 md:p-4 flex gap-3 cursor-pointer transition-all group h-full
+                        ${isActive 
+                            ? 'bg-blue-50/50 border-l-4 border-l-blue-500 shadow-inner' 
+                            : 'hover:bg-slate-50 border-l-4 border-l-transparent'
+                        }`}
+                >
+                    <div className="relative shrink-0 self-start">
+                        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-lg overflow-hidden transition-all
+                            ${isActive ? 'bg-blue-200 text-blue-700 ring-2 ring-white shadow-md' : 'bg-slate-200 text-slate-500 group-hover:bg-slate-300'}`}>
+                            {chat.user.avatar ? <img src={chat.user.avatar} alt={chat.user.name} className="w-full h-full object-cover" /> : chat.user.name[0]}
+                        </div>
+                        <div className={`absolute bottom-0 right-0 w-3 h-3 md:w-3.5 md:h-3.5 rounded-full border-2 border-white ${chat.user.status === 'online' ? 'bg-green-500' : 'bg-slate-400'}`}></div>
+                    </div>
+                    <div className="flex-1 min-w-0 flex flex-col justify-start">
+                        <div className="flex justify-between items-baseline mb-0.5">
+                            <h3 className={`font-bold text-sm truncate ${isActive ? 'text-blue-900' : 'text-slate-800'}`}>{chat.user.name}</h3>
+                            <span className={`text-[10px] font-medium whitespace-nowrap ml-2 ${isActive ? 'text-blue-600' : 'text-slate-400'}`}>
+                                {chat.lastMessageTime > 0 ? humanizeTime(chat.lastMessageTime, lang) : ''}
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center mb-2">
+                            <p className={`text-xs truncate max-w-[140px] md:max-w-[140px] ${isActive ? 'text-blue-700 font-medium' : 'text-slate-500 group-hover:text-slate-600'}`}>
+                                {chat.lastMessage}
+                            </p>
+                            {chat.unreadCount > 0 && (
+                                <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center shadow-sm">
+                                    {chat.unreadCount}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* ENHANCED METADATA ROW */}
+                        {chat.reservationSummary && (
+                            <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-100/80">
+                                <div className="flex items-center gap-1.5 text-[10px] text-slate-600 font-medium bg-slate-100 px-2 py-0.5 rounded-md max-w-[55%]">
+                                    <Car size={10} className="text-slate-400 shrink-0" />
+                                    <span className="truncate">{chat.reservationSummary.vehicleName}</span>
+                                </div>
+                                {chat.reservationSummary.status && (
+                                    <StatusBadge status={chat.reservationSummary.status} />
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </SwipeableRow>
+        </div>
+    );
+});
+
 interface ChatLayoutProps {
     leaseData: LeaseData;
     lang: Language;
@@ -159,6 +231,11 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     const [searchQuery, setSearchQuery] = useState('');
     const [sidebarTab, setSidebarTab] = useState<'profile' | 'details'>('details');
     
+    // Virtual List Dimension State
+    const listContainerRef = useRef<HTMLDivElement>(null);
+    const [listDimensions, setListDimensions] = useState({ width: 0, height: 0 });
+    const listRef = useRef<any>(null);
+
     // Sidebar Collapse State with Persistence
     const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
         if (typeof window !== 'undefined') {
@@ -211,31 +288,40 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         }
     }, [routeId, isMobile]);
 
+    // Resize Observer for Virtual List
+    useEffect(() => {
+        if (!listContainerRef.current) return;
+        
+        const observer = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                setListDimensions({
+                    width: entry.contentRect.width,
+                    height: entry.contentRect.height
+                });
+            }
+        });
+        
+        observer.observe(listContainerRef.current);
+        return () => observer.disconnect();
+    }, []);
+
     // Determine Active Chat based on Route ID or Store State
     const currentActiveId = routeId || activeSessionId;
     const activeChat = sessions.find((c: ChatSession) => c.id === currentActiveId);
     
     // --- SMART LEASE DATA RESOLUTION ---
-    // Problem: leaseContext takes time to fetch. leaseData (parent prop) might be stale/initial.
-    // Solution: Prioritize Context -> Session Summary -> Parent Data (only if IDs match)
-    
     const resolveDisplayData = (): LeaseData => {
-        // 1. Full Context Available & Matches
         if (leaseContext && (leaseContext.id === currentActiveId || leaseContext.reservationId === currentActiveId)) {
             return leaseContext;
         }
-
-        // 2. Parent Data Available & Matches
         if (leaseData.id === currentActiveId || leaseData.reservationId === currentActiveId) {
             return leaseData;
         }
-
-        // 3. Fallback to Session Summary (Instant Data)
         if (activeChat && activeChat.reservationSummary) {
             return {
-                ...INITIAL_LEASE, // Fill holes with defaults
+                ...INITIAL_LEASE,
                 id: activeChat.id,
-                reservationId: activeChat.id, // Use session ID as display ID if summary missing
+                reservationId: activeChat.id,
                 status: activeChat.reservationSummary.status,
                 vehicle: {
                     ...INITIAL_LEASE.vehicle,
@@ -246,14 +332,10 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                     ...INITIAL_LEASE.pricing,
                     total: activeChat.reservationSummary.price
                 },
-                // Keep dates empty/default to avoid showing "Today" falsely, 
-                // smart header handles empty dates gracefully
                 pickup: { ...INITIAL_LEASE.pickup, date: '' }, 
                 dropoff: { ...INITIAL_LEASE.dropoff, date: '' }
             };
         }
-
-        // 4. Ultimate Fallback (Loading state effectively)
         return { ...INITIAL_LEASE, reservationId: 'Loading...' };
     };
 
@@ -271,20 +353,17 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                     const status = el.dataset.status;
                     const sender = el.dataset.sender;
                     
-                    // If message is incoming (sender !== 'me') and unread (status === 'sent')
-                    // Note: 'other' is used for incoming messages in chatStore
                     if (id && status === 'sent' && sender !== 'me' && sender !== 'system') {
                         markMessageAsRead(activeChat.id, id);
-                        observer.unobserve(el); // Stop observing once marked
+                        observer.unobserve(el);
                     }
                 }
             });
         }, {
-            root: null, // Viewport
-            threshold: 0.5 // Trigger when 50% visible
+            root: null,
+            threshold: 0.5
         });
 
-        // Select all message wrappers that are potentially unread
         const elements = document.querySelectorAll('.message-wrapper');
         elements.forEach(el => observer.observe(el));
 
@@ -297,7 +376,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
             const isChatSwitch = activeChat.id !== prevChatIdRef.current;
             const isNewMessage = activeChat.messages.length > prevMessageCountRef.current;
             
-            // Only scroll if switching chats or if a new message arrived
             if (isChatSwitch || isNewMessage) {
                 messagesEndRef.current.scrollIntoView({ 
                     behavior: isChatSwitch ? "auto" : "smooth",
@@ -311,8 +389,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     }, [activeChat?.id, activeChat?.messages.length]);
 
     const handleChatSelect = (chatId: string) => {
-        setActiveSession(chatId); // Instant UI feedback
-        // If we are already on this route (e.g. user went back via UI state but URL stayed), force view
+        setActiveSession(chatId);
         if (routeId === chatId && isMobile) {
             setMobileView('room');
         } else {
@@ -329,7 +406,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     };
 
     const handleBackToList = () => {
-        // Always navigate to root to clear route params, ensuring subsequent clicks on the same chat trigger a route change or are handled correctly
         navigate('/');
     };
 
@@ -351,7 +427,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         if (file) {
             sendImage(file);
         }
-        // Reset input so same file can be selected again
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -390,24 +465,31 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         } catch (e) { return ''; }
     };
 
-    // Status Badge Component
-    const StatusBadge = ({ status, className = "" }: { status: LeaseStatus, className?: string }) => {
-        const config = STATUS_CONFIG[status] || STATUS_CONFIG['pending'];
-        return (
-            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${config.bg} ${config.text} ${config.border} ${className}`}>
-                {config.icon}
-                <span>{config.label}</span>
-            </div>
-        );
-    };
-
-    // Filter Sessions: Hide archived unless searching (or search query is empty)
-    const filteredSessions = sessions.filter((s: ChatSession) => {
-        // If searching, include archived. If not, exclude archived.
+    // Filter Sessions
+    const filteredSessions = useMemo(() => sessions.filter((s: ChatSession) => {
         const matchesSearch = !searchQuery || s.user.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.id.includes(searchQuery);
         const isVisible = searchQuery ? true : !s.isArchived;
         return matchesSearch && isVisible;
-    });
+    }), [sessions, searchQuery]);
+
+    // Reset list cache when list changes (search or update)
+    useEffect(() => {
+        if (listRef.current) {
+            listRef.current.resetAfterIndex(0);
+        }
+    }, [filteredSessions]);
+
+    // Calculate Row Item Size
+    const getItemSize = (index: number) => {
+        const s = filteredSessions[index];
+        // Height estimation:
+        // Desktop Base: 85px, Mobile Base: 75px
+        // Metadata Row adds ~30px
+        const isMobileScreen = window.innerWidth < 768; // Safe approximation
+        const base = isMobileScreen ? 75 : 85; 
+        const meta = s.reservationSummary ? (isMobileScreen ? 28 : 30) : 0;
+        return base + meta;
+    };
 
     const statusConfig = STATUS_CONFIG[currentLeaseData.status || 'pending'] || STATUS_CONFIG['pending'];
     const timelineProgress = getLeaseProgress(currentLeaseData.pickup.date, currentLeaseData.dropoff.date);
@@ -416,7 +498,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     return (
         <div className="flex h-full bg-white md:rounded-xl overflow-hidden md:border border-slate-200 md:shadow-sm relative">
             
-            {/* Hidden File Input */}
             <input 
                 type="file" 
                 ref={fileInputRef} 
@@ -432,17 +513,15 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                 isMobile && mobileView === 'room' ? '-translate-x-1/2' : 'translate-x-0'
             }`}>
 
-                {/* LEFT SIDEBAR: Chat List */}
+                {/* LEFT SIDEBAR: Chat List (VIRTUALIZED) */}
                 <div className={`flex flex-col bg-slate-50 relative ${
                     isMobile ? 'w-1/2' : 'w-80 border-r border-slate-200 shrink-0'
                 }`}>
                     
-                    {/* --- SMART COMMAND BAR --- */}
-                    <div className="p-3 border-b border-slate-200/50 bg-white/80 backdrop-blur-md sticky top-0 z-30">
+                    {/* Command Bar */}
+                    <div className="p-3 border-b border-slate-200/50 bg-white/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
                         <form onSubmit={handleSearchSubmit} className="relative group">
-                            {/* Focus Glow Effect */}
                             <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500 -m-[1px] blur-[1px]" />
-                            
                             <div className="relative flex items-center bg-slate-100/50 border border-slate-200 rounded-xl group-focus-within:bg-white group-focus-within:border-transparent group-focus-within:shadow-md transition-all duration-300 overflow-hidden">
                                 <div className="pl-3 text-slate-400 group-focus-within:text-blue-500 transition-colors">
                                     <Search size={16} className="group-focus-within:hidden" />
@@ -455,7 +534,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
-                                {/* Command Hint */}
                                 <div className="mr-2 px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-300 opacity-0 group-focus-within:opacity-100 transition-opacity scale-90 hidden sm:block">
                                     <span className="text-[10px] font-bold font-mono">/</span>
                                 </div>
@@ -463,76 +541,34 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                         </form>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto custom-scrollbar bg-white">
-                        {/* Empty State / Loading Initial */}
+                    {/* Virtual List Container */}
+                    <div className="flex-1 bg-white" ref={listContainerRef}>
                         {isLoading && sessions.length === 0 && (
-                            <div className="p-8 flex flex-col items-center justify-center text-slate-400 gap-2">
+                            <div className="p-8 flex flex-col items-center justify-center text-slate-400 gap-2 h-full">
                                 <Loader2 className="animate-spin text-blue-500" />
                                 <span className="text-xs">Loading chats...</span>
                             </div>
                         )}
                         
                         {filteredSessions.length === 0 && !isLoading && (
-                            <div className="p-8 text-center text-xs text-slate-400 italic">
+                            <div className="p-8 text-center text-xs text-slate-400 italic h-full">
                                 No active chats found.
                             </div>
                         )}
 
-                        {filteredSessions.map((chat: ChatSession) => {
-                            const isActive = currentActiveId === chat.id;
-                            
-                            return (
-                                <SwipeableRow key={chat.id} onArchive={() => archiveSession(chat.id)} className="border-b border-slate-50">
-                                    <div 
-                                        onClick={() => handleChatSelect(chat.id)}
-                                        className={`p-3 md:p-4 flex gap-3 cursor-pointer transition-all group
-                                            ${isActive 
-                                                ? 'bg-blue-50/50 border-l-4 border-l-blue-500 shadow-inner' 
-                                                : 'hover:bg-slate-50 border-l-4 border-l-transparent'
-                                            }`}
-                                    >
-                                        <div className="relative shrink-0 self-start">
-                                            <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-lg overflow-hidden transition-all
-                                                ${isActive ? 'bg-blue-200 text-blue-700 ring-2 ring-white shadow-md' : 'bg-slate-200 text-slate-500 group-hover:bg-slate-300'}`}>
-                                                {chat.user.avatar ? <img src={chat.user.avatar} alt={chat.user.name} className="w-full h-full object-cover" /> : chat.user.name[0]}
-                                            </div>
-                                            <div className={`absolute bottom-0 right-0 w-3 h-3 md:w-3.5 md:h-3.5 rounded-full border-2 border-white ${chat.user.status === 'online' ? 'bg-green-500' : 'bg-slate-400'}`}></div>
-                                        </div>
-                                        <div className="flex-1 min-w-0 flex flex-col justify-start">
-                                            <div className="flex justify-between items-baseline mb-0.5">
-                                                <h3 className={`font-bold text-sm truncate ${isActive ? 'text-blue-900' : 'text-slate-800'}`}>{chat.user.name}</h3>
-                                                <span className={`text-[10px] font-medium whitespace-nowrap ml-2 ${isActive ? 'text-blue-600' : 'text-slate-400'}`}>
-                                                    {chat.lastMessageTime > 0 ? humanizeTime(chat.lastMessageTime, lang) : ''}
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between items-center mb-2">
-                                                <p className={`text-xs truncate max-w-[140px] md:max-w-[140px] ${isActive ? 'text-blue-700 font-medium' : 'text-slate-500 group-hover:text-slate-600'}`}>
-                                                    {chat.lastMessage}
-                                                </p>
-                                                {chat.unreadCount > 0 && (
-                                                    <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center shadow-sm">
-                                                        {chat.unreadCount}
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            {/* ENHANCED METADATA ROW */}
-                                            {chat.reservationSummary && (
-                                                <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-100/80">
-                                                    <div className="flex items-center gap-1.5 text-[10px] text-slate-600 font-medium bg-slate-100 px-2 py-0.5 rounded-md max-w-[55%]">
-                                                        <Car size={10} className="text-slate-400 shrink-0" />
-                                                        <span className="truncate">{chat.reservationSummary.vehicleName}</span>
-                                                    </div>
-                                                    {chat.reservationSummary.status && (
-                                                        <StatusBadge status={chat.reservationSummary.status} />
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </SwipeableRow>
-                            );
-                        })}
+                        {listDimensions.height > 0 && filteredSessions.length > 0 && (
+                            <List
+                                ref={listRef}
+                                height={listDimensions.height}
+                                width={listDimensions.width}
+                                itemCount={filteredSessions.length}
+                                itemSize={getItemSize}
+                                itemData={{ sessions: filteredSessions, activeSessionId: currentActiveId, handleChatSelect, archiveSession, lang }}
+                                className="custom-scrollbar"
+                            >
+                                {ChatRow}
+                            </List>
+                        )}
                     </div>
                 </div>
 
@@ -565,7 +601,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                 <button className="hidden md:block p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors"><Phone size={18} /></button>
                                 <button className="hidden md:block p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors"><Video size={18} /></button>
                                 
-                                {/* SIDEBAR TOGGLE */}
                                 <div className="h-6 w-px bg-slate-200 mx-1 hidden xl:block"></div>
                                 <button 
                                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -579,11 +614,9 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                             </div>
                         </div>
 
-                        {/* --- SMART CONTEXT ISLAND (Redesigned Sticky Header) --- */}
+                        {/* --- SMART CONTEXT ISLAND --- */}
                         <div className={`backdrop-blur-xl bg-white/90 border-b border-slate-200/50 pt-3 pb-0 shrink-0 z-10 sticky top-0 transition-all shadow-[0_4px_20px_-12px_rgba(0,0,0,0.1)]`}>
                             <div className="px-4 pb-3 flex justify-between items-start gap-4">
-                                
-                                {/* LEFT: Asset (Icon, Name, Plate) */}
                                 <div className="flex items-start gap-3 min-w-0">
                                     <div className="relative shrink-0 pt-0.5">
                                         <div className="w-10 h-10 md:w-11 md:h-11 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 shadow-sm flex items-center justify-center text-slate-500">
@@ -603,7 +636,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                     </div>
                                 </div>
 
-                                {/* MIDDLE (Desktop Only): Timeline Visual */}
                                 <div className="hidden md:flex flex-col items-center justify-center min-w-0 px-2 flex-1">
                                     <div className="flex items-center gap-1.5 text-slate-500 mb-0.5">
                                         <CalendarClock size={12} />
@@ -633,9 +665,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                     </div>
                                 </div>
 
-                                {/* RIGHT: Status, Price, Mobile Dates */}
                                 <div className="flex flex-col items-end shrink-0">
-                                    {/* Row 1: Status */}
                                     <div className="flex items-center gap-2 mb-1">
                                         <span className="text-[10px] text-slate-400 font-mono hidden md:inline">
                                             #{currentLeaseData.reservationId}
@@ -643,7 +673,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                         <StatusBadge status={currentLeaseData.status || 'pending'} />
                                     </div>
                                     
-                                    {/* Row 2: Price & Currency */}
                                     <div className="text-right">
                                         <span className="font-bold text-slate-800 text-sm font-sans">
                                             {currentLeaseData.pricing.total > 0 ? currentLeaseData.pricing.total.toLocaleString() : '-'}
@@ -653,7 +682,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                         </span>
                                     </div>
 
-                                    {/* Row 3 (Mobile Only): Dates - Improved */}
                                     <div className="md:hidden mt-1.5 flex justify-end">
                                         {currentLeaseData.pickup.date ? (
                                             <div className="flex items-center text-[10px] font-medium bg-slate-50 px-2 py-1 rounded border border-slate-100 text-slate-600">
@@ -668,7 +696,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                 </div>
                             </div>
 
-                            {/* VISUAL TIMELINE PROGRESS BAR */}
                             <div className="w-full h-[3px] bg-slate-100 relative overflow-hidden">
                                 <div 
                                     className={`h-full transition-all duration-1000 ease-out ${statusConfig.accent}`} 
@@ -683,7 +710,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                         <div className="flex-1 p-2 md:p-6 overflow-y-auto space-y-4 md:space-y-6 flex flex-col dark-scrollbar bg-slate-50/50 overscroll-contain">
                             
                             {activeChat.messages.map((msg: ChatMessage, index: number) => {
-                                // Date Separator Logic
                                 const prevMsg = index > 0 ? activeChat.messages[index - 1] : null;
                                 const isDifferentDay = !prevMsg || new Date(msg.timestamp).toDateString() !== new Date(prevMsg.timestamp).toDateString();
 
@@ -697,7 +723,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                             </div>
                                         )}
 
-                                        {/* SYSTEM MESSAGE RENDERER */}
                                         {msg.type === 'system' ? (() => {
                                             const status = msg.metadata?.status;
                                             const style = status ? STATUS_CONFIG[status] : { bg: 'bg-slate-100', text: 'text-slate-600', icon: <CheckCheck size={12} />, label: 'System' };
@@ -725,7 +750,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                                             
                                                             {msg.text && <p className="text-[11px] md:text-xs text-slate-500 italic text-center max-w-xs">{msg.text}</p>}
                                                             
-                                                            {/* INTERACTIVE ACTIONS BUBBLE */}
                                                             {isActionable && (
                                                                 <div className="mt-3 flex gap-2 md:gap-3 animate-in zoom-in duration-300">
                                                                     <button 
@@ -749,7 +773,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                                 </div>
                                             );
                                         })() : (
-                                            /* NORMAL / IMAGE MESSAGE RENDERER */
                                             (() => {
                                                 const isMe = msg.senderId === 'me';
                                                 return (
@@ -798,7 +821,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                     </React.Fragment>
                                 );
                             })}
-                            {/* Dummy div for auto-scrolling anchor */}
                             <div ref={messagesEndRef} className="h-2" />
                         </div>
 
@@ -888,8 +910,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
 
                         {/* Tab Content */}
                         <div className="flex-1 overflow-y-auto custom-scrollbar bg-white">
-                            
-                            {/* DETAILS TAB (Mini-Editor) */}
                             {sidebarTab === 'details' && (
                                 <div className="p-4">
                                     <LeaseForm 
@@ -901,10 +921,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                 </div>
                             )}
 
-                            {/* PROFILE TAB */}
                             {sidebarTab === 'profile' && (
                                 <div className="p-4 space-y-6">
-                                    {/* Header: The Person we are talking to */}
                                     <div className="flex flex-col items-center">
                                         <div className="w-20 h-20 rounded-full bg-white mb-3 overflow-hidden flex items-center justify-center font-bold text-3xl text-slate-300 border-4 border-slate-50 shadow-md relative">
                                             {activeChat.user.avatar ? (
@@ -922,7 +940,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                         </div>
                                     </div>
 
-                                    {/* SECTION 1: RIDER / RENTER (Customer) */}
                                     <div>
                                         <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-2 px-1 flex items-center gap-1.5">
                                             <UserIcon size={12} /> Rider (Customer)
@@ -953,7 +970,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                         </div>
                                     </div>
 
-                                    {/* SECTION 2: OWNER (Business/You) */}
                                     <div>
                                         <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-2 px-1 flex items-center gap-1.5">
                                             <BadgeCheck size={12} className="text-blue-500" /> Owner (Business)
