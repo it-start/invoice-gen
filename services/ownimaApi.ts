@@ -162,7 +162,8 @@ const mapResponseToLeaseData = (json: any, ownerProfile?: OwnerProfile | null): 
                 priceSeason: i.prices?.season_price_total || 0,
                 // Use template deposit as fallback if reservation deposit is 0
                 deposit: v.price_templates?.deposit_amount || 0,
-                total: i.total_price || r.total_price || 0
+                total: i.total_price || r.total_price || 0,
+                currency: r.currency || 'THB'
             },
             extraOptions: extraOptions,
             renter: {

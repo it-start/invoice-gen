@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
@@ -16,7 +17,7 @@ interface WizardContainerProps {
     compact?: boolean;
 }
 
-export const WizardContainer: React.FC<WizardContainerProps> = ({ steps, lang = 'en', compact = false }) => {
+export const WizardContainer: React.FC<WizardContainerProps> = ({ steps, lang = 'en' as Language, compact = false }) => {
     const isMobile = useIsMobile();
     const [currentStep, setCurrentStep] = useState(0);
     const [expandedSteps, setExpandedSteps] = useState<number[]>([]);

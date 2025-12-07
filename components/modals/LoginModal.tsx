@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Loader2, Lock, X } from 'lucide-react';
 import { authService } from '../../services/authService';
@@ -13,7 +14,7 @@ interface LoginModalProps {
   lang?: Language;
 }
 
-export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess, lang = 'en' }) => {
+export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess, lang = 'en' as Language }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);

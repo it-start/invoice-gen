@@ -66,6 +66,7 @@ export interface LeaseData {
     priceSeason: number;
     deposit: number;
     total: number;
+    currency?: string; // Currency code (e.g. THB, USD)
   };
   extraOptions: { name: string; price: number }[];
   terms: string; // The long text
@@ -264,7 +265,8 @@ export const INITIAL_LEASE: LeaseData = {
     daysSeason: 11,
     priceSeason: 3641,
     deposit: 300,
-    total: 6904
+    total: 6904,
+    currency: 'THB'
   },
   extraOptions: [
     { name: 'Pressure', price: 100 },

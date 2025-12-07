@@ -9,7 +9,7 @@ interface LeasePreviewProps {
   lang?: Language;
 }
 
-const LeasePreview: React.FC<LeasePreviewProps> = ({ data, lang = 'en' }) => {
+const LeasePreview: React.FC<LeasePreviewProps> = ({ data, lang = 'en' as Language }) => {
   const isNonDefaultTime = (time: string) => time.includes('(Early)') || time.includes('(Late)');
 
   const getTimeClasses = (time: string) => {

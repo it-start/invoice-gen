@@ -121,6 +121,7 @@ interface ChatState {
     error: string | null;
     leaseContext: LeaseData | null; // Store the lease data associated with current chat
     activeEventSource: EventSource | null; // Track active SSE connection
+    currentLoadToken: number; // To prevent race conditions
     
     // Actions
     hydrate: () => Promise<void>;
@@ -135,6 +136,7 @@ interface ChatState {
     markMessageAsRead: (sessionId: string, messageId: string) => void;
     setupBackgroundSync: () => void;
     archiveSession: (sessionId: string) => void;
+    disconnect: () => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -145,6 +147,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     error: null,
     leaseContext: null,
     activeEventSource: null,
+    currentLoadToken: 0,
 
     hydrate: async () => {
         if (get().isHydrated) return;
@@ -185,44 +188,67 @@ export const useChatStore = create<ChatState>((set, get) => ({
         });
     },
 
+    disconnect: () => {
+        const { activeEventSource } = get();
+        if (activeEventSource) {
+            console.debug("Disconnecting active chat session...");
+            activeEventSource.close();
+            set({ activeEventSource: null });
+        }
+    },
+
     loadChatSession: async (reservationId: string) => {
         // Ensure store is hydrated first to check for existing data
         if (!get().isHydrated) {
             await get().hydrate();
         }
 
-        // Close existing connection if switching
+        // Close existing connection immediately
         const { activeEventSource, sessions } = get();
         if (activeEventSource) {
             activeEventSource.close();
-            set({ activeEventSource: null });
         }
-
-        // Stale-While-Revalidate Strategy
-        const existingSession = sessions.find(s => s.id === reservationId);
         
-        // Always set active session immediately to update UI focus
-        if (existingSession) {
-            set({ activeSessionId: reservationId, isLoading: false, error: null });
-        } else {
-            set({ activeSessionId: reservationId, isLoading: true, error: null });
-        }
+        // Generate a new token for this load request
+        const myToken = Math.random();
+        set({ 
+            activeEventSource: null, 
+            currentLoadToken: myToken,
+            // Optimistic active set
+            activeSessionId: reservationId, 
+            isLoading: !sessions.find(s => s.id === reservationId), 
+            error: null 
+        });
 
         try {
             // 1. Fetch Lease Data to get Renter/Owner context
             const leaseData = await loadLeaseData(reservationId);
+            
+            // CHECK: Did another load start while we were fetching?
+            if (get().currentLoadToken !== myToken) return;
+
             set({ leaseContext: leaseData });
 
             // 2. Fetch History (System Messages)
             const historyEvents = await fetchReservationHistory(leaseData.id || reservationId);
             
+            // CHECK
+            if (get().currentLoadToken !== myToken) return;
+
             // 3. Fetch Ntfy Messages (User Chat)
             // Use the real UUID (leaseData.id) for the chat topic if available, otherwise input
             const topicId = leaseData.id || reservationId;
             const ntfyData = await fetchNtfyMessages(topicId);
 
+            // CHECK
+            if (get().currentLoadToken !== myToken) return;
+
             // Create a map of existing messages to preserve status (read/sent)
-            const localMsgMap = new Map(existingSession?.messages.map(m => [m.id, m]));
+            const existingSession = sessions.find(s => s.id === reservationId);
+            const localMsgMap = new Map<string, ChatMessage>();
+            if (existingSession?.messages) {
+                existingSession.messages.forEach(m => localMsgMap.set(m.id, m));
+            }
 
             // 4. Merge & Sort
             const allMessages = [
@@ -230,8 +256,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 ...ntfyData.map((n: any) => {
                     const local = localMsgMap.get(n.id);
                     // Use local status if available (preserve 'read' state)
-                    // If new message (fresh load), default to 'read' (history) unless we want to assume unread.
-                    // For typical "load history" behavior, we treat fetched history as read if we don't know otherwise.
                     const status = local ? local.status : 'read';
                     return ntfyToChatMessage(n, status);
                 })
@@ -269,6 +293,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
             // 6. Update Store with Session & Persist
             set(state => {
+                // Double check token one last time before state update
+                if (state.currentLoadToken !== myToken) return {};
+
                 const existingIdx = state.sessions.findIndex(s => s.id === topicId);
                 let newSessions = [...state.sessions];
                 if (existingIdx >= 0) {
@@ -279,7 +306,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 
                 return {
                     sessions: newSessions,
-                    // Ensure activeSessionId is set (in case we did SWR update or full load)
                     activeSessionId: topicId,
                     isLoading: false
                 };
@@ -289,71 +315,78 @@ export const useChatStore = create<ChatState>((set, get) => ({
             await dbService.saveSession(newSession);
 
             // 7. Establish SSE Connection for Live Updates
-            const sseUrl = getChatSseUrl(topicId);
-            const eventSource = new EventSource(sseUrl);
-            
-            eventSource.onmessage = (event) => {
-                try {
-                    const ntfyMsg = JSON.parse(event.data);
-                    if (ntfyMsg.event !== 'message') return;
-                    
-                    // Always mark incoming live messages as 'sent' (unread) initially.
-                    // The UI IntersectionObserver will mark them as 'read' when visible.
-                    const status = 'sent';
+            if (get().currentLoadToken === myToken) {
+                const sseUrl = getChatSseUrl(topicId);
+                const eventSource = new EventSource(sseUrl);
+                
+                eventSource.onmessage = (event) => {
+                    // Safety check inside callback
+                    if (get().currentLoadToken !== myToken) {
+                         eventSource.close();
+                         return;
+                    }
 
-                    const chatMsg = ntfyToChatMessage(ntfyMsg, status);
-                    
-                    set(state => {
-                        const sessionIndex = state.sessions.findIndex(s => s.id === topicId);
-                        if (sessionIndex === -1) return {};
-
-                        const session = state.sessions[sessionIndex];
-                        // Deduplicate based on ID
-                        if (session.messages.some(m => m.id === chatMsg.id)) return {};
-
-                        const updatedMessages = [...session.messages, chatMsg];
+                    try {
+                        const ntfyMsg = JSON.parse(event.data);
+                        if (ntfyMsg.event !== 'message') return;
                         
-                        // Increment unread count (if message is not from me)
-                        // Note: ntfyToChatMessage handles senderId logic. 
-                        // If I sent it (via another device), senderId is 'me', so unreadCount shouldn't increase.
-                        const isIncoming = chatMsg.senderId !== 'me' && chatMsg.senderId !== 'system';
-                        const newUnreadCount = isIncoming ? (session.unreadCount || 0) + 1 : (session.unreadCount || 0);
+                        // Always mark incoming live messages as 'sent' (unread) initially.
+                        // The UI IntersectionObserver will mark them as 'read' when visible.
+                        const status = 'sent';
 
-                        const updatedSession = {
-                            ...session,
-                            messages: updatedMessages,
-                            lastMessage: chatMsg.type === 'image' ? 'Image Attachment' : chatMsg.text,
-                            lastMessageTime: chatMsg.timestamp,
-                            unreadCount: newUnreadCount
-                        };
+                        const chatMsg = ntfyToChatMessage(ntfyMsg, status);
                         
-                        const newSessions = [...state.sessions];
-                        newSessions[sessionIndex] = updatedSession;
-                        
-                        // Async Save (fire and forget for UI responsiveness)
-                        dbService.saveSession(updatedSession);
-                        
-                        return { sessions: newSessions };
-                    });
-                } catch (e) {
-                    console.error("SSE Parse Error", e);
-                }
-            };
-            
-            eventSource.onerror = (err) => {
-                console.error("SSE Connection Error", err);
-            };
+                        set(state => {
+                            const sessionIndex = state.sessions.findIndex(s => s.id === topicId);
+                            if (sessionIndex === -1) return {};
 
-            set({ activeEventSource: eventSource });
+                            const session = state.sessions[sessionIndex];
+                            // Deduplicate based on ID
+                            if (session.messages.some(m => m.id === chatMsg.id)) return {};
+
+                            const updatedMessages = [...session.messages, chatMsg];
+                            
+                            const isIncoming = chatMsg.senderId !== 'me' && chatMsg.senderId !== 'system';
+                            const newUnreadCount = isIncoming ? (session.unreadCount || 0) + 1 : (session.unreadCount || 0);
+
+                            const updatedSession = {
+                                ...session,
+                                messages: updatedMessages,
+                                lastMessage: chatMsg.type === 'image' ? 'Image Attachment' : chatMsg.text,
+                                lastMessageTime: chatMsg.timestamp,
+                                unreadCount: newUnreadCount
+                            };
+                            
+                            const newSessions = [...state.sessions];
+                            newSessions[sessionIndex] = updatedSession;
+                            
+                            dbService.saveSession(updatedSession);
+                            
+                            return { sessions: newSessions };
+                        });
+                    } catch (e) {
+                        console.error("SSE Parse Error", e);
+                    }
+                };
+                
+                eventSource.onerror = (err) => {
+                    console.error("SSE Connection Error", err);
+                };
+
+                set({ activeEventSource: eventSource });
+            }
 
         } catch (e: any) {
             console.error("Load Chat Error", e);
-            set(state => ({ 
-                isLoading: false, 
-                error: state.activeSessionId && state.sessions.find(s => s.id === state.activeSessionId) 
-                    ? null // Hide error if we have data to show
-                    : (e.message || "Failed to load chat")
-            }));
+            // Only update error if this is still the active request
+            if (get().currentLoadToken === myToken) {
+                set(state => ({ 
+                    isLoading: false, 
+                    error: state.activeSessionId && state.sessions.find(s => s.id === state.activeSessionId) 
+                        ? null // Hide error if we have data to show
+                        : (e.message || "Failed to load chat")
+                }));
+            }
         }
     },
 
