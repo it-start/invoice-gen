@@ -583,16 +583,10 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                 onChange={handleFileChange}
             />
 
-            {/* SLIDING CONTAINER */}
-            <div className={`flex h-full transition-transform duration-300 ease-out will-change-transform ${
-                isMobile ? 'w-[200%]' : 'w-full'
-            } ${
-                isMobile && mobileView === 'room' ? '-translate-x-1/2' : 'translate-x-0'
-            }`}>
-
-                {/* LEFT SIDEBAR: Chat List */}
+            {/* LEFT SIDEBAR: Chat List */}
+            {(!isMobile || mobileView === 'list') && (
                 <div className={`flex flex-col bg-slate-50 relative ${
-                    isMobile ? 'w-1/2' : 'w-80 border-r border-slate-200 shrink-0'
+                    isMobile ? 'w-full' : 'w-80 border-r border-slate-200 shrink-0'
                 }`}>
                     
                     {/* Command Bar */}
@@ -645,10 +639,12 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                         )}
                     </div>
                 </div>
+            )}
 
-                {/* MIDDLE: Chat Room */}
+            {/* MIDDLE: Chat Room */}
+            {(!isMobile || mobileView === 'room') && (
                 <div className={`flex flex-col bg-slate-50/30 relative ${
-                    isMobile ? 'w-1/2' : 'flex-1 min-w-0'
+                    isMobile ? 'w-full' : 'flex-1 min-w-0'
                 }`}>
                     {activeChat ? (
                     <>
@@ -985,9 +981,10 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                         </div>
                     )}
                 </div>
+            )}
 
-                {/* RIGHT SIDEBAR: Lease Mini-Editor & Profile (Desktop Only) */}
-                {activeChat && (
+            {/* RIGHT SIDEBAR: Lease Mini-Editor & Profile (Desktop Only) */}
+            {activeChat && (
                 <div className={`bg-white border-l border-slate-100 hidden xl:flex flex-col h-full shadow-lg z-20 transition-all duration-300 ease-in-out overflow-hidden ${isSidebarOpen ? 'w-[320px] opacity-100' : 'w-0 opacity-0 border-none'}`}>
                      <div className="w-[320px] h-full flex flex-col">
                         {/* Sidebar Tabs */}
@@ -1027,8 +1024,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                         </div>
                      </div>
                 </div>
-                )}
-            </div>
+            )}
 
             {/* Mobile Details Sheet */}
             {isMobileDetailsOpen && (
