@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle, CalendarClock, Hash, Sparkles } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage } from '../../types';
+import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage, INITIAL_LEASE } from '../../types';
 import { t } from '../../utils/i18n';
 import { humanizeTime, formatShortDate } from '../../utils/dateUtils';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -214,9 +214,49 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     const currentActiveId = routeId || activeSessionId;
     const activeChat = sessions.find((c: ChatSession) => c.id === currentActiveId);
     
-    // Determine Active Lease Context
-    const isEditingActiveChat = activeChat && activeChat.id === leaseData.id;
-    const currentLeaseData = isEditingActiveChat ? leaseData : (leaseContext || leaseData);
+    // --- SMART LEASE DATA RESOLUTION ---
+    // Problem: leaseContext takes time to fetch. leaseData (parent prop) might be stale/initial.
+    // Solution: Prioritize Context -> Session Summary -> Parent Data (only if IDs match)
+    
+    const resolveDisplayData = (): LeaseData => {
+        // 1. Full Context Available & Matches
+        if (leaseContext && (leaseContext.id === currentActiveId || leaseContext.reservationId === currentActiveId)) {
+            return leaseContext;
+        }
+
+        // 2. Parent Data Available & Matches
+        if (leaseData.id === currentActiveId || leaseData.reservationId === currentActiveId) {
+            return leaseData;
+        }
+
+        // 3. Fallback to Session Summary (Instant Data)
+        if (activeChat && activeChat.reservationSummary) {
+            return {
+                ...INITIAL_LEASE, // Fill holes with defaults
+                id: activeChat.id,
+                reservationId: activeChat.id, // Use session ID as display ID if summary missing
+                status: activeChat.reservationSummary.status,
+                vehicle: {
+                    ...INITIAL_LEASE.vehicle,
+                    name: activeChat.reservationSummary.vehicleName,
+                    plate: activeChat.reservationSummary.plateNumber,
+                },
+                pricing: {
+                    ...INITIAL_LEASE.pricing,
+                    total: activeChat.reservationSummary.price
+                },
+                // Keep dates empty/default to avoid showing "Today" falsely, 
+                // smart header handles empty dates gracefully
+                pickup: { ...INITIAL_LEASE.pickup, date: '' }, 
+                dropoff: { ...INITIAL_LEASE.dropoff, date: '' }
+            };
+        }
+
+        // 4. Ultimate Fallback (Loading state effectively)
+        return { ...INITIAL_LEASE, reservationId: 'Loading...' };
+    };
+
+    const currentLeaseData = resolveDisplayData();
 
     // --- READ RECEIPT / VISIBILITY OBSERVER ---
     useEffect(() => {
@@ -567,17 +607,25 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                             </div>
                             <div className="flex items-baseline gap-1.5 truncate w-full md:justify-center">
                                 <span className="text-xs font-semibold text-slate-800 truncate">
-                                    {formatShortDate(currentLeaseData.pickup.date, lang)}
-                                    <span className="text-slate-300 mx-1.5">→</span>
-                                    {formatShortDate(currentLeaseData.dropoff.date, lang)}
+                                    {currentLeaseData.pickup.date ? (
+                                        <>
+                                            {formatShortDate(currentLeaseData.pickup.date, lang)}
+                                            <span className="text-slate-300 mx-1.5">→</span>
+                                            {formatShortDate(currentLeaseData.dropoff.date, lang)}
+                                        </>
+                                    ) : (
+                                        <span className="text-slate-400 italic">No dates set</span>
+                                    )}
                                 </span>
-                                <span className={`text-[10px] font-bold px-1.5 rounded-md ${
-                                    (currentLeaseData.status === 'overdue' || currentLeaseData.status === 'cancelled') 
-                                        ? 'bg-red-100 text-red-700' 
-                                        : 'bg-blue-50 text-blue-700'
-                                }`}>
-                                    {smartTime}
-                                </span>
+                                {currentLeaseData.dropoff.date && (
+                                    <span className={`text-[10px] font-bold px-1.5 rounded-md ${
+                                        (currentLeaseData.status === 'overdue' || currentLeaseData.status === 'cancelled') 
+                                            ? 'bg-red-100 text-red-700' 
+                                            : 'bg-blue-50 text-blue-700'
+                                    }`}>
+                                        {smartTime}
+                                    </span>
+                                )}
                             </div>
                         </div>
 
@@ -590,7 +638,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                 </span>
                                 <span className="w-px h-3 bg-slate-200"></span>
                                 <span className="font-bold text-slate-700 text-xs font-sans">
-                                    {currentLeaseData.pricing.total.toLocaleString()}
+                                    {currentLeaseData.pricing.total > 0 ? currentLeaseData.pricing.total.toLocaleString() : '-'}
                                 </span>
                             </div>
                         </div>
