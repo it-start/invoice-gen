@@ -622,6 +622,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                 <input 
                                     type="text" 
                                     placeholder={t('chat_search', lang)}
+                                    // text-base on mobile prevents zoom
                                     className="w-full pl-2 pr-3 py-2.5 bg-transparent text-base md:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -690,9 +691,21 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                 </div>
                             </div>
                             <div className="flex gap-2 text-slate-400 items-center">
+                                {/* Actions: Phone/Video hidden on small mobile, visible on md+ */}
                                 <button className="hidden md:block p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors"><Phone size={18} /></button>
                                 <button className="hidden md:block p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors"><Video size={18} /></button>
                                 
+                                {/* Lease/Details button for mobile: replaces global nav */}
+                                <button 
+                                    onClick={() => {
+                                        setSidebarTab('details');
+                                        setIsMobileDetailsOpen(true);
+                                    }}
+                                    className="md:hidden p-2 text-blue-600 bg-blue-50 rounded-full hover:bg-blue-100 transition-colors shadow-sm"
+                                >
+                                    <Car size={18} />
+                                </button>
+
                                 <div className="h-6 w-px bg-slate-200 mx-1 hidden xl:block"></div>
                                 <button 
                                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -713,7 +726,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
 
                         {/* --- SMART CONTEXT ISLAND (Compact for Mobile) --- */}
                         <div className={`backdrop-blur-xl bg-white/90 border-b border-slate-200/50 pt-0 pb-0 shrink-0 z-10 sticky top-0 transition-all shadow-[0_4px_20px_-12px_rgba(0,0,0,0.1)]`}>
-                            <div className="px-3 py-2 md:px-4 md:pb-3 flex justify-between items-center md:items-start gap-2 md:gap-4">
+                            {/* Adjusted padding for mobile: px-3 py-1.5 instead of py-2 */}
+                            <div className="px-3 py-1.5 md:px-4 md:py-3 flex justify-between items-center md:items-start gap-2 md:gap-4">
                                 <div className="flex items-center md:items-start gap-3 min-w-0">
                                     <div className="relative shrink-0 hidden xs:block">
                                         <div className="w-8 h-8 md:w-11 md:h-11 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 shadow-sm flex items-center justify-center text-slate-500">
@@ -777,6 +791,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                         <span className="text-[10px] text-slate-400 font-bold ml-1">THB</span>
                                     </div>
 
+                                    {/* Mobile Date Summary inside right block to save space */}
                                     <div className="md:hidden mt-0.5 flex justify-end">
                                         {currentLeaseData.pickup.date ? (
                                             <div className="flex items-center text-[9px] font-medium text-slate-500">
@@ -940,6 +955,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                 <input 
                                     type="text" 
                                     name="message"
+                                    // text-base prevents iOS zoom
                                     className="flex-1 bg-slate-100 border-transparent focus:bg-white border focus:border-blue-300 rounded-full py-2.5 md:py-3 pl-4 md:pl-5 pr-10 md:pr-12 text-base md:text-sm focus:ring-4 focus:ring-blue-100 outline-none transition-all placeholder:text-slate-400"
                                     placeholder={t('chat_type_message', lang)}
                                     value={messageInput}

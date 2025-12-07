@@ -51,12 +51,6 @@ export default function EditorPage() {
         setDocType('chat');
         chatStore.loadChatSession(id);
     }
-    
-    // Cleanup: Disconnect chat when component unmounts or ID changes
-    // This prevents SSE connection leaks in the background
-    return () => {
-        chatStore.disconnect();
-    };
   }, [id]);
 
   // Sync Lease Editor with Active Chat Session
@@ -155,50 +149,55 @@ export default function EditorPage() {
     </div>
   );
 
+  // Hide global header on mobile if we are deep in a chat view to save space
+  const hideGlobalHeader = isMobile && docType === 'chat' && id;
+
   return (
+    // Use dynamic viewport height (100dvh) to fix mobile browser scroll issues
     <div className="h-[100dvh] bg-slate-50 flex flex-col font-sans overflow-hidden text-slate-900">
         
         {/* UNIFIED APP HEADER */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 shrink-0 z-30 shadow-sm">
-             {/* Left: Logo + AI + Nav (Desktop) */}
-             <div className="flex items-center gap-3 md:gap-6">
-                 <BrandLogo className="text-slate-800 h-6" />
-                 
-                 {/* AI Button (only for editor modes) */}
-                 {docType !== 'chat' && (
-                     <button 
-                        onClick={ai.open}
-                        className="flex items-center gap-2 text-xs bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full hover:bg-purple-200 font-bold tracking-wide transition-all shadow-sm active:scale-95"
+        {!hideGlobalHeader && (
+            <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 shrink-0 z-30 shadow-sm">
+                {/* Left: Logo + Nav (Desktop) */}
+                <div className="flex items-center gap-6">
+                    <BrandLogo className="text-slate-800 h-6" />
+                    <div className="hidden md:block">
+                        <NavPills />
+                    </div>
+                </div>
+
+                {/* Right: Actions */}
+                <div className="flex items-center gap-3">
+                    {/* Mobile Nav Icons (Simple) */}
+                    <div className="md:hidden flex gap-1 bg-slate-100 p-1 rounded-lg">
+                        <button onClick={() => setDocType('chat')} className={`p-2 rounded-md ${docType === 'chat' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}><MessageCircle size={18} /></button>
+                        <button onClick={() => setDocType('lease')} className={`p-2 rounded-md ${docType === 'lease' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}><Car size={18} /></button>
+                        {showInvoiceTab && (
+                        <button onClick={() => setDocType('invoice')} className={`p-2 rounded-md ${docType === 'invoice' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}><FileText size={18} /></button>
+                        )}
+                    </div>
+
+                    <button
+                        onClick={toggleLang}
+                        className="text-slate-400 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-slate-100"
+                        title="Switch Language"
                     >
-                        <Wand2 size={14} /> AI
+                        <Globe size={20} />
                     </button>
-                 )}
-
-                 <div className="hidden md:block border-l border-slate-200 pl-6">
-                     <NavPills />
-                 </div>
-             </div>
-
-             {/* Right: Actions */}
-             <div className="flex items-center gap-3">
-                 {/* Mobile Nav Icons (Simple) */}
-                 <div className="md:hidden flex gap-1 bg-slate-100 p-1 rounded-lg">
-                    <button onClick={() => setDocType('chat')} className={`p-2 rounded-md ${docType === 'chat' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}><MessageCircle size={18} /></button>
-                    <button onClick={() => setDocType('lease')} className={`p-2 rounded-md ${docType === 'lease' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}><Car size={18} /></button>
-                    {showInvoiceTab && (
-                    <button onClick={() => setDocType('invoice')} className={`p-2 rounded-md ${docType === 'invoice' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}><FileText size={18} /></button>
+                    
+                    {/* AI Button (only for editor modes) */}
+                    {docType !== 'chat' && (
+                        <button 
+                            onClick={ai.open}
+                            className="flex items-center gap-2 text-xs bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full hover:bg-purple-200 font-bold tracking-wide"
+                        >
+                            <Wand2 size={14} /> AI
+                        </button>
                     )}
-                 </div>
-
-                 <button
-                    onClick={toggleLang}
-                    className="text-slate-400 hover:text-blue-500 transition-colors p-2 rounded-full hover:bg-slate-100"
-                    title="Switch Language"
-                >
-                    <Globe size={20} />
-                </button>
-             </div>
-        </header>
+                </div>
+            </header>
+        )}
 
         {/* CONTENT AREA */}
         <div className="flex-1 flex overflow-hidden relative">
