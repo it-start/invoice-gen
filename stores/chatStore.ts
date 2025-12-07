@@ -122,6 +122,7 @@ interface ChatState {
     leaseContext: LeaseData | null; // Store the lease data associated with current chat
     activeEventSource: EventSource | null; // Track active SSE connection
     currentLoadToken: number; // To prevent race conditions
+    abortController: AbortController | null; // To cancel pending fetch requests
     
     // Actions
     hydrate: () => Promise<void>;
@@ -148,6 +149,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     leaseContext: null,
     activeEventSource: null,
     currentLoadToken: 0,
+    abortController: null,
 
     hydrate: async () => {
         if (get().isHydrated) return;
@@ -189,12 +191,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
     },
 
     disconnect: () => {
-        const { activeEventSource } = get();
+        const { activeEventSource, abortController } = get();
         if (activeEventSource) {
             console.debug("Disconnecting active chat session...");
             activeEventSource.close();
-            set({ activeEventSource: null });
         }
+        if (abortController) {
+            abortController.abort();
+        }
+        set({ activeEventSource: null, abortController: null });
     },
 
     loadChatSession: async (reservationId: string) => {
@@ -203,16 +208,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
             await get().hydrate();
         }
 
-        // Close existing connection immediately
-        const { activeEventSource, sessions } = get();
+        // Close existing connection & abort pending requests immediately
+        const { activeEventSource, abortController, sessions } = get();
         if (activeEventSource) {
             activeEventSource.close();
         }
+        if (abortController) {
+            abortController.abort();
+        }
         
+        // Create new AbortController
+        const controller = new AbortController();
+        const signal = controller.signal;
+
         // Generate a new token for this load request
         const myToken = Math.random();
         set({ 
             activeEventSource: null, 
+            abortController: controller,
             currentLoadToken: myToken,
             // Optimistic active set
             activeSessionId: reservationId, 
@@ -222,7 +235,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
         try {
             // 1. Fetch Lease Data to get Renter/Owner context
-            const leaseData = await loadLeaseData(reservationId);
+            const leaseData = await loadLeaseData(reservationId, signal);
             
             // CHECK: Did another load start while we were fetching?
             if (get().currentLoadToken !== myToken) return;
@@ -230,7 +243,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             set({ leaseContext: leaseData });
 
             // 2. Fetch History (System Messages)
-            const historyEvents = await fetchReservationHistory(leaseData.id || reservationId);
+            const historyEvents = await fetchReservationHistory(leaseData.id || reservationId, signal);
             
             // CHECK
             if (get().currentLoadToken !== myToken) return;
@@ -238,17 +251,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
             // 3. Fetch Ntfy Messages (User Chat)
             // Use the real UUID (leaseData.id) for the chat topic if available, otherwise input
             const topicId = leaseData.id || reservationId;
-            const ntfyData = await fetchNtfyMessages(topicId);
+            const ntfyData = await fetchNtfyMessages(topicId, signal);
 
             // CHECK
             if (get().currentLoadToken !== myToken) return;
 
             // Create a map of existing messages to preserve status (read/sent)
             const existingSession = sessions.find(s => s.id === reservationId);
-            const localMsgMap = new Map<string, ChatMessage>();
-            if (existingSession?.messages) {
-                existingSession.messages.forEach(m => localMsgMap.set(m.id, m));
-            }
+            // Fix: Fallback to empty array to ensure correct Map type inference
+            const localMsgMap = new Map<string, ChatMessage>(
+                (existingSession?.messages || []).map(m => [m.id, m] as [string, ChatMessage])
+            );
 
             // 4. Merge & Sort
             const allMessages = [
@@ -377,6 +390,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
             }
 
         } catch (e: any) {
+            // Ignore abort errors
+            if (e.name === 'AbortError') return;
+
             console.error("Load Chat Error", e);
             // Only update error if this is still the active request
             if (get().currentLoadToken === myToken) {

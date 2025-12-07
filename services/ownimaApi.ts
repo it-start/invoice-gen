@@ -195,10 +195,11 @@ const getAuthHeaders = (): Record<string, string> => {
     return headers;
 };
 
-const fetchOwnerProfile = async (ownerId: string): Promise<OwnerProfile | null> => {
+const fetchOwnerProfile = async (ownerId: string, signal?: AbortSignal): Promise<OwnerProfile | null> => {
     try {
         const response = await fetch(`${OWNER_PROFILE_ENDPOINT}/${ownerId}/profile`, {
-            headers: getAuthHeaders()
+            headers: getAuthHeaders(),
+            signal
         });
 
         if (!response.ok) {
@@ -207,16 +208,19 @@ const fetchOwnerProfile = async (ownerId: string): Promise<OwnerProfile | null> 
         }
 
         return await response.json();
-    } catch (error) {
-        console.error("Fetch Owner Profile Error", error);
+    } catch (error: any) {
+        if (error.name !== 'AbortError') {
+            console.error("Fetch Owner Profile Error", error);
+        }
         return null;
     }
 };
 
-export const fetchReservation = async (id: string): Promise<Partial<LeaseData> | null> => {
+export const fetchReservation = async (id: string, signal?: AbortSignal): Promise<Partial<LeaseData> | null> => {
     try {
         const response = await fetch(`${BASE_RESERVATION_URL}/${id}`, {
-            headers: getAuthHeaders()
+            headers: getAuthHeaders(),
+            signal
         });
 
         if (response.status === 401) {
@@ -233,13 +237,15 @@ export const fetchReservation = async (id: string): Promise<Partial<LeaseData> |
         const ownerId = data.reservation?.owner_id;
         
         if (ownerId) {
-            ownerProfile = await fetchOwnerProfile(ownerId);
+            ownerProfile = await fetchOwnerProfile(ownerId, signal);
         }
 
         return mapResponseToLeaseData(data, ownerProfile);
 
-    } catch (error) {
-        console.error("Fetch Reservation Error", error);
+    } catch (error: any) {
+        if (error.name !== 'AbortError') {
+            console.error("Fetch Reservation Error", error);
+        }
         throw error;
     }
 };
@@ -248,9 +254,9 @@ export const fetchReservation = async (id: string): Promise<Partial<LeaseData> |
  * Loads full lease data including fetching from API, generating QR code,
  * and merging with default values to ensure a complete object.
  */
-export const loadLeaseData = async (id: string): Promise<LeaseData> => {
+export const loadLeaseData = async (id: string, signal?: AbortSignal): Promise<LeaseData> => {
     // 1. Fetch data from API (now includes owner profile fetch)
-    const apiData = await fetchReservation(id);
+    const apiData = await fetchReservation(id, signal);
     
     if (!apiData) {
         throw new Error("Reservation not found");
@@ -340,10 +346,11 @@ export interface HistoryEvent {
     [key: string]: any;
 }
 
-export const fetchReservationHistory = async (id: string): Promise<HistoryEvent[]> => {
+export const fetchReservationHistory = async (id: string, signal?: AbortSignal): Promise<HistoryEvent[]> => {
     try {
         const response = await fetch(`${BASE_RESERVATION_URL}/${id}/history`, {
-             headers: getAuthHeaders()
+             headers: getAuthHeaders(),
+             signal
         });
         if (response.status === 401) throw new Error("Unauthorized");
         if (!response.ok) return [];
@@ -365,16 +372,18 @@ export const fetchReservationHistory = async (id: string): Promise<HistoryEvent[
         if (Array.isArray(data)) return data;
 
         return [];
-    } catch (e) {
-        console.error("History fetch error", e);
+    } catch (e: any) {
+        if (e.name !== 'AbortError') {
+            console.error("History fetch error", e);
+        }
         return [];
     }
 };
 
-export const fetchNtfyMessages = async (topicId: string) => {
+export const fetchNtfyMessages = async (topicId: string, signal?: AbortSignal) => {
     // Uses Ntfy JSON format (NDJSON)
     try {
-        const response = await fetch(`${CHAT_BASE_URL}/chat-${topicId}/json?poll=1&since=all`);
+        const response = await fetch(`${CHAT_BASE_URL}/chat-${topicId}/json?poll=1&since=all`, { signal });
         if (!response.ok) return [];
         const text = await response.text();
         
@@ -384,8 +393,10 @@ export const fetchNtfyMessages = async (topicId: string) => {
                 try { return JSON.parse(line); } catch(e) { return null; }
             })
             .filter((msg: any) => msg && msg.event === 'message'); // Filter for chat messages only
-    } catch (e) {
-        console.error("Chat fetch error", e);
+    } catch (e: any) {
+        if (e.name !== 'AbortError') {
+            console.error("Chat fetch error", e);
+        }
         return [];
     }
 };

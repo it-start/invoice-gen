@@ -42,7 +42,12 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   // Strategy for API calls (Network First, no caching of POST/PUT)
-  if (url.pathname.startsWith('/api') || event.request.method !== 'GET') {
+  // Exclude /api and /chat- (SSE/Long-polling) to prevent hanging connections
+  if (
+    url.pathname.startsWith('/api') || 
+    url.pathname.includes('/chat-') || 
+    event.request.method !== 'GET'
+  ) {
     return; // Let browser handle it (Network only)
   }
 
