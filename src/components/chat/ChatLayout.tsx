@@ -113,7 +113,7 @@ const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, border: str
     }
 };
 
-// Status Badge Component (Moved outside for usage in Row)
+// Status Badge Component
 const StatusBadge = ({ status, className = "" }: { status: LeaseStatus, className?: string }) => {
     const config = STATUS_CONFIG[status] || STATUS_CONFIG['pending'];
     return (
@@ -197,7 +197,6 @@ const ChatRow = React.memo(({ index, style, data }: ListChildComponentProps) => 
                             )}
                         </div>
 
-                        {/* ENHANCED METADATA ROW */}
                         {chat.reservationSummary && (
                             <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-100/80">
                                 <div className="flex items-center gap-1.5 text-[10px] text-slate-600 font-medium bg-slate-100 px-2 py-0.5 rounded-md max-w-[55%]">
@@ -251,13 +250,11 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         localStorage.setItem('chat_sidebar_open', JSON.stringify(isSidebarOpen));
     }, [isSidebarOpen]);
 
-    // --- REFS FOR SCROLLING & INPUTS ---
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const prevChatIdRef = useRef<string | null>(null);
     const prevMessageCountRef = useRef<number>(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // --- ZUSTAND STORE ---
     const { 
         sessions, 
         activeSessionId, 
@@ -274,14 +271,12 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         archiveSession
     } = useChatStore();
 
-    // Hydrate store on mount
     useEffect(() => {
         if (!isHydrated) {
             hydrate();
         }
     }, [isHydrated, hydrate]);
     
-    // Sync mobile view when route changes
     useEffect(() => {
         if (routeId) {
             if (isMobile) setMobileView('room');
@@ -290,7 +285,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         }
     }, [routeId, isMobile]);
 
-    // Resize Observer for Virtual List
     useEffect(() => {
         if (!listContainerRef.current) return;
         
@@ -307,11 +301,9 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         return () => observer.disconnect();
     }, []);
 
-    // Determine Active Chat based on Route ID or Store State
     const currentActiveId = routeId || activeSessionId;
     const activeChat = sessions.find((c: ChatSession) => c.id === currentActiveId);
     
-    // --- SMART LEASE DATA RESOLUTION ---
     const resolveDisplayData = (): LeaseData => {
         if (leaseContext && (leaseContext.id === currentActiveId || leaseContext.reservationId === currentActiveId)) {
             return leaseContext;
@@ -343,7 +335,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
 
     const currentLeaseData = resolveDisplayData();
 
-    // --- READ RECEIPT / VISIBILITY OBSERVER ---
     useEffect(() => {
         if (!activeChat) return;
 
@@ -372,7 +363,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         return () => observer.disconnect();
     }, [activeChat?.id, activeChat?.messages, markMessageAsRead]);
 
-    // --- SMART AUTO SCROLL EFFECT ---
     useEffect(() => {
         if (activeChat && messagesEndRef.current) {
             const isChatSwitch = activeChat.id !== prevChatIdRef.current;
@@ -435,7 +425,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     };
 
     const handleStatusClick = () => {
-        // Open sidebar/modal to show details
         if (window.innerWidth >= 1280) { // xl breakpoint
             if (!isSidebarOpen) setIsSidebarOpen(true);
             setSidebarTab('details');
@@ -445,7 +434,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         }
     };
 
-    // --- FORMATTERS ---
     const formatTime = (timestamp: number) => {
         if (!timestamp) return '';
         try {
@@ -478,21 +466,18 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         } catch (e) { return ''; }
     };
 
-    // Filter Sessions
     const filteredSessions = useMemo(() => sessions.filter((s: ChatSession) => {
         const matchesSearch = !searchQuery || s.user.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.id.includes(searchQuery);
         const isVisible = searchQuery ? true : !s.isArchived;
         return matchesSearch && isVisible;
     }), [sessions, searchQuery]);
 
-    // Reset list cache when list changes (search or update)
     useEffect(() => {
         if (listRef.current) {
             listRef.current.resetAfterIndex(0);
         }
     }, [filteredSessions]);
 
-    // Calculate Row Item Size
     const getItemSize = (index: number) => {
         const s = filteredSessions[index];
         const isMobileScreen = window.innerWidth < 768; 
@@ -605,13 +590,13 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                 isMobile && mobileView === 'room' ? '-translate-x-1/2' : 'translate-x-0'
             }`}>
 
-                {/* LEFT SIDEBAR: Chat List (VIRTUALIZED) */}
+                {/* LEFT SIDEBAR: Chat List */}
                 <div className={`flex flex-col bg-slate-50 relative ${
                     isMobile ? 'w-1/2' : 'w-80 border-r border-slate-200 shrink-0'
                 }`}>
                     
                     {/* Command Bar */}
-                    <div className="p-3 border-b border-slate-200/50 bg-white/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
+                    <div className="p-3 border-b border-slate-200/50 bg-white/80 backdrop-blur-md sticky top-0 z-30 shrink-0 pt-[env(safe-area-inset-top)]">
                         <form onSubmit={handleSearchSubmit} className="relative group">
                             <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500 -m-[1px] blur-[1px]" />
                             <div className="relative flex items-center bg-slate-100/50 border border-slate-200 rounded-xl group-focus-within:bg-white group-focus-within:border-transparent group-focus-within:shadow-md transition-all duration-300 overflow-hidden">
@@ -622,14 +607,10 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                 <input 
                                     type="text" 
                                     placeholder={t('chat_search', lang)}
-                                    // text-base on mobile prevents zoom
                                     className="w-full pl-2 pr-3 py-2.5 bg-transparent text-base md:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
-                                <div className="mr-2 px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-300 opacity-0 group-focus-within:opacity-100 transition-opacity scale-90 hidden sm:block">
-                                    <span className="text-[10px] font-bold font-mono">/</span>
-                                </div>
                             </div>
                         </form>
                     </div>
@@ -671,8 +652,12 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                 }`}>
                     {activeChat ? (
                     <>
-                        {/* Header */}
-                        <div className="h-14 md:h-16 border-b border-slate-200 flex justify-between items-center px-3 md:px-6 shrink-0 bg-white shadow-sm z-20">
+                        {/* Header: Adjusted for Safe Area on Mobile */}
+                        <div className={`
+                            border-b border-slate-200 flex justify-between items-center px-3 md:px-6 shrink-0 bg-white shadow-sm z-20
+                            h-[max(3.5rem,calc(3.5rem+env(safe-area-inset-top)))]
+                            pt-[env(safe-area-inset-top)]
+                        `}>
                             <div className="flex items-center gap-2 md:gap-3">
                                 {isMobile && (
                                     <button onClick={handleBackToList} className="-ml-2 p-2 hover:bg-slate-100 rounded-full text-slate-600">
@@ -691,11 +676,11 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                 </div>
                             </div>
                             <div className="flex gap-2 text-slate-400 items-center">
-                                {/* Actions: Phone/Video hidden on small mobile, visible on md+ */}
+                                {/* Actions */}
                                 <button className="hidden md:block p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors"><Phone size={18} /></button>
                                 <button className="hidden md:block p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors"><Video size={18} /></button>
                                 
-                                {/* Lease/Details button for mobile: replaces global nav */}
+                                {/* Lease/Details button for mobile */}
                                 <button 
                                     onClick={() => {
                                         setSidebarTab('details');
@@ -724,9 +709,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                             </div>
                         </div>
 
-                        {/* --- SMART CONTEXT ISLAND (Compact for Mobile) --- */}
+                        {/* --- SMART CONTEXT ISLAND (Compact) --- */}
                         <div className={`backdrop-blur-xl bg-white/90 border-b border-slate-200/50 pt-0 pb-0 shrink-0 z-10 sticky top-0 transition-all shadow-[0_4px_20px_-12px_rgba(0,0,0,0.1)]`}>
-                            {/* Adjusted padding for mobile: px-3 py-1.5 instead of py-2 */}
                             <div className="px-3 py-1.5 md:px-4 md:py-3 flex justify-between items-center md:items-start gap-2 md:gap-4">
                                 <div className="flex items-center md:items-start gap-3 min-w-0">
                                     <div className="relative shrink-0 hidden xs:block">
@@ -791,7 +775,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                         <span className="text-[10px] text-slate-400 font-bold ml-1">THB</span>
                                     </div>
 
-                                    {/* Mobile Date Summary inside right block to save space */}
+                                    {/* Mobile Date Summary */}
                                     <div className="md:hidden mt-0.5 flex justify-end">
                                         {currentLeaseData.pickup.date ? (
                                             <div className="flex items-center text-[9px] font-medium text-slate-500">
@@ -955,7 +939,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                 <input 
                                     type="text" 
                                     name="message"
-                                    // text-base prevents iOS zoom
                                     className="flex-1 bg-slate-100 border-transparent focus:bg-white border focus:border-blue-300 rounded-full py-2.5 md:py-3 pl-4 md:pl-5 pr-10 md:pr-12 text-base md:text-sm focus:ring-4 focus:ring-blue-100 outline-none transition-all placeholder:text-slate-400"
                                     placeholder={t('chat_type_message', lang)}
                                     value={messageInput}
@@ -1052,7 +1035,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                 <div className="fixed inset-0 z-50 xl:hidden">
                     <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMobileDetailsOpen(false)} />
                     <div className="absolute right-0 top-0 bottom-0 w-[85%] max-w-[320px] bg-white shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
-                        <div className="flex justify-between items-center p-4 border-b border-slate-100">
+                        <div className="flex justify-between items-center p-4 border-b border-slate-100 pt-[calc(1rem+env(safe-area-inset-top))]">
                             <h3 className="font-bold text-slate-800">Details</h3>
                             <button onClick={() => setIsMobileDetailsOpen(false)} className="p-2 hover:bg-slate-100 rounded-full">
                                 <X size={20} className="text-slate-500" />
@@ -1075,7 +1058,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar pb-[calc(1rem+env(safe-area-inset-bottom))]">
                              {sidebarTab === 'details' && (
                                 <LeaseForm 
                                     data={currentLeaseData} 
