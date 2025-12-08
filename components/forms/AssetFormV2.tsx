@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { Asset, DomainType } from '../../types';
 import InputGroup from '../ui/InputGroup';
 import { Car, Home, Hammer, Building2, Save, RotateCcw } from 'lucide-react';
-import { t } from '../../utils/i18n';
 
 // Initial state generator
 const createEmptyAsset = (domain: DomainType = 'vehicle'): Asset => ({
