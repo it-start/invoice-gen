@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, Phone, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle, CalendarClock, Sparkles, MapPin, Navigation, FileText, ExternalLink } from 'lucide-react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
@@ -176,7 +175,7 @@ const ChatRow = React.memo(({ index, style, data }: ListChildComponentProps) => 
 
     // Determine status color safely
     const statusColor = chat.reservationSummary 
-        ? (STATUS_CONFIG[chat.reservationSummary.status]?.accent.replace('text-', 'bg-') || 'bg-slate-400') 
+        ? (STATUS_CONFIG[chat.reservationSummary.status as LeaseStatus]?.accent.replace('text-', 'bg-') || 'bg-slate-400') 
         : 'bg-slate-400';
 
     return (

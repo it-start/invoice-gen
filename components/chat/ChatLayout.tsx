@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle, CalendarClock, Sparkles, MapPin, Navigation, FileText, ExternalLink } from 'lucide-react';
+import { Search, Phone, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle, CalendarClock, Sparkles, MapPin, Navigation, FileText, ExternalLink } from 'lucide-react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 // @ts-ignore
 import { VariableSizeList as List, ListChildComponentProps } from 'react-window';
