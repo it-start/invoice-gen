@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle, CalendarClock, Sparkles } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle, CalendarClock, Sparkles, MapPin, Navigation, FileText, ExternalLink } from 'lucide-react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 // @ts-ignore
 import { VariableSizeList as List, ListChildComponentProps } from 'react-window';
 import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage, INITIAL_LEASE } from '../../types';
@@ -13,6 +13,9 @@ import LeaseForm from '../forms/LeaseForm';
 import InputGroup from '../ui/InputGroup';
 import { SwipeableRow } from '../ui/SwipeableRow';
 
+// --- PIVOT: RIDER MODE ---
+const IS_RIDER_MODE = true; 
+
 // --- STATUS CONFIGURATION ---
 const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, border: string, icon: React.ReactNode, label: string, accent: string }> = {
     collected: {
@@ -21,7 +24,7 @@ const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, border: str
         border: 'border-emerald-200',
         accent: 'bg-emerald-500',
         icon: <Play size={10} fill="currentColor" />,
-        label: 'Collected'
+        label: 'Active Trip'
     },
     completed: {
         bg: 'bg-slate-100',
@@ -53,7 +56,7 @@ const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, border: str
         border: 'border-amber-200',
         accent: 'bg-amber-500',
         icon: <CircleDashed size={10} />,
-        label: 'Pending'
+        label: 'Requested'
     },
     confirmation_owner: {
         bg: 'bg-blue-50',
@@ -61,7 +64,7 @@ const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, border: str
         border: 'border-blue-200',
         accent: 'bg-blue-500',
         icon: <CheckCheck size={10} />,
-        label: 'Wait Owner'
+        label: 'Host Review'
     },
     confirmation_rider: {
         bg: 'bg-violet-50',
@@ -69,7 +72,7 @@ const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, border: str
         border: 'border-violet-200',
         accent: 'bg-violet-500',
         icon: <Check size={10} />,
-        label: 'Wait Rider'
+        label: 'Confirm Now'
     },
     rejected: {
         bg: 'bg-red-50',
@@ -77,7 +80,7 @@ const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, border: str
         border: 'border-red-200',
         accent: 'bg-red-500',
         icon: <X size={10} />,
-        label: 'Rejected'
+        label: 'Declined'
     },
     maintenance: {
         bg: 'bg-gray-50',
@@ -101,7 +104,7 @@ const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, border: str
         border: 'border-orange-200',
         accent: 'bg-orange-500',
         icon: <AlertTriangle size={10} />,
-        label: 'Conflict'
+        label: 'Issue'
     },
     no_response: {
         bg: 'bg-slate-50',
@@ -113,7 +116,7 @@ const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, border: str
     }
 };
 
-// Status Badge Component (Moved outside for usage in Row)
+// Status Badge Component
 const StatusBadge = ({ status, className = "" }: { status: LeaseStatus, className?: string }) => {
     const config = STATUS_CONFIG[status] || STATUS_CONFIG['pending'];
     return (
@@ -148,10 +151,10 @@ const getTimeRemaining = (endStr: string, status: LeaseStatus) => {
     const diffDays = Math.ceil(diffHours / 24);
 
     if (status === 'completed' || status === 'cancelled') return 'Ended';
-    if (status === 'overdue') return `Overdue by ${Math.abs(diffDays)}d`;
+    if (status === 'overdue') return `Overdue ${Math.abs(diffDays)}d`;
     
     if (diffHours < 0) return 'Ending now';
-    if (diffHours < 24) return `Ends in ${Math.floor(diffHours)}h`;
+    if (diffHours < 24) return `${Math.floor(diffHours)}h left`;
     return `${diffDays} days left`;
 };
 
@@ -160,6 +163,10 @@ const ChatRow = React.memo(({ index, style, data }: ListChildComponentProps) => 
     const { sessions, activeSessionId, handleChatSelect, archiveSession, lang } = data;
     const chat = sessions[index];
     const isActive = activeSessionId === chat.id;
+
+    // RIDER VIEW: Focus on Vehicle Name first, Owner/Host second
+    const displayTitle = IS_RIDER_MODE && chat.reservationSummary ? chat.reservationSummary.vehicleName : chat.user.name;
+    const displaySubtitle = IS_RIDER_MODE ? `Host: ${chat.user.name}` : chat.lastMessage;
 
     return (
         <div style={style}>
@@ -173,22 +180,28 @@ const ChatRow = React.memo(({ index, style, data }: ListChildComponentProps) => 
                         }`}
                 >
                     <div className="relative shrink-0 self-start">
-                        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-lg overflow-hidden transition-all
+                        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center font-bold text-lg overflow-hidden transition-all
                             ${isActive ? 'bg-blue-200 text-blue-700 ring-2 ring-white shadow-md' : 'bg-slate-200 text-slate-500 group-hover:bg-slate-300'}`}>
-                            {chat.user.avatar ? <img src={chat.user.avatar} alt={chat.user.name} className="w-full h-full object-cover" /> : chat.user.name[0]}
+                            {IS_RIDER_MODE ? <Car size={20} /> : (chat.user.avatar ? <img src={chat.user.avatar} alt={chat.user.name} className="w-full h-full object-cover" /> : chat.user.name[0])}
                         </div>
-                        <div className={`absolute bottom-0 right-0 w-3 h-3 md:w-3.5 md:h-3.5 rounded-full border-2 border-white ${chat.user.status === 'online' ? 'bg-green-500' : 'bg-slate-400'}`}></div>
+                        {/* Status Dot */}
+                        <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white 
+                            ${chat.reservationSummary 
+                                ? (STATUS_CONFIG[chat.reservationSummary.status]?.accent.replace('text-', 'bg-') || 'bg-slate-400') 
+                                : 'bg-slate-400'
+                            }`}></div>
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-start">
                         <div className="flex justify-between items-baseline mb-0.5">
-                            <h3 className={`font-bold text-sm truncate ${isActive ? 'text-blue-900' : 'text-slate-800'}`}>{chat.user.name}</h3>
+                            <h3 className={`font-bold text-sm truncate ${isActive ? 'text-blue-900' : 'text-slate-800'}`}>{displayTitle}</h3>
                             <span className={`text-[10px] font-medium whitespace-nowrap ml-2 ${isActive ? 'text-blue-600' : 'text-slate-400'}`}>
                                 {chat.lastMessageTime > 0 ? humanizeTime(chat.lastMessageTime, lang) : ''}
                             </span>
                         </div>
-                        <div className="flex justify-between items-center mb-2">
-                            <p className={`text-xs truncate max-w-[140px] md:max-w-[140px] ${isActive ? 'text-blue-700 font-medium' : 'text-slate-500 group-hover:text-slate-600'}`}>
-                                {chat.lastMessage}
+                        
+                        <div className="flex justify-between items-center mb-1">
+                             <p className={`text-xs truncate max-w-[140px] md:max-w-[140px] ${isActive ? 'text-blue-700 font-medium' : 'text-slate-500'}`}>
+                                {displaySubtitle}
                             </p>
                             {chat.unreadCount > 0 && (
                                 <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center shadow-sm">
@@ -197,8 +210,16 @@ const ChatRow = React.memo(({ index, style, data }: ListChildComponentProps) => 
                             )}
                         </div>
 
-                        {/* ENHANCED METADATA ROW */}
-                        {chat.reservationSummary && (
+                        {/* RIDER MODE: Show Dates/Status explicitly */}
+                        {IS_RIDER_MODE && chat.reservationSummary && (
+                             <div className="flex items-center gap-2 mt-1">
+                                <StatusBadge status={chat.reservationSummary.status} />
+                                <span className="text-[10px] text-slate-400 font-mono">{chat.reservationSummary.plateNumber}</span>
+                             </div>
+                        )}
+                        
+                        {/* OWNER MODE: Show Vehicle Summary */}
+                        {!IS_RIDER_MODE && chat.reservationSummary && (
                             <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-100/80">
                                 <div className="flex items-center gap-1.5 text-[10px] text-slate-600 font-medium bg-slate-100 px-2 py-0.5 rounded-md max-w-[55%]">
                                     <Car size={10} className="text-slate-400 shrink-0" />
@@ -230,7 +251,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     const [mobileView, setMobileView] = useState<'list' | 'room'>('list');
     const [messageInput, setMessageInput] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
-    const [sidebarTab, setSidebarTab] = useState<'profile' | 'details'>('details');
+    const [sidebarTab, setSidebarTab] = useState<'profile' | 'details'>('profile'); // Default to Profile/Host info for Rider
     const [isMobileDetailsOpen, setIsMobileDetailsOpen] = useState(false);
     
     // Virtual List Dimension State
@@ -251,13 +272,11 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         localStorage.setItem('chat_sidebar_open', JSON.stringify(isSidebarOpen));
     }, [isSidebarOpen]);
 
-    // --- REFS FOR SCROLLING & INPUTS ---
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const prevChatIdRef = useRef<string | null>(null);
     const prevMessageCountRef = useRef<number>(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // --- ZUSTAND STORE ---
     const { 
         sessions, 
         activeSessionId, 
@@ -274,14 +293,12 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         archiveSession
     } = useChatStore();
 
-    // Hydrate store on mount
     useEffect(() => {
         if (!isHydrated) {
             hydrate();
         }
     }, [isHydrated, hydrate]);
     
-    // Sync mobile view when route changes
     useEffect(() => {
         if (routeId) {
             if (isMobile) setMobileView('room');
@@ -290,7 +307,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         }
     }, [routeId, isMobile]);
 
-    // Resize Observer for Virtual List
     useEffect(() => {
         if (!listContainerRef.current) return;
         
@@ -307,11 +323,9 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         return () => observer.disconnect();
     }, []);
 
-    // Determine Active Chat based on Route ID or Store State
     const currentActiveId = routeId || activeSessionId;
     const activeChat = sessions.find((c: ChatSession) => c.id === currentActiveId);
     
-    // --- SMART LEASE DATA RESOLUTION ---
     const resolveDisplayData = (): LeaseData => {
         if (leaseContext && (leaseContext.id === currentActiveId || leaseContext.reservationId === currentActiveId)) {
             return leaseContext;
@@ -343,7 +357,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
 
     const currentLeaseData = resolveDisplayData();
 
-    // --- READ RECEIPT / VISIBILITY OBSERVER ---
     useEffect(() => {
         if (!activeChat) return;
 
@@ -372,7 +385,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         return () => observer.disconnect();
     }, [activeChat?.id, activeChat?.messages, markMessageAsRead]);
 
-    // --- SMART AUTO SCROLL EFFECT ---
     useEffect(() => {
         if (activeChat && messagesEndRef.current) {
             const isChatSwitch = activeChat.id !== prevChatIdRef.current;
@@ -435,17 +447,15 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     };
 
     const handleStatusClick = () => {
-        // Open sidebar/modal to show details
         if (window.innerWidth >= 1280) { // xl breakpoint
             if (!isSidebarOpen) setIsSidebarOpen(true);
-            setSidebarTab('details');
+            setSidebarTab('profile'); // Rider wants to see Host info often
         } else {
             setIsMobileDetailsOpen(true);
-            setSidebarTab('details');
+            setSidebarTab('profile');
         }
     };
 
-    // --- FORMATTERS ---
     const formatTime = (timestamp: number) => {
         if (!timestamp) return '';
         try {
@@ -478,21 +488,18 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         } catch (e) { return ''; }
     };
 
-    // Filter Sessions
     const filteredSessions = useMemo(() => sessions.filter((s: ChatSession) => {
         const matchesSearch = !searchQuery || s.user.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.id.includes(searchQuery);
         const isVisible = searchQuery ? true : !s.isArchived;
         return matchesSearch && isVisible;
     }), [sessions, searchQuery]);
 
-    // Reset list cache when list changes (search or update)
     useEffect(() => {
         if (listRef.current) {
             listRef.current.resetAfterIndex(0);
         }
     }, [filteredSessions]);
 
-    // Calculate Row Item Size
     const getItemSize = (index: number) => {
         const s = filteredSessions[index];
         const isMobileScreen = window.innerWidth < 768; 
@@ -509,81 +516,147 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         <div className="space-y-6">
             <div className="flex flex-col items-center">
                 <div className="w-20 h-20 rounded-full bg-white mb-3 overflow-hidden flex items-center justify-center font-bold text-3xl text-slate-300 border-4 border-slate-50 shadow-md relative">
+                    {/* IN RIDER MODE, THE AVATAR IS THE HOST (SHOP) */}
                     {activeChat && activeChat.user.avatar ? (
                         <img src={activeChat.user.avatar} alt="Profile" className="w-full h-full object-cover" />
-                    ) : activeChat?.user.name[0]}
+                    ) : <UserIcon size={32} />}
                 </div>
+                {/* RIDER MODE: This is the Host Name */}
                 <h3 className="font-bold text-xl text-slate-800 text-center">{activeChat?.user.name}</h3>
                 <div className="flex gap-2 mt-2">
                     <span className="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded-full font-bold border border-green-200">
                         {t('chat_active', lang)}
                     </span>
                     <span className="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded-full font-bold border border-slate-200">
-                        {activeChat?.user.role}
+                        {IS_RIDER_MODE ? "Host" : activeChat?.user.role}
                     </span>
                 </div>
             </div>
 
-            <div>
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-2 px-1 flex items-center gap-1.5">
-                    <UserIcon size={12} /> Rider (Customer)
-                </h4>
-                <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-sm relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-blue-50 rounded-bl-full -mr-8 -mt-8 z-0"></div>
-                    
-                    <InputGroup 
-                        label="Full Name *"
-                        value={currentLeaseData.renter.surname || activeChat?.user.name || ''}
-                        onChange={(v) => leaseHandlers.updateLease('renter', 'surname', v)}
-                        placeholder="Enter Rider Name"
-                    />
+            {/* RIDER MODE: HOST CARD & ACTIONS */}
+            {IS_RIDER_MODE ? (
+                <>
+                    {/* QUICK ACTIONS ROW */}
+                    <div className="grid grid-cols-3 gap-2">
+                        <button className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">
+                            <Navigation size={20} />
+                            <span className="text-[10px] font-bold">Directions</span>
+                        </button>
+                        <button className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 transition-colors">
+                            <Phone size={20} />
+                            <span className="text-[10px] font-bold">Call</span>
+                        </button>
+                        <Link 
+                            to={`/preview/lease/${currentLeaseData.reservationId}`} 
+                            target="_blank"
+                            className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors"
+                        >
+                            <FileText size={20} />
+                            <span className="text-[10px] font-bold">Contract</span>
+                        </Link>
+                    </div>
 
-                    <InputGroup 
-                        label="Contact Info *"
-                        value={currentLeaseData.renter.contact || ''}
-                        onChange={(v) => leaseHandlers.updateLease('renter', 'contact', v)}
-                        placeholder="Phone or Email"
-                    />
+                    {/* HOST LOCATION CARD */}
+                    <div>
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-2 px-1 flex items-center gap-1.5">
+                            <BadgeCheck size={12} className="text-blue-500" /> Host Location
+                        </h4>
+                        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
+                            {/* Fake Map Visual */}
+                            <div className="h-24 bg-slate-100 relative bg-[url('https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/100.0,13.0,12,0/300x150?access_token=pk.xxx')] bg-cover bg-center opacity-80 group-hover:opacity-100 transition-opacity">
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="bg-red-500 text-white p-1.5 rounded-full shadow-lg animate-bounce">
+                                        <MapPin size={16} fill="currentColor" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="p-3">
+                                <p className="text-xs font-bold text-slate-800">{currentLeaseData.owner.surname}</p>
+                                <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">{currentLeaseData.owner.address}</p>
+                                <div className="mt-2 flex items-center gap-1 text-[10px] text-blue-600 font-bold">
+                                    <span>Open in Maps</span>
+                                    <ExternalLink size={10} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                    <InputGroup 
-                        label="Passport / ID"
-                        value={currentLeaseData.renter.passport || ''}
-                        onChange={(v) => leaseHandlers.updateLease('renter', 'passport', v)}
-                        placeholder="Passport Number"
-                    />
-                </div>
-            </div>
-
-            <div>
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-2 px-1 flex items-center gap-1.5">
-                    <BadgeCheck size={12} className="text-blue-500" /> Owner (Business)
-                </h4>
-                <div className="bg-slate-50/80 rounded-xl border border-slate-200 p-4 space-y-3">
-                    <InputGroup 
-                        label="Rent Service Name *"
-                        value={currentLeaseData.owner.surname}
-                        onChange={(v) => leaseHandlers.updateLease('owner', 'surname', v)}
-                        helperText="Shown on contract header"
-                        className="bg-white"
-                    />
-
-                    <InputGroup 
-                        label="Business Address"
-                        value={currentLeaseData.owner.address}
-                        onChange={(v) => leaseHandlers.updateLease('owner', 'address', v)}
-                        placeholder="Full Address"
-                        className="bg-white"
-                    />
-
-                        <InputGroup 
-                        label="Contact Info"
-                        value={currentLeaseData.owner.contact}
-                        onChange={(v) => leaseHandlers.updateLease('owner', 'contact', v)}
-                        placeholder="Phone / Email"
-                        className="bg-white"
-                    />
-                </div>
-            </div>
+                    {/* MY INFO (Simplified) */}
+                    <div>
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-2 px-1 flex items-center gap-1.5">
+                            <UserIcon size={12} /> My Rider Details
+                        </h4>
+                        <div className="bg-slate-50/80 rounded-xl border border-slate-200 p-4 space-y-2">
+                            <div className="flex justify-between">
+                                <span className="text-[10px] text-slate-500">Name</span>
+                                <span className="text-[10px] font-bold text-slate-800">{currentLeaseData.renter.surname}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-[10px] text-slate-500">Contact</span>
+                                <span className="text-[10px] font-bold text-slate-800">{currentLeaseData.renter.contact}</span>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            ) : (
+                /* ORIGINAL OWNER VIEW */
+                <>
+                    <div>
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-2 px-1 flex items-center gap-1.5">
+                            <UserIcon size={12} /> Rider (Customer)
+                        </h4>
+                        <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-sm relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-16 h-16 bg-blue-50 rounded-bl-full -mr-8 -mt-8 z-0"></div>
+                            <InputGroup 
+                                label="Full Name *"
+                                value={currentLeaseData.renter.surname || activeChat?.user.name || ''}
+                                onChange={(v) => leaseHandlers.updateLease('renter', 'surname', v)}
+                                placeholder="Enter Rider Name"
+                            />
+                            <InputGroup 
+                                label="Contact Info *"
+                                value={currentLeaseData.renter.contact || ''}
+                                onChange={(v) => leaseHandlers.updateLease('renter', 'contact', v)}
+                                placeholder="Phone or Email"
+                            />
+                            <InputGroup 
+                                label="Passport / ID"
+                                value={currentLeaseData.renter.passport || ''}
+                                onChange={(v) => leaseHandlers.updateLease('renter', 'passport', v)}
+                                placeholder="Passport Number"
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-2 px-1 flex items-center gap-1.5">
+                            <BadgeCheck size={12} className="text-blue-500" /> Owner (Business)
+                        </h4>
+                        <div className="bg-slate-50/80 rounded-xl border border-slate-200 p-4 space-y-3">
+                            <InputGroup 
+                                label="Rent Service Name *"
+                                value={currentLeaseData.owner.surname}
+                                onChange={(v) => leaseHandlers.updateLease('owner', 'surname', v)}
+                                helperText="Shown on contract header"
+                                className="bg-white"
+                            />
+                            <InputGroup 
+                                label="Business Address"
+                                value={currentLeaseData.owner.address}
+                                onChange={(v) => leaseHandlers.updateLease('owner', 'address', v)}
+                                placeholder="Full Address"
+                                className="bg-white"
+                            />
+                                <InputGroup 
+                                label="Contact Info"
+                                value={currentLeaseData.owner.contact}
+                                onChange={(v) => leaseHandlers.updateLease('owner', 'contact', v)}
+                                placeholder="Phone / Email"
+                                className="bg-white"
+                            />
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 
@@ -598,20 +671,14 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                 onChange={handleFileChange}
             />
 
-            {/* SLIDING CONTAINER */}
-            <div className={`flex h-full transition-transform duration-300 ease-out will-change-transform ${
-                isMobile ? 'w-[200%]' : 'w-full'
-            } ${
-                isMobile && mobileView === 'room' ? '-translate-x-1/2' : 'translate-x-0'
-            }`}>
-
-                {/* LEFT SIDEBAR: Chat List (VIRTUALIZED) */}
+            {/* LEFT SIDEBAR: Chat List (Trips for Rider / Chats for Owner) */}
+            {(!isMobile || mobileView === 'list') && (
                 <div className={`flex flex-col bg-slate-50 relative ${
-                    isMobile ? 'w-1/2' : 'w-80 border-r border-slate-200 shrink-0'
+                    isMobile ? 'w-full' : 'w-80 border-r border-slate-200 shrink-0'
                 }`}>
                     
                     {/* Command Bar */}
-                    <div className="p-3 border-b border-slate-200/50 bg-white/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
+                    <div className="p-3 border-b border-slate-200/50 bg-white/80 backdrop-blur-md sticky top-0 z-30 shrink-0 pt-[env(safe-area-inset-top)]">
                         <form onSubmit={handleSearchSubmit} className="relative group">
                             <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500 -m-[1px] blur-[1px]" />
                             <div className="relative flex items-center bg-slate-100/50 border border-slate-200 rounded-xl group-focus-within:bg-white group-focus-within:border-transparent group-focus-within:shadow-md transition-all duration-300 overflow-hidden">
@@ -621,15 +688,11 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                 </div>
                                 <input 
                                     type="text" 
-                                    placeholder={t('chat_search', lang)}
-                                    // text-base on mobile prevents zoom
+                                    placeholder={IS_RIDER_MODE ? "Search trips..." : t('chat_search', lang)}
                                     className="w-full pl-2 pr-3 py-2.5 bg-transparent text-base md:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
-                                <div className="mr-2 px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-300 opacity-0 group-focus-within:opacity-100 transition-opacity scale-90 hidden sm:block">
-                                    <span className="text-[10px] font-bold font-mono">/</span>
-                                </div>
                             </div>
                         </form>
                     </div>
@@ -639,13 +702,13 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                         {isLoading && sessions.length === 0 && (
                             <div className="p-8 flex flex-col items-center justify-center text-slate-400 gap-2 h-full">
                                 <Loader2 className="animate-spin text-blue-500" />
-                                <span className="text-xs">Loading chats...</span>
+                                <span className="text-xs">Loading {IS_RIDER_MODE ? 'trips' : 'chats'}...</span>
                             </div>
                         )}
                         
                         {filteredSessions.length === 0 && !isLoading && (
                             <div className="p-8 text-center text-xs text-slate-400 italic h-full">
-                                No active chats found.
+                                No active {IS_RIDER_MODE ? 'trips' : 'chats'} found.
                             </div>
                         )}
 
@@ -664,15 +727,21 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                         )}
                     </div>
                 </div>
+            )}
 
-                {/* MIDDLE: Chat Room */}
+            {/* MIDDLE: Chat Room */}
+            {(!isMobile || mobileView === 'room') && (
                 <div className={`flex flex-col bg-slate-50/30 relative ${
-                    isMobile ? 'w-1/2' : 'flex-1 min-w-0'
+                    isMobile ? 'w-full' : 'flex-1 min-w-0'
                 }`}>
                     {activeChat ? (
                     <>
-                        {/* Header */}
-                        <div className="h-14 md:h-16 border-b border-slate-200 flex justify-between items-center px-3 md:px-6 shrink-0 bg-white shadow-sm z-20">
+                        {/* Header: Adjusted for Safe Area on Mobile */}
+                        <div className={`
+                            border-b border-slate-200 flex justify-between items-center px-3 md:px-6 shrink-0 bg-white shadow-sm z-20
+                            h-[max(3.5rem,calc(3.5rem+env(safe-area-inset-top)))]
+                            pt-[env(safe-area-inset-top)]
+                        `}>
                             <div className="flex items-center gap-2 md:gap-3">
                                 {isMobile && (
                                     <button onClick={handleBackToList} className="-ml-2 p-2 hover:bg-slate-100 rounded-full text-slate-600">
@@ -683,6 +752,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                     {activeChat.user.avatar ? <img src={activeChat.user.avatar} alt={activeChat.user.name} className="w-full h-full object-cover" /> : activeChat.user.name[0]}
                                 </div>
                                 <div>
+                                    {/* RIDER MODE: Title is Host Name */}
                                     <h3 className="font-bold text-slate-800 text-sm">{activeChat.user.name}</h3>
                                     <p className="text-[10px] md:text-xs text-green-600 flex items-center gap-1 font-medium">
                                         <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
@@ -691,17 +761,16 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                 </div>
                             </div>
                             <div className="flex gap-2 text-slate-400 items-center">
-                                {/* Actions: Phone/Video hidden on small mobile, visible on md+ */}
+                                {/* Actions */}
                                 <button className="hidden md:block p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors"><Phone size={18} /></button>
-                                <button className="hidden md:block p-2 hover:bg-slate-100 rounded-full hover:text-slate-600 transition-colors"><Video size={18} /></button>
                                 
-                                {/* Lease/Details button for mobile: replaces global nav */}
+                                {/* RIDER MODE: Highlight "My Trip" Button */}
                                 <button 
                                     onClick={() => {
-                                        setSidebarTab('details');
+                                        setSidebarTab('profile'); // Default to Host/Action view for Rider
                                         setIsMobileDetailsOpen(true);
                                     }}
-                                    className="md:hidden p-2 text-blue-600 bg-blue-50 rounded-full hover:bg-blue-100 transition-colors shadow-sm"
+                                    className={`md:hidden p-2 rounded-full transition-colors shadow-sm ${IS_RIDER_MODE ? 'bg-blue-600 text-white' : 'text-blue-600 bg-blue-50'}`}
                                 >
                                     <Car size={18} />
                                 </button>
@@ -724,9 +793,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                             </div>
                         </div>
 
-                        {/* --- SMART CONTEXT ISLAND (Compact for Mobile) --- */}
-                        <div className={`backdrop-blur-xl bg-white/90 border-b border-slate-200/50 pt-0 pb-0 shrink-0 z-10 sticky top-0 transition-all shadow-[0_4px_20px_-12px_rgba(0,0,0,0.1)]`}>
-                            {/* Adjusted padding for mobile: px-3 py-1.5 instead of py-2 */}
+                        {/* --- SMART CONTEXT ISLAND (Compact) --- */}
+                        <div className={`backdrop-blur-xl bg-white/90 border-b border-slate-200/50 pt-0 pb-0 shrink-0 z-10 sticky top-0 transition-all shadow-[0_4px_20px_-12px_rgba(0,0,0,0.1)]`} onClick={() => handleStatusClick()}>
                             <div className="px-3 py-1.5 md:px-4 md:py-3 flex justify-between items-center md:items-start gap-2 md:gap-4">
                                 <div className="flex items-center md:items-start gap-3 min-w-0">
                                     <div className="relative shrink-0 hidden xs:block">
@@ -791,7 +859,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                         <span className="text-[10px] text-slate-400 font-bold ml-1">THB</span>
                                     </div>
 
-                                    {/* Mobile Date Summary inside right block to save space */}
+                                    {/* Mobile Date Summary */}
                                     <div className="md:hidden mt-0.5 flex justify-end">
                                         {currentLeaseData.pickup.date ? (
                                             <div className="flex items-center text-[9px] font-medium text-slate-500">
@@ -839,7 +907,10 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                             
                                             if (!style) return null;
 
-                                            const isActionable = status === 'confirmation_owner' && currentLeaseData.status !== 'confirmed' && currentLeaseData.status !== 'rejected';
+                                            // RIDER MODE LOGIC: Riders can confirm if waiting for rider
+                                            const isActionable = IS_RIDER_MODE 
+                                                ? (status === 'confirmation_rider' && currentLeaseData.status !== 'confirmed')
+                                                : (status === 'confirmation_owner' && currentLeaseData.status !== 'confirmed');
 
                                             return (
                                                 <div className="flex flex-col gap-1 my-2 animate-in fade-in slide-in-from-bottom-2 duration-300 px-2 md:px-12">
@@ -955,7 +1026,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                 <input 
                                     type="text" 
                                     name="message"
-                                    // text-base prevents iOS zoom
                                     className="flex-1 bg-slate-100 border-transparent focus:bg-white border focus:border-blue-300 rounded-full py-2.5 md:py-3 pl-4 md:pl-5 pr-10 md:pr-12 text-base md:text-sm focus:ring-4 focus:ring-blue-100 outline-none transition-all placeholder:text-slate-400"
                                     placeholder={t('chat_type_message', lang)}
                                     value={messageInput}
@@ -986,7 +1056,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                             {isLoading ? (
                                 <div className="flex flex-col items-center gap-3 animate-in fade-in duration-500">
                                     <Loader2 className="animate-spin text-blue-500" size={48} />
-                                    <p className="text-sm font-medium text-slate-500">Loading conversation...</p>
+                                    <p className="text-sm font-medium text-slate-500">Loading {IS_RIDER_MODE ? 'trip' : 'conversation'}...</p>
                                 </div>
                             ) : (
                                 <>
@@ -994,32 +1064,33 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                         <Smile size={40} />
                                     </div>
                                     <div className="text-center space-y-2">
-                                        <h3 className="text-lg font-bold text-slate-600">No Chat Selected</h3>
-                                        <p className="text-sm max-w-xs mx-auto">Select a conversation from the sidebar or search for a reservation ID to start.</p>
+                                        <h3 className="text-lg font-bold text-slate-600">No {IS_RIDER_MODE ? 'Trip' : 'Chat'} Selected</h3>
+                                        <p className="text-sm max-w-xs mx-auto">Select a {IS_RIDER_MODE ? 'trip' : 'conversation'} from the list to start.</p>
                                     </div>
                                 </>
                             )}
                         </div>
                     )}
                 </div>
+            )}
 
-                {/* RIGHT SIDEBAR: Lease Mini-Editor & Profile (Desktop Only) */}
-                {activeChat && (
+            {/* RIGHT SIDEBAR: Lease Mini-Editor & Profile (Desktop Only) */}
+            {activeChat && (
                 <div className={`bg-white border-l border-slate-100 hidden xl:flex flex-col h-full shadow-lg z-20 transition-all duration-300 ease-in-out overflow-hidden ${isSidebarOpen ? 'w-[320px] opacity-100' : 'w-0 opacity-0 border-none'}`}>
                      <div className="w-[320px] h-full flex flex-col">
                         {/* Sidebar Tabs */}
                         <div className="flex border-b border-slate-200 bg-slate-50/50 p-1 gap-1 m-2 rounded-xl shrink-0">
                             <button 
-                                onClick={() => setSidebarTab('details')}
-                                className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${sidebarTab === 'details' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
-                            >
-                                <FileEdit size={14} /> Details
-                            </button>
-                            <button 
                                 onClick={() => setSidebarTab('profile')}
                                 className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${sidebarTab === 'profile' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
                             >
-                                <UserIcon size={14} /> Profile
+                                <UserIcon size={14} /> {IS_RIDER_MODE ? 'Host' : 'Profile'}
+                            </button>
+                            <button 
+                                onClick={() => setSidebarTab('details')}
+                                className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${sidebarTab === 'details' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+                            >
+                                <FileEdit size={14} /> {IS_RIDER_MODE ? 'Trip Info' : 'Details'}
                             </button>
                         </div>
 
@@ -1031,7 +1102,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                         data={currentLeaseData} 
                                         handlers={leaseHandlers} 
                                         lang={lang}
-                                        compact={true} 
+                                        compact={true}
+                                        readOnly={IS_RIDER_MODE} 
                                     />
                                 </div>
                             )}
@@ -1044,16 +1116,15 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                         </div>
                      </div>
                 </div>
-                )}
-            </div>
+            )}
 
             {/* Mobile Details Sheet */}
             {isMobileDetailsOpen && (
                 <div className="fixed inset-0 z-50 xl:hidden">
                     <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMobileDetailsOpen(false)} />
                     <div className="absolute right-0 top-0 bottom-0 w-[85%] max-w-[320px] bg-white shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
-                        <div className="flex justify-between items-center p-4 border-b border-slate-100">
-                            <h3 className="font-bold text-slate-800">Details</h3>
+                        <div className="flex justify-between items-center p-4 border-b border-slate-100 pt-[calc(1rem+env(safe-area-inset-top))]">
+                            <h3 className="font-bold text-slate-800">{IS_RIDER_MODE ? 'Trip Details' : 'Details'}</h3>
                             <button onClick={() => setIsMobileDetailsOpen(false)} className="p-2 hover:bg-slate-100 rounded-full">
                                 <X size={20} className="text-slate-500" />
                             </button>
@@ -1062,26 +1133,27 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                         {/* Reuse Sidebar Tabs logic */}
                         <div className="flex border-b border-slate-200 bg-slate-50/50 p-1 gap-1 m-2 rounded-xl shrink-0">
                             <button 
-                                onClick={() => setSidebarTab('details')}
-                                className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${sidebarTab === 'details' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
-                            >
-                                <FileEdit size={14} /> Details
-                            </button>
-                            <button 
                                 onClick={() => setSidebarTab('profile')}
                                 className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${sidebarTab === 'profile' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
                             >
-                                <UserIcon size={14} /> Profile
+                                <UserIcon size={14} /> {IS_RIDER_MODE ? 'Host' : 'Profile'}
+                            </button>
+                            <button 
+                                onClick={() => setSidebarTab('details')}
+                                className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${sidebarTab === 'details' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+                            >
+                                <FileEdit size={14} /> {IS_RIDER_MODE ? 'Trip Info' : 'Details'}
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar pb-[calc(1rem+env(safe-area-inset-bottom))]">
                              {sidebarTab === 'details' && (
                                 <LeaseForm 
                                     data={currentLeaseData} 
                                     handlers={leaseHandlers} 
                                     lang={lang}
-                                    compact={true} 
+                                    compact={true}
+                                    readOnly={IS_RIDER_MODE}
                                 />
                             )}
                             {sidebarTab === 'profile' && renderProfileContent()}
