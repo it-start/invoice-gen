@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle, CalendarClock, Sparkles, MapPin } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle, CalendarClock, Sparkles, MapPin, Navigation, FileText, ExternalLink } from 'lucide-react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 // @ts-ignore
 import { VariableSizeList as List, ListChildComponentProps } from 'react-window';
 import { LeaseData, Language, LeaseStatus, ChatSession, ChatMessage, INITIAL_LEASE } from '../../types';
@@ -251,7 +251,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     const [mobileView, setMobileView] = useState<'list' | 'room'>('list');
     const [messageInput, setMessageInput] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
-    const [sidebarTab, setSidebarTab] = useState<'profile' | 'details'>('details');
+    const [sidebarTab, setSidebarTab] = useState<'profile' | 'details'>('profile'); // Default to Profile/Host info for Rider
     const [isMobileDetailsOpen, setIsMobileDetailsOpen] = useState(false);
     
     // Virtual List Dimension State
@@ -449,10 +449,10 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
     const handleStatusClick = () => {
         if (window.innerWidth >= 1280) { // xl breakpoint
             if (!isSidebarOpen) setIsSidebarOpen(true);
-            setSidebarTab('details');
+            setSidebarTab('profile'); // Rider wants to see Host info often
         } else {
             setIsMobileDetailsOpen(true);
-            setSidebarTab('details');
+            setSidebarTab('profile');
         }
     };
 
@@ -533,56 +533,68 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                 </div>
             </div>
 
-            {/* RIDER MODE: INVERTED SECTIONS */}
+            {/* RIDER MODE: HOST CARD & ACTIONS */}
             {IS_RIDER_MODE ? (
                 <>
-                    {/* HOST INFO (TOP) */}
+                    {/* QUICK ACTIONS ROW */}
+                    <div className="grid grid-cols-3 gap-2">
+                        <button className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">
+                            <Navigation size={20} />
+                            <span className="text-[10px] font-bold">Directions</span>
+                        </button>
+                        <button className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 transition-colors">
+                            <Phone size={20} />
+                            <span className="text-[10px] font-bold">Call</span>
+                        </button>
+                        <Link 
+                            to={`/preview/lease/${currentLeaseData.reservationId}`} 
+                            target="_blank"
+                            className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors"
+                        >
+                            <FileText size={20} />
+                            <span className="text-[10px] font-bold">Contract</span>
+                        </Link>
+                    </div>
+
+                    {/* HOST LOCATION CARD */}
                     <div>
                         <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-2 px-1 flex items-center gap-1.5">
-                            <BadgeCheck size={12} className="text-blue-500" /> Host (Rental Service)
+                            <BadgeCheck size={12} className="text-blue-500" /> Host Location
                         </h4>
-                        <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-sm">
-                            <div className="flex items-start gap-3">
-                                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                                    <MapPin size={18} />
-                                </div>
-                                <div>
-                                    <p className="text-xs font-bold text-slate-800">{currentLeaseData.owner.surname}</p>
-                                    <p className="text-[10px] text-slate-500 mt-0.5">{currentLeaseData.owner.address}</p>
+                        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
+                            {/* Fake Map Visual */}
+                            <div className="h-24 bg-slate-100 relative bg-[url('https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/100.0,13.0,12,0/300x150?access_token=pk.xxx')] bg-cover bg-center opacity-80 group-hover:opacity-100 transition-opacity">
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="bg-red-500 text-white p-1.5 rounded-full shadow-lg animate-bounce">
+                                        <MapPin size={16} fill="currentColor" />
+                                    </div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3 pt-2 border-t border-slate-50">
-                                <div className="p-2 bg-green-50 text-green-600 rounded-lg">
-                                    <Phone size={18} />
-                                </div>
-                                <div>
-                                    <p className="text-xs font-bold text-slate-800">Contact</p>
-                                    <p className="text-[10px] text-slate-500 mt-0.5">{currentLeaseData.owner.contact}</p>
+                            <div className="p-3">
+                                <p className="text-xs font-bold text-slate-800">{currentLeaseData.owner.surname}</p>
+                                <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">{currentLeaseData.owner.address}</p>
+                                <div className="mt-2 flex items-center gap-1 text-[10px] text-blue-600 font-bold">
+                                    <span>Open in Maps</span>
+                                    <ExternalLink size={10} />
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* MY INFO (BOTTOM) */}
+                    {/* MY INFO (Simplified) */}
                     <div>
                         <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-2 px-1 flex items-center gap-1.5">
-                            <UserIcon size={12} /> My Details (Rider)
+                            <UserIcon size={12} /> My Rider Details
                         </h4>
-                        <div className="bg-slate-50/80 rounded-xl border border-slate-200 p-4 space-y-3">
-                            <InputGroup 
-                                label="My Name"
-                                value={currentLeaseData.renter.surname}
-                                onChange={() => {}} // Read only
-                                readOnly={true}
-                                className="bg-white"
-                            />
-                            <InputGroup 
-                                label="My Contact"
-                                value={currentLeaseData.renter.contact}
-                                onChange={() => {}} // Read only
-                                readOnly={true}
-                                className="bg-white"
-                            />
+                        <div className="bg-slate-50/80 rounded-xl border border-slate-200 p-4 space-y-2">
+                            <div className="flex justify-between">
+                                <span className="text-[10px] text-slate-500">Name</span>
+                                <span className="text-[10px] font-bold text-slate-800">{currentLeaseData.renter.surname}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-[10px] text-slate-500">Contact</span>
+                                <span className="text-[10px] font-bold text-slate-800">{currentLeaseData.renter.contact}</span>
+                            </div>
                         </div>
                     </div>
                 </>
@@ -755,7 +767,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                 {/* RIDER MODE: Highlight "My Trip" Button */}
                                 <button 
                                     onClick={() => {
-                                        setSidebarTab('details');
+                                        setSidebarTab('profile'); // Default to Host/Action view for Rider
                                         setIsMobileDetailsOpen(true);
                                     }}
                                     className={`md:hidden p-2 rounded-full transition-colors shadow-sm ${IS_RIDER_MODE ? 'bg-blue-600 text-white' : 'text-blue-600 bg-blue-50'}`}
@@ -1069,16 +1081,16 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                         {/* Sidebar Tabs */}
                         <div className="flex border-b border-slate-200 bg-slate-50/50 p-1 gap-1 m-2 rounded-xl shrink-0">
                             <button 
-                                onClick={() => setSidebarTab('details')}
-                                className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${sidebarTab === 'details' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
-                            >
-                                <FileEdit size={14} /> {IS_RIDER_MODE ? 'Trip Info' : 'Details'}
-                            </button>
-                            <button 
                                 onClick={() => setSidebarTab('profile')}
                                 className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${sidebarTab === 'profile' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
                             >
                                 <UserIcon size={14} /> {IS_RIDER_MODE ? 'Host' : 'Profile'}
+                            </button>
+                            <button 
+                                onClick={() => setSidebarTab('details')}
+                                className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${sidebarTab === 'details' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+                            >
+                                <FileEdit size={14} /> {IS_RIDER_MODE ? 'Trip Info' : 'Details'}
                             </button>
                         </div>
 
@@ -1121,16 +1133,16 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                         {/* Reuse Sidebar Tabs logic */}
                         <div className="flex border-b border-slate-200 bg-slate-50/50 p-1 gap-1 m-2 rounded-xl shrink-0">
                             <button 
-                                onClick={() => setSidebarTab('details')}
-                                className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${sidebarTab === 'details' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
-                            >
-                                <FileEdit size={14} /> {IS_RIDER_MODE ? 'Trip Info' : 'Details'}
-                            </button>
-                            <button 
                                 onClick={() => setSidebarTab('profile')}
                                 className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${sidebarTab === 'profile' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
                             >
                                 <UserIcon size={14} /> {IS_RIDER_MODE ? 'Host' : 'Profile'}
+                            </button>
+                            <button 
+                                onClick={() => setSidebarTab('details')}
+                                className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${sidebarTab === 'details' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+                            >
+                                <FileEdit size={14} /> {IS_RIDER_MODE ? 'Trip Info' : 'Details'}
                             </button>
                         </div>
 
