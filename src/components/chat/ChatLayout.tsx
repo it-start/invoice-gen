@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, Phone, Video, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle, CalendarClock, Sparkles, MapPin, Navigation, FileText, ExternalLink } from 'lucide-react';
+import { Search, Phone, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle, CalendarClock, Sparkles, MapPin, Navigation, FileText, ExternalLink } from 'lucide-react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 // @ts-ignore
 import { VariableSizeList as List, ListChildComponentProps } from 'react-window';
@@ -160,13 +160,24 @@ const getTimeRemaining = (endStr: string, status: LeaseStatus) => {
 
 // --- VIRTUAL ROW COMPONENT ---
 const ChatRow = React.memo(({ index, style, data }: ListChildComponentProps) => {
-    const { sessions, activeSessionId, handleChatSelect, archiveSession, lang } = data;
+    const { sessions, activeSessionId, handleChatSelect, archiveSession, lang } = data as {
+        sessions: ChatSession[];
+        activeSessionId: string | null;
+        handleChatSelect: (id: string) => void;
+        archiveSession: (id: string) => void;
+        lang: Language;
+    };
     const chat = sessions[index];
     const isActive = activeSessionId === chat.id;
 
     // RIDER VIEW: Focus on Vehicle Name first, Owner/Host second
     const displayTitle = IS_RIDER_MODE && chat.reservationSummary ? chat.reservationSummary.vehicleName : chat.user.name;
     const displaySubtitle = IS_RIDER_MODE ? `Host: ${chat.user.name}` : chat.lastMessage;
+
+    // Determine status color safely
+    const statusColor = chat.reservationSummary 
+        ? (STATUS_CONFIG[chat.reservationSummary.status]?.accent.replace('text-', 'bg-') || 'bg-slate-400') 
+        : 'bg-slate-400';
 
     return (
         <div style={style}>
@@ -185,11 +196,7 @@ const ChatRow = React.memo(({ index, style, data }: ListChildComponentProps) => 
                             {IS_RIDER_MODE ? <Car size={20} /> : (chat.user.avatar ? <img src={chat.user.avatar} alt={chat.user.name} className="w-full h-full object-cover" /> : chat.user.name[0])}
                         </div>
                         {/* Status Dot */}
-                        <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white 
-                            ${chat.reservationSummary 
-                                ? (STATUS_CONFIG[chat.reservationSummary.status]?.accent.replace('text-', 'bg-') || 'bg-slate-400') 
-                                : 'bg-slate-400'
-                            }`}></div>
+                        <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${statusColor}`}></div>
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-start">
                         <div className="flex justify-between items-baseline mb-0.5">
