@@ -164,6 +164,35 @@ export interface ChatSession {
   };
 }
 
+// --- ASSET TELEPORT (V2) ---
+
+export type DomainType = 'vehicle' | 'property' | 'equipment' | 'coworking';
+
+export interface Asset {
+  id: string;
+  organizationId: string;
+  name: string;
+  domainType: DomainType;
+  attributes: Record<string, any>;
+  images: string[];
+  status: 'available' | 'booked' | 'maintenance';
+}
+
+export interface BookingV2 {
+  id: string;
+  assetId: string;
+  userId: string;
+  startDatetime: string;
+  endDatetime: string;
+  status: LeaseStatus;
+  pricing: {
+    totalAmount: number;
+    currencyCode: string;
+    details?: Record<string, any>;
+  };
+  contractTermsHash?: string;
+}
+
 export const VAT_RATES = [
   { value: -1, label: 'Без НДС' },
   { value: 0, label: '0%' },
