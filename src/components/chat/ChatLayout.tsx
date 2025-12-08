@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, Phone, Send, Smile, Image as ImageIcon, CheckCheck, Check, ArrowLeft, Car, Play, Clock, Target, CircleDashed, Loader2, User as UserIcon, FileEdit, ThumbsUp, ThumbsDown, X, MoreVertical, PanelRightClose, PanelRightOpen, BadgeCheck, Wrench, Ban, AlertTriangle, HelpCircle, CalendarClock, Sparkles, MapPin, Navigation, FileText, ExternalLink } from 'lucide-react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
@@ -157,15 +158,18 @@ const getTimeRemaining = (endStr: string, status: LeaseStatus) => {
     return `${diffDays} days left`;
 };
 
+// Interface for Virtual List Data
+interface ChatListData {
+    sessions: ChatSession[];
+    activeSessionId: string | null;
+    handleChatSelect: (id: string) => void;
+    archiveSession: (id: string) => void;
+    lang: Language;
+}
+
 // --- VIRTUAL ROW COMPONENT ---
 const ChatRow = React.memo(({ index, style, data }: ListChildComponentProps) => {
-    const { sessions, activeSessionId, handleChatSelect, archiveSession, lang } = data as {
-        sessions: ChatSession[];
-        activeSessionId: string | null;
-        handleChatSelect: (id: string) => void;
-        archiveSession: (id: string) => void;
-        lang: Language;
-    };
+    const { sessions, activeSessionId, handleChatSelect, archiveSession, lang } = data as ChatListData;
     const chat = sessions[index];
     const isActive = activeSessionId === chat.id;
 
@@ -174,9 +178,13 @@ const ChatRow = React.memo(({ index, style, data }: ListChildComponentProps) => 
     const displaySubtitle = IS_RIDER_MODE ? `Host: ${chat.user.name}` : chat.lastMessage;
 
     // Determine status color safely
-    const statusColor = chat.reservationSummary 
-        ? (STATUS_CONFIG[chat.reservationSummary.status as LeaseStatus]?.accent.replace('text-', 'bg-') || 'bg-slate-400') 
-        : 'bg-slate-400';
+    let statusColor = 'bg-slate-400';
+    if (chat.reservationSummary?.status) {
+        const config = STATUS_CONFIG[chat.reservationSummary.status as LeaseStatus];
+        if (config) {
+            statusColor = config.accent.replace('text-', 'bg-');
+        }
+    }
 
     return (
         <div style={style}>
@@ -908,11 +916,9 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                         )}
 
                                         {msg.type === 'system' ? (() => {
-                                            const status = msg.metadata?.status;
-                                            const style = status ? STATUS_CONFIG[status] : { bg: 'bg-slate-100', text: 'text-slate-600', icon: <CheckCheck size={12} />, label: 'System' };
+                                            const status = msg.metadata?.status as LeaseStatus | undefined;
+                                            const style = status && STATUS_CONFIG[status] ? STATUS_CONFIG[status] : { bg: 'bg-slate-100', text: 'text-slate-600', icon: <CheckCheck size={12} />, label: 'System' };
                                             
-                                            if (!style) return null;
-
                                             // RIDER MODE LOGIC: Riders can confirm if waiting for rider
                                             const isActionable = IS_RIDER_MODE 
                                                 ? (status === 'confirmation_rider' && currentLeaseData.status !== 'confirmed')

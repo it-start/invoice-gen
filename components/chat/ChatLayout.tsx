@@ -158,15 +158,33 @@ const getTimeRemaining = (endStr: string, status: LeaseStatus) => {
     return `${diffDays} days left`;
 };
 
+// Interface for Virtual List Data
+interface ChatListData {
+    sessions: ChatSession[];
+    activeSessionId: string | null;
+    handleChatSelect: (id: string) => void;
+    archiveSession: (id: string) => void;
+    lang: Language;
+}
+
 // --- VIRTUAL ROW COMPONENT ---
 const ChatRow = React.memo(({ index, style, data }: ListChildComponentProps) => {
-    const { sessions, activeSessionId, handleChatSelect, archiveSession, lang } = data;
+    const { sessions, activeSessionId, handleChatSelect, archiveSession, lang } = data as ChatListData;
     const chat = sessions[index];
     const isActive = activeSessionId === chat.id;
 
     // RIDER VIEW: Focus on Vehicle Name first, Owner/Host second
     const displayTitle = IS_RIDER_MODE && chat.reservationSummary ? chat.reservationSummary.vehicleName : chat.user.name;
     const displaySubtitle = IS_RIDER_MODE ? `Host: ${chat.user.name}` : chat.lastMessage;
+
+    // Determine status color safely
+    let statusColor = 'bg-slate-400';
+    if (chat.reservationSummary?.status) {
+        const config = STATUS_CONFIG[chat.reservationSummary.status as LeaseStatus];
+        if (config) {
+            statusColor = config.accent.replace('text-', 'bg-');
+        }
+    }
 
     return (
         <div style={style}>
@@ -185,11 +203,7 @@ const ChatRow = React.memo(({ index, style, data }: ListChildComponentProps) => 
                             {IS_RIDER_MODE ? <Car size={20} /> : (chat.user.avatar ? <img src={chat.user.avatar} alt={chat.user.name} className="w-full h-full object-cover" /> : chat.user.name[0])}
                         </div>
                         {/* Status Dot */}
-                        <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white 
-                            ${chat.reservationSummary 
-                                ? (STATUS_CONFIG[chat.reservationSummary.status]?.accent.replace('text-', 'bg-') || 'bg-slate-400') 
-                                : 'bg-slate-400'
-                            }`}></div>
+                        <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${statusColor}`}></div>
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-start">
                         <div className="flex justify-between items-baseline mb-0.5">
@@ -902,11 +916,9 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                         )}
 
                                         {msg.type === 'system' ? (() => {
-                                            const status = msg.metadata?.status;
-                                            const style = status ? STATUS_CONFIG[status] : { bg: 'bg-slate-100', text: 'text-slate-600', icon: <CheckCheck size={12} />, label: 'System' };
+                                            const status = msg.metadata?.status as LeaseStatus | undefined;
+                                            const style = status && STATUS_CONFIG[status] ? STATUS_CONFIG[status] : { bg: 'bg-slate-100', text: 'text-slate-600', icon: <CheckCheck size={12} />, label: 'System' };
                                             
-                                            if (!style) return null;
-
                                             // RIDER MODE LOGIC: Riders can confirm if waiting for rider
                                             const isActionable = IS_RIDER_MODE 
                                                 ? (status === 'confirmation_rider' && currentLeaseData.status !== 'confirmed')
