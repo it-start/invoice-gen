@@ -1,8 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { pdf } from '@react-pdf/renderer';
-import { Download, Wand2, Loader2, RotateCcw, FileText, Car, Globe, Share2, MessageCircle } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { Download, Wand2, Loader2, RotateCcw, FileText, Car, Globe, Share2, MessageCircle, FlaskConical } from 'lucide-react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 
 import InvoicePreview from '../components/InvoicePreview';
 import LeasePreview from '../components/LeasePreview';
@@ -27,6 +27,7 @@ type DocType = 'invoice' | 'lease' | 'chat';
 
 export default function EditorPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [docType, setDocType] = useState<DocType>('chat');
   const [lang, setLang] = useState<Language>('en');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -173,10 +174,15 @@ export default function EditorPage() {
                     <div className="md:hidden flex gap-1 bg-slate-100 p-1 rounded-lg">
                         <button onClick={() => setDocType('chat')} className={`p-2 rounded-md ${docType === 'chat' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}><MessageCircle size={18} /></button>
                         <button onClick={() => setDocType('lease')} className={`p-2 rounded-md ${docType === 'lease' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}><Car size={18} /></button>
-                        {showInvoiceTab && (
-                        <button onClick={() => setDocType('invoice')} className={`p-2 rounded-md ${docType === 'invoice' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}><FileText size={18} /></button>
-                        )}
                     </div>
+
+                    {/* V2 Beta Link */}
+                    <button 
+                        onClick={() => navigate('/v2/assets')}
+                        className="hidden md:flex items-center gap-2 text-xs font-bold bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors border border-indigo-200"
+                    >
+                        <FlaskConical size={14} /> V2 Beta
+                    </button>
 
                     <button
                         onClick={toggleLang}
