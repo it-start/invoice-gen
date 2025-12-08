@@ -20,7 +20,7 @@ export const authService = {
     const params = new URLSearchParams();
     params.append('username', username);
     params.append('password', password);
-    params.append('user_type', 'owner'); 
+    params.append('user_type', 'rider'); 
 
     const response = await fetch(AUTH_URL, {
       method: 'POST',
