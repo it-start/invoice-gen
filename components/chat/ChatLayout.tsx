@@ -120,9 +120,9 @@ const STATUS_CONFIG: Record<LeaseStatus, { bg: string, text: string, border: str
 const StatusBadge = ({ status, className = "" }: { status: LeaseStatus, className?: string }) => {
     const config = STATUS_CONFIG[status] || STATUS_CONFIG['pending'];
     return (
-        <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider border ${config.bg} ${config.text} ${config.border} ${className}`}>
+        <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${config.bg} ${config.text} ${config.border} ${className}`}>
             {config.icon}
-            <span className="truncate">{config.label}</span>
+            <span>{config.label}</span>
         </div>
     );
 };
@@ -173,6 +173,7 @@ const ChatRow = React.memo(({ index, style, data }: ListChildComponentProps) => 
     const chat = sessions[index];
     const isActive = activeSessionId === chat.id;
 
+    // RIDER VIEW: Focus on Vehicle Name first, Owner/Host second
     const displayTitle = IS_RIDER_MODE && chat.reservationSummary ? chat.reservationSummary.vehicleName : chat.user.name;
     const displaySubtitle = IS_RIDER_MODE ? `Host: ${chat.user.name}` : chat.lastMessage;
 
@@ -187,56 +188,60 @@ const ChatRow = React.memo(({ index, style, data }: ListChildComponentProps) => 
 
     return (
         <div style={style}>
-            <SwipeableRow onArchive={() => archiveSession(chat.id)} className="h-full">
+            <SwipeableRow onArchive={() => archiveSession(chat.id)} className="border-b border-slate-50 h-full">
                 <div 
                     onClick={() => handleChatSelect(chat.id)}
-                    className={`relative p-3 flex gap-3 cursor-pointer transition-all h-full border-b border-slate-100 hover:bg-slate-50
-                        ${isActive ? 'bg-blue-50/60' : 'bg-white'}
-                    `}
+                    className={`p-3 md:p-4 flex gap-3 cursor-pointer transition-all group h-full
+                        ${isActive 
+                            ? 'bg-blue-50/50 border-l-4 border-l-blue-500 shadow-inner' 
+                            : 'hover:bg-slate-50 border-l-4 border-l-transparent'
+                        }`}
                 >
-                    {/* Active Indicator Line */}
-                    {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r"></div>}
-
-                    {/* Avatar */}
-                    <div className="relative shrink-0 pt-1">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg shadow-sm border border-slate-100 overflow-hidden transition-all
-                            ${isActive ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
-                            {IS_RIDER_MODE ? <Car size={22} strokeWidth={1.5} /> : (chat.user.avatar ? <img src={chat.user.avatar} alt={chat.user.name} className="w-full h-full object-cover" /> : chat.user.name[0])}
+                    <div className="relative shrink-0 self-start">
+                        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center font-bold text-lg overflow-hidden transition-all
+                            ${isActive ? 'bg-blue-200 text-blue-700 ring-2 ring-white shadow-md' : 'bg-slate-200 text-slate-500 group-hover:bg-slate-300'}`}>
+                            {IS_RIDER_MODE ? <Car size={20} /> : (chat.user.avatar ? <img src={chat.user.avatar} alt={chat.user.name} className="w-full h-full object-cover" /> : chat.user.name[0])}
                         </div>
                         {/* Status Dot */}
-                        {chat.unreadCount > 0 ? (
-                             <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 rounded-full border-2 border-white flex items-center justify-center shadow-sm">
-                                <span className="text-[9px] text-white font-bold">{chat.unreadCount}</span>
-                             </div>
-                        ) : (
-                             <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${statusColor}`}></div>
-                        )}
+                        <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${statusColor}`}></div>
                     </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0 flex flex-col gap-0.5 justify-center">
-                        {/* Top Line */}
-                        <div className="flex justify-between items-start">
-                            <h3 className={`font-bold text-sm truncate leading-tight ${isActive ? 'text-slate-900' : 'text-slate-800'}`}>
-                                {displayTitle}
-                            </h3>
+                    <div className="flex-1 min-w-0 flex flex-col justify-start">
+                        <div className="flex justify-between items-baseline mb-0.5">
+                            <h3 className={`font-bold text-sm truncate ${isActive ? 'text-blue-900' : 'text-slate-800'}`}>{displayTitle}</h3>
                             <span className={`text-[10px] font-medium whitespace-nowrap ml-2 ${isActive ? 'text-blue-600' : 'text-slate-400'}`}>
                                 {chat.lastMessageTime > 0 ? humanizeTime(chat.lastMessageTime, lang) : ''}
                             </span>
                         </div>
-
-                        {/* Middle Line */}
-                        <p className="text-xs text-slate-500 truncate leading-tight">
-                            {displaySubtitle}
-                        </p>
-
-                        {/* Bottom Line (Tags) */}
-                        {chat.reservationSummary && (
-                            <div className="mt-1.5 flex items-center justify-between">
-                                <StatusBadge status={chat.reservationSummary.status} />
-                                <span className="text-[10px] font-mono text-slate-400 bg-slate-50 px-1.5 rounded border border-slate-100">
-                                    {chat.reservationSummary.plateNumber}
+                        
+                        <div className="flex justify-between items-center mb-1">
+                             <p className={`text-xs truncate max-w-[140px] md:max-w-[140px] ${isActive ? 'text-blue-700 font-medium' : 'text-slate-500'}`}>
+                                {displaySubtitle}
+                            </p>
+                            {chat.unreadCount > 0 && (
+                                <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center shadow-sm">
+                                    {chat.unreadCount}
                                 </span>
+                            )}
+                        </div>
+
+                        {/* RIDER MODE: Show Dates/Status explicitly */}
+                        {IS_RIDER_MODE && chat.reservationSummary && (
+                             <div className="flex items-center gap-2 mt-1">
+                                <StatusBadge status={chat.reservationSummary.status} />
+                                <span className="text-[10px] text-slate-400 font-mono">{chat.reservationSummary.plateNumber}</span>
+                             </div>
+                        )}
+                        
+                        {/* OWNER MODE: Show Vehicle Summary */}
+                        {!IS_RIDER_MODE && chat.reservationSummary && (
+                            <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-100/80">
+                                <div className="flex items-center gap-1.5 text-[10px] text-slate-600 font-medium bg-slate-100 px-2 py-0.5 rounded-md max-w-[55%]">
+                                    <Car size={10} className="text-slate-400 shrink-0" />
+                                    <span className="truncate">{chat.reservationSummary.vehicleName}</span>
+                                </div>
+                                {chat.reservationSummary.status && (
+                                    <StatusBadge status={chat.reservationSummary.status} />
+                                )}
                             </div>
                         )}
                     </div>
@@ -511,8 +516,10 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
 
     const getItemSize = (index: number) => {
         const s = filteredSessions[index];
-        // 96px for items with vehicle details (3 rows), 72px for simple rows (2 rows)
-        return s.reservationSummary ? 96 : 72;
+        const isMobileScreen = window.innerWidth < 768; 
+        const base = isMobileScreen ? 75 : 85; 
+        const meta = s.reservationSummary ? (isMobileScreen ? 28 : 30) : 0;
+        return base + meta;
     };
 
     const statusConfig = STATUS_CONFIG[currentLeaseData.status || 'pending'] || STATUS_CONFIG['pending'];

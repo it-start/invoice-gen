@@ -1,5 +1,4 @@
 
-
 import { Language } from '../types';
 
 export const humanizeTime = (timestamp: number, lang: Language): string => {

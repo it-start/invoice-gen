@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export const BrandIcon: React.FC<{ className?: string }> = ({ className = "" }) => (
