@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAssetStore } from '../stores/assetStore';
 import { DomainType } from '../types';
-import { Plus, Car, Home, Hammer, Building2, Search, Trash2, Edit2, MapPin, Hash, Zap, DownloadCloud } from 'lucide-react';
+import { Plus, Car, Home, Hammer, Building2, Search, Trash2, Edit2, MapPin, Hash, Zap, DownloadCloud, Calendar } from 'lucide-react';
 import { BrandLogo } from '../components/ui/BrandLogo';
 import { MigrationModal } from '../components/modals/MigrationModal';
 
@@ -56,6 +56,12 @@ export default function AssetInventoryPage() {
                     className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors"
                 >
                     Back to V1
+                </button>
+                <button 
+                    onClick={() => navigate('/v2/scheduler')}
+                    className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-bold transition-colors border border-slate-200"
+                >
+                    <Calendar size={18} /> Schedule
                 </button>
                 <button 
                     onClick={() => setShowMigration(true)}
