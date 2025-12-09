@@ -3,8 +3,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAssetStore } from '../stores/assetStore';
 import { DomainType } from '../types';
-import { Plus, Car, Home, Hammer, Building2, Search, Trash2, Edit2, MapPin, Hash, Zap } from 'lucide-react';
+import { Plus, Car, Home, Hammer, Building2, Search, Trash2, Edit2, MapPin, Hash, Zap, DownloadCloud } from 'lucide-react';
 import { BrandLogo } from '../components/ui/BrandLogo';
+import { MigrationModal } from '../components/modals/MigrationModal';
 
 const DOMAIN_ICONS: Record<DomainType, React.ReactNode> = {
   vehicle: <Car size={18} />,
@@ -24,6 +25,7 @@ export default function AssetInventoryPage() {
   const { assets, deleteAsset } = useAssetStore();
   const [filter, setFilter] = useState<DomainType | 'all'>('all');
   const [search, setSearch] = useState('');
+  const [showMigration, setShowMigration] = useState(false);
 
   const filteredAssets = assets.filter(a => {
     const matchesFilter = filter === 'all' || a.domainType === filter;
@@ -54,6 +56,12 @@ export default function AssetInventoryPage() {
                     className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors"
                 >
                     Back to V1
+                </button>
+                <button 
+                    onClick={() => setShowMigration(true)}
+                    className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-bold transition-colors"
+                >
+                    <DownloadCloud size={18} /> Import V1
                 </button>
                 <button 
                     onClick={() => navigate('/v2/assets')} 
@@ -122,7 +130,7 @@ export default function AssetInventoryPage() {
                             </div>
 
                             <h3 className="font-bold text-slate-900 text-lg mb-1 line-clamp-1">{asset.name || 'Unnamed Asset'}</h3>
-                            <p className="text-xs text-slate-400 font-mono mb-4">ID: {asset.id.toUpperCase()}</p>
+                            <p className="text-xs text-slate-400 font-mono mb-4">ID: {asset.id.substr(0, 8)}...</p>
 
                             {/* Attributes Summary */}
                             <div className="space-y-2 mb-auto">
@@ -201,6 +209,8 @@ export default function AssetInventoryPage() {
                 )}
             </div>
         </div>
+
+        <MigrationModal isOpen={showMigration} onClose={() => setShowMigration(false)} />
     </div>
   );
 }
