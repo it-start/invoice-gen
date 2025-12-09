@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Asset, DomainType, BookingV2 } from '../../types';
 import InputGroup from '../ui/InputGroup';
-import { Car, Home, Hammer, Building2, Save, Wand2, Sparkles, ArrowLeft, Calendar, FileText, Plus, User, Clock, Trash2, Image as ImageIcon, X, AlertCircle } from 'lucide-react';
+import { Car, Home, Hammer, Building2, Save, Wand2, Sparkles, ArrowLeft, Calendar, FileText, Plus, Clock, Trash2, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { useAiAssistant } from '../../hooks/useAiAssistant';
 import { AiModal } from '../modals/AiModal';
 import { useAssetStore } from '../../stores/assetStore';
