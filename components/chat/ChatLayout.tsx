@@ -12,6 +12,7 @@ import { useChatStore } from '../../stores/chatStore';
 import LeaseForm from '../forms/LeaseForm';
 import InputGroup from '../ui/InputGroup';
 import { SwipeableRow } from '../ui/SwipeableRow';
+import { SmartActionBar } from './SmartActionBar';
 
 // --- PIVOT: RIDER MODE ---
 const IS_RIDER_MODE = true; 
@@ -1020,6 +1021,14 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                             })}
                             <div ref={messagesEndRef} className="h-2" />
                         </div>
+
+                        {/* Smart Action Bar */}
+                        {activeChat && (
+                            <SmartActionBar 
+                                messages={activeChat.messages}
+                                onSuggestionClick={(text) => setMessageInput(text)}
+                            />
+                        )}
 
                         {/* Input Area */}
                         <div className="p-3 md:p-4 border-t border-slate-200 shrink-0 bg-white z-10 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">

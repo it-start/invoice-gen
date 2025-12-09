@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { InvoiceData, LeaseData, Asset } from "../types";
+import { InvoiceData, LeaseData, Asset, ChatMessage } from "../types";
 
 // --- SCHEMAS ---
 
@@ -141,6 +141,26 @@ const assetSchema: Schema = {
   required: ["name", "domainType", "attributes"]
 };
 
+const intentSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    intent: { type: Type.STRING, description: "Short description of user intent (e.g. 'asking_price', 'scheduling_viewing')" },
+    suggestions: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          label: { type: Type.STRING, description: "Short button label (2-3 words)" },
+          text: { type: Type.STRING, description: "The full text to populate in the chat input" },
+          type: { type: Type.STRING, enum: ["reply", "action"] }
+        },
+        required: ["label", "text", "type"]
+      }
+    }
+  },
+  required: ["suggestions"]
+};
+
 // --- API HELPER ---
 
 const getAiClient = () => {
@@ -228,5 +248,46 @@ export const parseGenericAsset = async (text: string): Promise<Partial<Asset> | 
   } catch (error) {
      console.error("Gemini Asset Parse Error:", error);
      throw error;
+  }
+};
+
+export interface ChatSuggestion {
+  label: string;
+  text: string;
+  type: 'reply' | 'action';
+}
+
+export const analyzeChatIntent = async (messages: ChatMessage[], domain: string = 'vehicle'): Promise<ChatSuggestion[]> => {
+  try {
+    const ai = getAiClient();
+    
+    // Prepare conversation context (last 5 messages)
+    const context = messages.slice(-5).map(m => 
+      `${m.senderId === 'me' ? 'Owner' : 'Renter'}: ${m.text}`
+    ).join('\n');
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: `You are a helpful assistant for a rental business (Domain: ${domain}).
+      Analyze the conversation context below.
+      Suggest 3 relevant, professional, and concise responses or actions for the Owner to reply to the Renter.
+      
+      Conversation:
+      ${context}`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: intentSchema,
+        temperature: 0.4, // Slightly creative for conversation
+      },
+    });
+
+    const jsonText = response.text;
+    if (!jsonText) return [];
+    
+    const result = JSON.parse(jsonText);
+    return result.suggestions || [];
+  } catch (error) {
+    console.error("Gemini Intent Analysis Error:", error);
+    return [];
   }
 };
