@@ -28,10 +28,28 @@ export default function PreviewPage() {
   const [serverHtml, setServerHtml] = useState<string | null>(null);
   
   const isMobile = useIsMobile();
+  const [mobileScale, setMobileScale] = useState(0.42);
   const [isDownloading, setIsDownloading] = useState(false);
 
   // Check output mode: 'blob' implies redirecting to raw pdf, undefined implies UI wrapper
   const outputMode = searchParams.get('output');
+
+  // Dynamic Scale Calculation for Mobile Preview
+  useEffect(() => {
+    const updateScale = () => {
+      // Calculate scale to fit width with small margin (e.g. 16px total)
+      // A4 width is approx 794px
+      const availableWidth = window.innerWidth - 16;
+      const scale = availableWidth / 794; 
+      setMobileScale(scale);
+    };
+
+    if (isMobile) {
+        updateScale();
+        window.addEventListener('resize', updateScale);
+        return () => window.removeEventListener('resize', updateScale);
+    }
+  }, [isMobile]);
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -272,9 +290,12 @@ export default function PreviewPage() {
                     <p className="text-[10px] text-slate-400">ID: {id}</p>
                 </div>
             </div>
-            <div className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-200 p-4 custom-scrollbar">
+            <div className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-200 p-0 custom-scrollbar pt-4">
                 <div className="w-full flex justify-center pb-24">
-                     <div className="origin-top transform scale-[0.45] sm:scale-[0.6] bg-white shadow-2xl">
+                     <div 
+                        className="origin-top bg-white shadow-2xl transition-transform duration-300"
+                        style={{ transform: `scale(${mobileScale})` }}
+                     >
                         <LeasePreview data={data} lang={lang} />
                      </div>
                 </div>
