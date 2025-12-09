@@ -5,6 +5,7 @@ import PreviewPage from './pages/PreviewPage';
 import { AssetFormV2 } from './components/forms/AssetFormV2';
 import AssetInventoryPage from './pages/AssetInventoryPage';
 import SchedulerPage from './pages/SchedulerPage';
+import DashboardPage from './pages/DashboardPage';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/v2/assets" element={<div className="min-h-screen bg-slate-50"><AssetFormV2 /></div>} />
         <Route path="/v2/inventory" element={<AssetInventoryPage />} />
         <Route path="/v2/scheduler" element={<SchedulerPage />} />
+        <Route path="/v2/dashboard" element={<DashboardPage />} />
       </Routes>
     </HashRouter>
   );
