@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAssetStore } from '../stores/assetStore';
-import { DomainType, LeaseStatus } from '../types';
+import { DomainType } from '../types';
 import { Plus, Car, Home, Hammer, Building2, Search, Trash2, Edit2, MapPin, Hash, Zap } from 'lucide-react';
 import { BrandLogo } from '../components/ui/BrandLogo';
 
