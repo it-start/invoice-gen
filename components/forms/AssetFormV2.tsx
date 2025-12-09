@@ -2,7 +2,9 @@
 import React, { useState } from 'react';
 import { Asset, DomainType } from '../../types';
 import InputGroup from '../ui/InputGroup';
-import { Car, Home, Hammer, Building2, Save, RotateCcw } from 'lucide-react';
+import { Car, Home, Hammer, Building2, Save, RotateCcw, Wand2 } from 'lucide-react';
+import { useAiAssistant } from '../../hooks/useAiAssistant';
+import { AiModal } from '../modals/AiModal';
 
 // Initial state generator
 const createEmptyAsset = (domain: DomainType = 'vehicle'): Asset => ({
@@ -24,6 +26,9 @@ const DOMAINS: { type: DomainType; label: string; icon: React.ReactNode }[] = [
 
 export const AssetFormV2: React.FC = () => {
   const [asset, setAsset] = useState<Asset>(createEmptyAsset('vehicle'));
+  
+  // Use English for V2 Beta
+  const ai = useAiAssistant('en');
 
   const handleDomainChange = (type: DomainType) => {
     // Preserve name, reset attributes when switching domain
@@ -32,6 +37,23 @@ export const AssetFormV2: React.FC = () => {
       domainType: type,
       attributes: {} 
     }));
+  };
+
+  const handleAiParse = async () => {
+    const result = await ai.parse('asset');
+    if (result) {
+        const assetData = result as Partial<Asset>;
+        
+        // Use functional state update to ensure latest state
+        setAsset(prev => ({
+            ...prev,
+            // If AI detects a domain, switch to it
+            domainType: assetData.domainType || prev.domainType,
+            name: assetData.name || prev.name,
+            // Deep merge attributes: keep existing, overwrite with new AI data
+            attributes: { ...prev.attributes, ...assetData.attributes }
+        }));
+    }
   };
 
   const updateAttribute = (key: string, value: string | number) => {
@@ -138,12 +160,21 @@ export const AssetFormV2: React.FC = () => {
             <h2 className="text-2xl font-bold text-slate-900">Asset Teleport <span className="text-blue-600 text-sm align-top bg-blue-100 px-2 py-0.5 rounded-full">V2 Beta</span></h2>
             <p className="text-slate-500 text-sm">Universal Asset Manager</p>
         </div>
-        <button 
-            onClick={() => setAsset(createEmptyAsset(asset.domainType))}
-            className="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-full transition-colors"
-        >
-            <RotateCcw size={20} />
-        </button>
+        <div className="flex gap-2">
+            <button 
+                onClick={ai.open}
+                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg shadow-purple-900/20 active:scale-95 transition-all"
+            >
+                <Wand2 size={16} /> Magic Import
+            </button>
+            <button 
+                onClick={() => setAsset(createEmptyAsset(asset.domainType))}
+                className="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-full transition-colors"
+                title="Reset Form"
+            >
+                <RotateCcw size={20} />
+            </button>
+        </div>
       </div>
 
       {/* DOMAIN SWITCHER */}
@@ -234,6 +265,18 @@ export const AssetFormV2: React.FC = () => {
             Save New Asset
         </button>
       </div>
+
+      <AiModal 
+        isOpen={ai.isOpen}
+        onClose={ai.close}
+        onParse={handleAiParse}
+        input={ai.input}
+        setInput={ai.setInput}
+        isLoading={ai.isLoading}
+        error={ai.error}
+        apiKeyMissing={ai.apiKeyMissing}
+        lang="en"
+      />
     </div>
   );
 };

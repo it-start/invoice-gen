@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { InvoiceData, LeaseData } from "../types";
+import { InvoiceData, LeaseData, Asset, DomainType } from "../types";
 
 // --- SCHEMAS ---
 
@@ -108,6 +108,39 @@ const leaseSchema: Schema = {
   required: ["vehicle", "pickup", "dropoff", "pricing"]
 };
 
+const assetSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    name: { type: Type.STRING, description: "The concise name or title of the asset (e.g. 'BMW X5 2020' or 'Sunset Villa')." },
+    domainType: {
+      type: Type.STRING,
+      enum: ["vehicle", "property", "equipment", "coworking"],
+      description: "Classify the asset into one of these domains based on the text."
+    },
+    attributes: {
+      type: Type.OBJECT,
+      description: "Extract attributes matching the detected domain.",
+      properties: {
+        // Vehicle
+        plate: { type: Type.STRING },
+        vin: { type: Type.STRING },
+        mileage: { type: Type.NUMBER },
+        fuelType: { type: Type.STRING },
+        // Property
+        address: { type: Type.STRING },
+        bedrooms: { type: Type.NUMBER },
+        bathrooms: { type: Type.NUMBER },
+        area: { type: Type.NUMBER },
+        // Equipment
+        serialNumber: { type: Type.STRING },
+        modelYear: { type: Type.NUMBER },
+        specs: { type: Type.STRING, description: "Technical specifications string" },
+      }
+    }
+  },
+  required: ["name", "domainType", "attributes"]
+};
+
 // --- API HELPER ---
 
 const getAiClient = () => {
@@ -172,6 +205,28 @@ export const parseLeaseText = async (text: string): Promise<Partial<LeaseData> |
     return JSON.parse(jsonText) as Partial<LeaseData>;
   } catch (error) {
      console.error("Gemini Lease Parse Error:", error);
+     throw error;
+  }
+};
+
+export const parseGenericAsset = async (text: string): Promise<Partial<Asset> | null> => {
+  try {
+    const ai = getAiClient();
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: `Analyze this text and extract an asset structure. Classify it as vehicle, property, or equipment. Text: ${text}`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: assetSchema,
+        temperature: 0.1,
+      },
+    });
+
+    const jsonText = response.text;
+    if (!jsonText) return null;
+    return JSON.parse(jsonText) as Partial<Asset>;
+  } catch (error) {
+     console.error("Gemini Asset Parse Error:", error);
      throw error;
   }
 };

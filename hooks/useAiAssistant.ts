@@ -1,10 +1,10 @@
 
 import { useState, useEffect } from 'react';
-import { parseInvoiceText, parseLeaseText } from '../services/geminiService';
+import { parseInvoiceText, parseLeaseText, parseGenericAsset } from '../services/geminiService';
 import { t } from '../utils/i18n';
-import { Language, InvoiceData, LeaseData } from '../types';
+import { Language, InvoiceData, LeaseData, Asset } from '../types';
 
-type DocType = 'invoice' | 'lease';
+type DocType = 'invoice' | 'lease' | 'asset';
 
 export const useAiAssistant = (lang: Language) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -33,7 +33,7 @@ export const useAiAssistant = (lang: Language) => {
       setError(null);
   };
 
-  const parse = async (docType: DocType): Promise<Partial<InvoiceData> | Partial<LeaseData> | null> => {
+  const parse = async (docType: DocType): Promise<Partial<InvoiceData> | Partial<LeaseData> | Partial<Asset> | null> => {
     if (!input.trim()) return null;
     
     setIsLoading(true);
@@ -43,8 +43,10 @@ export const useAiAssistant = (lang: Language) => {
         let result;
         if (docType === 'invoice') {
             result = await parseInvoiceText(input);
-        } else {
+        } else if (docType === 'lease') {
             result = await parseLeaseText(input);
+        } else {
+            result = await parseGenericAsset(input);
         }
         
         if (result) {
