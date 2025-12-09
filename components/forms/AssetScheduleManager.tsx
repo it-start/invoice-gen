@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { BookingV2 } from '../../types';
 import InputGroup from '../ui/InputGroup';
-import { Plus, Calendar, Clock, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, Calendar, Clock, Trash2, AlertCircle, X } from 'lucide-react';
 import { checkDateOverlap } from '../../utils/dateUtils';
 
 interface AssetScheduleManagerProps {
@@ -87,9 +87,13 @@ export const AssetScheduleManager: React.FC<AssetScheduleManagerProps> = ({ asse
                 </button>
             ) : (
                 <div className={`bg-white border rounded-2xl p-6 shadow-lg transition-all ${hasConflict ? 'border-red-300 shadow-red-50' : 'border-blue-200 shadow-blue-50'}`}>
-                    <h3 className="text-sm font-bold text-slate-800 uppercase mb-4 flex items-center gap-2">
-                        <Calendar size={16} className="text-blue-600" /> New Reservation
-                    </h3>
+                    <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-sm font-bold text-slate-800 uppercase flex items-center gap-2">
+                            <Calendar size={16} className="text-blue-600" /> New Reservation
+                        </h3>
+                        <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+                    </div>
+                    
                     <div className="space-y-4">
                         <InputGroup label="Customer Name" value={newBooking.userId || ''} onChange={v => setNewBooking({...newBooking, userId: v})} placeholder="John Doe" />
                         <div className="grid grid-cols-2 gap-4">
@@ -98,7 +102,7 @@ export const AssetScheduleManager: React.FC<AssetScheduleManagerProps> = ({ asse
                         </div>
                         
                         {hasConflict && (
-                            <div className="flex items-center gap-2 text-red-600 text-xs font-bold bg-red-50 p-2 rounded-lg border border-red-100">
+                            <div className="flex items-center gap-2 text-red-600 text-xs font-bold bg-red-50 p-3 rounded-lg border border-red-100">
                                 <AlertCircle size={16} /> Warning: Dates overlap with an existing booking.
                             </div>
                         )}
@@ -108,7 +112,7 @@ export const AssetScheduleManager: React.FC<AssetScheduleManagerProps> = ({ asse
                             <div>
                                 <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5 ml-1 tracking-wider">Status</label>
                                 <select 
-                                    className="w-full px-3 py-2.5 border rounded-lg text-sm bg-white outline-none"
+                                    className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white outline-none focus:ring-4 focus:ring-blue-100"
                                     value={newBooking.status}
                                     onChange={e => setNewBooking({...newBooking, status: e.target.value as any})}
                                 >
@@ -118,10 +122,13 @@ export const AssetScheduleManager: React.FC<AssetScheduleManagerProps> = ({ asse
                                 </select>
                             </div>
                         </div>
-                        <div className="flex gap-3 pt-2">
-                            <button onClick={() => setShowForm(false)} className="flex-1 py-2 text-slate-500 font-bold hover:bg-slate-100 rounded-lg">Cancel</button>
-                            <button onClick={handleCreate} className="flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">Create Booking</button>
-                        </div>
+                        <button 
+                            onClick={handleCreate} 
+                            disabled={hasConflict}
+                            className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Create Booking
+                        </button>
                     </div>
                 </div>
             )}
@@ -132,7 +139,7 @@ export const AssetScheduleManager: React.FC<AssetScheduleManagerProps> = ({ asse
                 {bookings.length === 0 ? (
                     <div className="text-center py-8 text-slate-400 italic bg-slate-50 rounded-xl border border-slate-100">No bookings yet.</div>
                 ) : (
-                    bookings.map(booking => (
+                    bookings.sort((a,b) => new Date(b.startDatetime).getTime() - new Date(a.startDatetime).getTime()).map(booking => (
                         <BookingItem key={booking.id} booking={booking} onDelete={() => onDeleteBooking(booking.id)} />
                     ))
                 )}
@@ -145,15 +152,15 @@ export const AssetScheduleManager: React.FC<AssetScheduleManagerProps> = ({ asse
 const StatCard = ({ label, value, color }: { label: string, value: string, color: string }) => (
     <div className={`bg-${color}-50 p-4 rounded-xl border border-${color}-100`}>
         <div className={`text-${color}-500 text-xs font-bold uppercase mb-1`}>{label}</div>
-        <div className={`text-2xl font-bold text-${color}-900`}>{value}</div>
+        <div className={`text-2xl font-bold text-${color}-900 truncate`}>{value}</div>
     </div>
 );
 
 const BookingItem = ({ booking, onDelete }: { booking: BookingV2, onDelete: () => void }) => (
-    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center hover:border-blue-300 transition-colors group">
+    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between hover:border-blue-300 transition-colors group gap-3">
         <div className="flex items-center gap-4">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-slate-500 bg-slate-100`}>
-                {booking.userId.charAt(0)}
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-slate-500 bg-slate-100 shrink-0`}>
+                {booking.userId.charAt(0).toUpperCase()}
             </div>
             <div>
                 <div className="font-bold text-slate-800 text-sm">{booking.userId}</div>
@@ -165,16 +172,16 @@ const BookingItem = ({ booking, onDelete }: { booking: BookingV2, onDelete: () =
                 </div>
             </div>
         </div>
-        <div className="flex items-center gap-4">
-            <div className="text-right">
+        <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto pl-14 sm:pl-0">
+            <div className="text-left sm:text-right">
                 <div className="font-bold text-slate-900">{booking.pricing.totalAmount.toLocaleString()} <span className="text-[10px] text-slate-400">{booking.pricing.currencyCode}</span></div>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border uppercase tracking-wide inline-block mt-1 ${STATUS_BADGES[booking.status] || 'bg-slate-100 text-slate-500'}`}>
                     {booking.status}
                 </span>
             </div>
             <button 
-                onClick={onDelete}
-                className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-100 sm:opacity-0 group-hover:opacity-100"
                 title="Delete Booking"
             >
                 <Trash2 size={16} />

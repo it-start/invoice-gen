@@ -12,7 +12,7 @@ interface AssetAttributesEditorProps {
 export const AssetAttributesEditor: React.FC<AssetAttributesEditorProps> = ({ domain, attributes, onChange }) => {
     
     const renderVehicleFields = () => (
-        <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-300">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-300">
             <InputGroup 
                 label="License Plate" 
                 value={attributes.plate || ''} 
@@ -72,7 +72,7 @@ export const AssetAttributesEditor: React.FC<AssetAttributesEditorProps> = ({ do
     );
 
     const renderEquipmentFields = () => (
-        <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-300">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-300">
             <InputGroup 
                 label="Serial Number" 
                 value={attributes.serialNumber || ''} 
@@ -84,7 +84,7 @@ export const AssetAttributesEditor: React.FC<AssetAttributesEditorProps> = ({ do
                 onChange={(v) => onChange('modelYear', Number(v))} 
                 type="number"
             />
-            <div className="col-span-2">
+            <div className="md:col-span-2">
                 <InputGroup 
                     label="Technical Specs" 
                     value={attributes.specs || ''} 
@@ -97,15 +97,16 @@ export const AssetAttributesEditor: React.FC<AssetAttributesEditorProps> = ({ do
 
     return (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mb-8 relative overflow-hidden">
+            {/* Contextual Accent Stripe */}
             <div className={`absolute top-0 left-0 w-1 h-full ${
                 domain === 'vehicle' ? 'bg-blue-500' : 
                 domain === 'property' ? 'bg-emerald-500' : 
                 'bg-amber-500'
             }`}></div>
             
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex justify-between">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-6 flex justify-between items-center">
                 <span>{domain} Attributes</span>
-                <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-mono">Type-Safe</span>
+                <span className="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-500 font-mono tracking-tight">Dynamic Schema</span>
             </h3>
             
             {domain === 'vehicle' && renderVehicleFields()}
