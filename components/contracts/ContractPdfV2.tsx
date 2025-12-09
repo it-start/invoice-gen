@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { Page, Text, View, Document, StyleSheet, Image, Svg, Path, Ellipse } from '@react-pdf/renderer';
+import { Page, Text, View, Document, StyleSheet, Svg, Path, Ellipse } from '@react-pdf/renderer';
 import { Asset, BookingV2 } from '../../types';
-import { DOMAIN_TERMS, getDomainTerm } from '../../utils/domainTerms';
+import { DOMAIN_TERMS } from '../../utils/domainTerms';
 import { registerFonts, pdfStyles } from '../../styles/pdfStyles';
 
 registerFonts();

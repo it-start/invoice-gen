@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { BookingV2, Asset } from '../../types';
+import { BookingV2 } from '../../types';
 import InputGroup from '../ui/InputGroup';
 import { Plus, Calendar, Clock, Trash2, AlertCircle, X, FileText } from 'lucide-react';
 import { checkDateOverlap } from '../../utils/dateUtils';
