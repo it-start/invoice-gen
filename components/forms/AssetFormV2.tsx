@@ -1,10 +1,12 @@
 
 import React, { useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Asset, DomainType } from '../../types';
 import InputGroup from '../ui/InputGroup';
-import { Car, Home, Hammer, Building2, Save, RotateCcw, Wand2 } from 'lucide-react';
+import { Car, Home, Hammer, Building2, Save, RotateCcw, Wand2, Sparkles, ArrowLeft } from 'lucide-react';
 import { useAiAssistant } from '../../hooks/useAiAssistant';
 import { AiModal } from '../modals/AiModal';
+import { useAssetStore } from '../../stores/assetStore';
 
 // Initial state generator
 const createEmptyAsset = (domain: DomainType = 'vehicle'): Asset => ({
@@ -24,11 +26,31 @@ const DOMAINS: { type: DomainType; label: string; icon: React.ReactNode }[] = [
   { type: 'coworking', label: 'Coworking', icon: <Building2 size={16} /> },
 ];
 
+const EXAMPLE_TEXT = `New Inventory Arrival:
+2023 Tesla Model Y Long Range
+VIN: 7G234672346123456
+Color: Pearl White
+Mileage: 12,450 km
+Type: Electric Vehicle (EV)
+Please register this car and set status to Available.`;
+
 export const AssetFormV2: React.FC = () => {
-  const [asset, setAsset] = useState<Asset>(createEmptyAsset('vehicle'));
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const assetId = searchParams.get('id');
+  const { addAsset, updateAsset, getAsset } = useAssetStore();
   
   // Use English for V2 Beta
   const ai = useAiAssistant('en');
+
+  // Initialize State (Edit vs Create)
+  const [asset, setAsset] = useState<Asset>(() => {
+      if (assetId) {
+          const existing = getAsset(assetId);
+          if (existing) return existing;
+      }
+      return createEmptyAsset('vehicle');
+  });
 
   const handleDomainChange = (type: DomainType) => {
     // Preserve name, reset attributes when switching domain
@@ -54,6 +76,25 @@ export const AssetFormV2: React.FC = () => {
             attributes: { ...prev.attributes, ...assetData.attributes }
         }));
     }
+  };
+
+  const handleLoadExample = () => {
+    ai.setInput(EXAMPLE_TEXT);
+    ai.open();
+  };
+
+  const handleSave = () => {
+      if (asset.name.trim() === '') {
+          alert('Asset name is required');
+          return;
+      }
+
+      if (assetId) {
+          updateAsset(assetId, asset);
+      } else {
+          addAsset(asset);
+      }
+      navigate('/v2/inventory');
   };
 
   const updateAttribute = (key: string, value: string | number) => {
@@ -153,14 +194,28 @@ export const AssetFormV2: React.FC = () => {
   );
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
+    <div className="max-w-2xl mx-auto p-6 font-sans text-slate-900">
       {/* HEADER */}
       <div className="flex justify-between items-center mb-8">
-        <div>
-            <h2 className="text-2xl font-bold text-slate-900">Asset Teleport <span className="text-blue-600 text-sm align-top bg-blue-100 px-2 py-0.5 rounded-full">V2 Beta</span></h2>
-            <p className="text-slate-500 text-sm">Universal Asset Manager</p>
+        <div className="flex items-center gap-4">
+            <button 
+                onClick={() => navigate('/v2/inventory')}
+                className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors"
+            >
+                <ArrowLeft size={24} />
+            </button>
+            <div>
+                <h2 className="text-2xl font-bold text-slate-900">{assetId ? 'Edit Asset' : 'New Asset'}</h2>
+                <p className="text-slate-500 text-sm">{asset.domainType.charAt(0).toUpperCase() + asset.domainType.slice(1)} Metadata</p>
+            </div>
         </div>
         <div className="flex gap-2">
+            <button 
+                onClick={handleLoadExample}
+                className="hidden md:flex items-center gap-2 text-purple-600 bg-purple-50 hover:bg-purple-100 px-4 py-2 rounded-xl font-bold text-sm transition-all"
+            >
+                <Sparkles size={16} /> Try Example
+            </button>
             <button 
                 onClick={ai.open}
                 className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg shadow-purple-900/20 active:scale-95 transition-all"
@@ -217,7 +272,7 @@ export const AssetFormV2: React.FC = () => {
                     Status
                 </label>
                 <select 
-                    className="w-full px-3 py-2.5 border rounded-lg text-sm bg-white outline-none focus:ring-4 focus:ring-blue-500/10 border-slate-300"
+                    className="w-full px-3 py-2.5 border rounded-lg text-base md:text-sm bg-white outline-none focus:ring-4 focus:ring-blue-500/10 border-slate-300"
                     value={asset.status}
                     onChange={(e) => setAsset(prev => ({ ...prev, status: e.target.value as any }))}
                 >
@@ -248,7 +303,7 @@ export const AssetFormV2: React.FC = () => {
       </div>
 
       {/* DEBUG DATA VISUALIZER */}
-      <div className="bg-slate-900 rounded-xl p-6 text-slate-300 font-mono text-xs overflow-hidden">
+      <div className="bg-slate-900 rounded-xl p-6 text-slate-300 font-mono text-xs overflow-hidden mb-8">
         <div className="flex justify-between items-center mb-2 border-b border-slate-700 pb-2">
             <span className="font-bold text-slate-100">Live Data Model Preview</span>
             <span className="text-[10px] opacity-50">Read-only</span>
@@ -259,10 +314,13 @@ export const AssetFormV2: React.FC = () => {
       </div>
 
       {/* ACTION BAR */}
-      <div className="mt-8 flex justify-end">
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-blue-900/20 active:scale-95 transition-all">
+      <div className="flex justify-end pb-12">
+        <button 
+            onClick={handleSave}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
+        >
             <Save size={18} />
-            Save New Asset
+            {assetId ? 'Update Asset' : 'Save Asset'}
         </button>
       </div>
 

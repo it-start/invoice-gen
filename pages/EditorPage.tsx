@@ -178,7 +178,7 @@ export default function EditorPage() {
 
                     {/* V2 Beta Link */}
                     <button 
-                        onClick={() => navigate('/v2/assets')}
+                        onClick={() => navigate('/v2/inventory')}
                         className="hidden md:flex items-center gap-2 text-xs font-bold bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors border border-indigo-200"
                     >
                         <FlaskConical size={14} /> V2 Beta
