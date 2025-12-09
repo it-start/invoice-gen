@@ -1,10 +1,10 @@
 
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAssetStore } from '../stores/assetStore';
 import { useBookingStore } from '../stores/bookingStore';
 import { DomainType } from '../types';
-import { ArrowLeft, ChevronLeft, ChevronRight, Calendar, Filter, User, DollarSign } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Calendar, User, DollarSign } from 'lucide-react';
 import { BrandLogo } from '../components/ui/BrandLogo';
 
 const DOMAIN_COLORS: Record<DomainType, string> = {
