@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Asset, DomainType, BookingV2 } from '../../types';
 import InputGroup from '../ui/InputGroup';
-import { Car, Home, Hammer, Building2, Save, RotateCcw, Wand2, Sparkles, ArrowLeft, Calendar, FileText, Plus, User, Clock, CheckCircle } from 'lucide-react';
+import { Car, Home, Hammer, Building2, Save, Wand2, Sparkles, ArrowLeft, Calendar, FileText, Plus, User, Clock, Trash2, Image as ImageIcon, X, AlertCircle } from 'lucide-react';
 import { useAiAssistant } from '../../hooks/useAiAssistant';
 import { AiModal } from '../modals/AiModal';
 import { useAssetStore } from '../../stores/assetStore';
@@ -48,10 +48,11 @@ export const AssetFormV2: React.FC = () => {
   const [searchParams] = useSearchParams();
   const assetId = searchParams.get('id');
   const { addAsset, updateAsset, getAsset } = useAssetStore();
-  const { getBookingsByAsset, addBooking } = useBookingStore();
+  const { getBookingsByAsset, addBooking, deleteBooking } = useBookingStore();
   
   const [activeTab, setActiveTab] = useState<'metadata' | 'schedule'>('metadata');
   const [showBookingForm, setShowBookingForm] = useState(false);
+  const [imageUrlInput, setImageUrlInput] = useState('');
 
   // New Booking State
   const [newBooking, setNewBooking] = useState<Partial<BookingV2>>({
@@ -121,9 +122,41 @@ export const AssetFormV2: React.FC = () => {
       navigate('/v2/inventory');
   };
 
+  const handleAddImage = () => {
+      if (!imageUrlInput.trim()) return;
+      setAsset(prev => ({
+          ...prev,
+          images: [...(prev.images || []), imageUrlInput]
+      }));
+      setImageUrlInput('');
+  };
+
+  const handleRemoveImage = (index: number) => {
+      setAsset(prev => ({
+          ...prev,
+          images: prev.images.filter((_, i) => i !== index)
+      }));
+  };
+
+  const checkConflict = (start: string, end: string) => {
+      const s = new Date(start).getTime();
+      const e = new Date(end).getTime();
+      return assetBookings.some(b => {
+          if (b.status === 'cancelled') return false;
+          const bStart = new Date(b.startDatetime).getTime();
+          const bEnd = new Date(b.endDatetime).getTime();
+          return (s < bEnd && e > bStart);
+      });
+  };
+
   const handleCreateBooking = () => {
       if (!assetId || !newBooking.userId) return;
       
+      if (new Date(newBooking.endDatetime!) <= new Date(newBooking.startDatetime!)) {
+          alert("End date must be after start date");
+          return;
+      }
+
       const booking: BookingV2 = {
           id: `bkg_${Math.random().toString(36).substr(2, 9)}`,
           assetId: assetId,
@@ -241,103 +274,125 @@ export const AssetFormV2: React.FC = () => {
     </div>
   );
 
-  const renderScheduleTab = () => (
-      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          
-          {/* Summary Stats */}
-          <div className="grid grid-cols-3 gap-4">
-              <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                  <div className="text-blue-500 text-xs font-bold uppercase mb-1">Total Bookings</div>
-                  <div className="text-2xl font-bold text-blue-900">{assetBookings.length}</div>
-              </div>
-              <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
-                  <div className="text-emerald-500 text-xs font-bold uppercase mb-1">Revenue</div>
-                  <div className="text-2xl font-bold text-emerald-900">
-                      {assetBookings.reduce((acc, b) => acc + (b.pricing?.totalAmount || 0), 0).toLocaleString()}
-                  </div>
-              </div>
-              <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
-                  <div className="text-purple-500 text-xs font-bold uppercase mb-1">Status</div>
-                  <div className="text-2xl font-bold text-purple-900 capitalize">{asset.status}</div>
-              </div>
-          </div>
+  const renderScheduleTab = () => {
+      const hasConflict = showBookingForm && checkConflict(newBooking.startDatetime!, newBooking.endDatetime!);
 
-          {/* New Booking Action */}
-          {!showBookingForm ? (
-              <button 
-                onClick={() => setShowBookingForm(true)}
-                className="w-full py-4 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 font-bold hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
-              >
-                  <Plus size={20} /> Add Manual Booking
-              </button>
-          ) : (
-              <div className="bg-white border border-blue-200 rounded-2xl p-6 shadow-lg shadow-blue-50">
-                  <h3 className="text-sm font-bold text-slate-800 uppercase mb-4 flex items-center gap-2">
-                      <Calendar size={16} className="text-blue-600" /> New Reservation
-                  </h3>
-                  <div className="space-y-4">
-                      <InputGroup label="Customer Name" value={newBooking.userId || ''} onChange={v => setNewBooking({...newBooking, userId: v})} placeholder="John Doe" />
-                      <div className="grid grid-cols-2 gap-4">
-                          <InputGroup label="Start Date" type="date" value={newBooking.startDatetime?.split('T')[0] || ''} onChange={v => setNewBooking({...newBooking, startDatetime: v})} />
-                          <InputGroup label="End Date" type="date" value={newBooking.endDatetime?.split('T')[0] || ''} onChange={v => setNewBooking({...newBooking, endDatetime: v})} />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                          <InputGroup label="Total Amount" type="number" value={newBooking.pricing?.totalAmount || 0} onChange={v => setNewBooking({...newBooking, pricing: { ...newBooking.pricing!, totalAmount: Number(v) }})} />
-                          <div>
-                              <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5 ml-1 tracking-wider">Status</label>
-                              <select 
-                                className="w-full px-3 py-2.5 border rounded-lg text-sm bg-white outline-none"
-                                value={newBooking.status}
-                                onChange={e => setNewBooking({...newBooking, status: e.target.value as any})}
-                              >
-                                  <option value="pending">Pending</option>
-                                  <option value="confirmed">Confirmed</option>
-                                  <option value="completed">Completed</option>
-                              </select>
-                          </div>
-                      </div>
-                      <div className="flex gap-3 pt-2">
-                          <button onClick={() => setShowBookingForm(false)} className="flex-1 py-2 text-slate-500 font-bold hover:bg-slate-100 rounded-lg">Cancel</button>
-                          <button onClick={handleCreateBooking} className="flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">Create Booking</button>
-                      </div>
-                  </div>
-              </div>
-          )}
+      return (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            
+            {/* Summary Stats */}
+            <div className="grid grid-cols-3 gap-4">
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <div className="text-blue-500 text-xs font-bold uppercase mb-1">Bookings</div>
+                    <div className="text-2xl font-bold text-blue-900">{assetBookings.length}</div>
+                </div>
+                <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                    <div className="text-emerald-500 text-xs font-bold uppercase mb-1">Revenue</div>
+                    <div className="text-2xl font-bold text-emerald-900">
+                        {assetBookings.reduce((acc, b) => acc + (b.pricing?.totalAmount || 0), 0).toLocaleString()}
+                    </div>
+                </div>
+                <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
+                    <div className="text-purple-500 text-xs font-bold uppercase mb-1">Occupancy</div>
+                    <div className="text-2xl font-bold text-purple-900">
+                        {assetBookings.length > 0 ? Math.min(100, assetBookings.length * 10) + '%' : '0%'}
+                    </div>
+                </div>
+            </div>
 
-          {/* Booking List */}
-          <div className="space-y-3">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1">Booking History</h3>
-              {assetBookings.length === 0 ? (
-                  <div className="text-center py-8 text-slate-400 italic bg-slate-50 rounded-xl border border-slate-100">No bookings yet.</div>
-              ) : (
-                  assetBookings.map(booking => (
-                      <div key={booking.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center hover:border-blue-300 transition-colors cursor-default">
-                          <div className="flex items-center gap-4">
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-slate-500 bg-slate-100`}>
-                                  {booking.userId.charAt(0)}
-                              </div>
-                              <div>
-                                  <div className="font-bold text-slate-800 text-sm">{booking.userId}</div>
-                                  <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
-                                      <Clock size={12} />
-                                      {new Date(booking.startDatetime).toLocaleDateString()} 
-                                      <span className="text-slate-300">→</span> 
-                                      {new Date(booking.endDatetime).toLocaleDateString()}
-                                  </div>
-                              </div>
-                          </div>
-                          <div className="text-right">
-                              <div className="font-bold text-slate-900">{booking.pricing.totalAmount.toLocaleString()} <span className="text-[10px] text-slate-400">{booking.pricing.currencyCode}</span></div>
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border uppercase tracking-wide inline-block mt-1 ${STATUS_BADGES[booking.status] || 'bg-slate-100 text-slate-500'}`}>
-                                  {booking.status}
-                              </span>
-                          </div>
-                      </div>
-                  ))
-              )}
-          </div>
-      </div>
-  );
+            {/* New Booking Action */}
+            {!showBookingForm ? (
+                <button 
+                    onClick={() => setShowBookingForm(true)}
+                    className="w-full py-4 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 font-bold hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
+                >
+                    <Plus size={20} /> Add Manual Booking
+                </button>
+            ) : (
+                <div className={`bg-white border rounded-2xl p-6 shadow-lg transition-all ${hasConflict ? 'border-red-300 shadow-red-50' : 'border-blue-200 shadow-blue-50'}`}>
+                    <h3 className="text-sm font-bold text-slate-800 uppercase mb-4 flex items-center gap-2">
+                        <Calendar size={16} className="text-blue-600" /> New Reservation
+                    </h3>
+                    <div className="space-y-4">
+                        <InputGroup label="Customer Name" value={newBooking.userId || ''} onChange={v => setNewBooking({...newBooking, userId: v})} placeholder="John Doe" />
+                        <div className="grid grid-cols-2 gap-4">
+                            <InputGroup label="Start Date" type="date" value={newBooking.startDatetime?.split('T')[0] || ''} onChange={v => setNewBooking({...newBooking, startDatetime: v})} />
+                            <InputGroup label="End Date" type="date" value={newBooking.endDatetime?.split('T')[0] || ''} onChange={v => setNewBooking({...newBooking, endDatetime: v})} />
+                        </div>
+                        
+                        {hasConflict && (
+                            <div className="flex items-center gap-2 text-red-600 text-xs font-bold bg-red-50 p-2 rounded-lg border border-red-100">
+                                <AlertCircle size={16} /> Warning: Dates overlap with an existing booking.
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <InputGroup label="Total Amount" type="number" value={newBooking.pricing?.totalAmount || 0} onChange={v => setNewBooking({...newBooking, pricing: { ...newBooking.pricing!, totalAmount: Number(v) }})} />
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5 ml-1 tracking-wider">Status</label>
+                                <select 
+                                    className="w-full px-3 py-2.5 border rounded-lg text-sm bg-white outline-none"
+                                    value={newBooking.status}
+                                    onChange={e => setNewBooking({...newBooking, status: e.target.value as any})}
+                                >
+                                    <option value="pending">Pending</option>
+                                    <option value="confirmed">Confirmed</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                            <button onClick={() => setShowBookingForm(false)} className="flex-1 py-2 text-slate-500 font-bold hover:bg-slate-100 rounded-lg">Cancel</button>
+                            <button onClick={handleCreateBooking} className="flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">Create Booking</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Booking List */}
+            <div className="space-y-3">
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1">Booking History</h3>
+                {assetBookings.length === 0 ? (
+                    <div className="text-center py-8 text-slate-400 italic bg-slate-50 rounded-xl border border-slate-100">No bookings yet.</div>
+                ) : (
+                    assetBookings.map(booking => (
+                        <div key={booking.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center hover:border-blue-300 transition-colors group">
+                            <div className="flex items-center gap-4">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-slate-500 bg-slate-100`}>
+                                    {booking.userId.charAt(0)}
+                                </div>
+                                <div>
+                                    <div className="font-bold text-slate-800 text-sm">{booking.userId}</div>
+                                    <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
+                                        <Clock size={12} />
+                                        {new Date(booking.startDatetime).toLocaleDateString()} 
+                                        <span className="text-slate-300">→</span> 
+                                        {new Date(booking.endDatetime).toLocaleDateString()}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                    <div className="font-bold text-slate-900">{booking.pricing.totalAmount.toLocaleString()} <span className="text-[10px] text-slate-400">{booking.pricing.currencyCode}</span></div>
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border uppercase tracking-wide inline-block mt-1 ${STATUS_BADGES[booking.status] || 'bg-slate-100 text-slate-500'}`}>
+                                        {booking.status}
+                                    </span>
+                                </div>
+                                <button 
+                                    onClick={() => deleteBooking(booking.id)}
+                                    className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                    title="Delete Booking"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+        </div>
+      );
+  };
 
   return (
     <div className="max-w-2xl mx-auto p-6 font-sans text-slate-900">
@@ -450,6 +505,54 @@ export const AssetFormV2: React.FC = () => {
                             <option value="maintenance">Maintenance</option>
                         </select>
                     </div>
+                </div>
+            </div>
+
+            {/* IMAGE GALLERY */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mb-6">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Images</h3>
+                    <span className="text-[10px] text-slate-400">{asset.images.length} items</span>
+                </div>
+                
+                <div className="grid grid-cols-4 gap-3 mb-4">
+                    {asset.images.map((url, idx) => (
+                        <div key={idx} className="relative aspect-square rounded-lg bg-slate-100 overflow-hidden group border border-slate-200">
+                            <img src={url} alt={`Asset ${idx}`} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => handleRemoveImage(idx)} className="text-white bg-red-500 p-1.5 rounded-full">
+                                    <Trash2 size={14} />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                    {/* Placeholder for empty */}
+                    {asset.images.length === 0 && (
+                        <div className="col-span-4 py-6 text-center text-slate-400 text-xs italic border-2 border-dashed border-slate-100 rounded-lg">
+                            No images added yet.
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex gap-2">
+                    <div className="flex-1 relative">
+                        <ImageIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input 
+                            type="text"
+                            placeholder="Paste image URL..."
+                            className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-blue-100 outline-none"
+                            value={imageUrlInput}
+                            onChange={(e) => setImageUrlInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddImage()}
+                        />
+                    </div>
+                    <button 
+                        onClick={handleAddImage}
+                        disabled={!imageUrlInput}
+                        className="bg-slate-900 text-white px-4 rounded-lg font-bold text-sm hover:bg-slate-800 disabled:opacity-50"
+                    >
+                        Add
+                    </button>
                 </div>
             </div>
 
