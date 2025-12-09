@@ -1,4 +1,5 @@
 
+
 import { Language } from '../types';
 
 export const humanizeTime = (timestamp: number, lang: Language): string => {
@@ -67,4 +68,51 @@ export const formatShortDate = (dateStr: string, lang: Language): string => {
     } catch {
         return dateStr;
     }
+};
+
+/**
+ * Checks if two date ranges overlap.
+ * @param start1 ISO start date string
+ * @param end1 ISO end date string
+ * @param start2 ISO start date string
+ * @param end2 ISO end date string
+ * @returns boolean
+ */
+export const checkDateOverlap = (start1: string, end1: string, start2: string, end2: string): boolean => {
+    const s1 = new Date(start1).getTime();
+    const e1 = new Date(end1).getTime();
+    const s2 = new Date(start2).getTime();
+    const e2 = new Date(end2).getTime();
+    
+    // Standard overlap check: (StartA < EndB) and (EndA > StartB)
+    return s1 < e2 && e1 > s2;
+};
+
+/**
+ * Calculates the CSS position and width for a timeline bar relative to a viewing window.
+ * @param itemStart ISO string
+ * @param itemEnd ISO string
+ * @param timelineStart Date object
+ * @param timelineEnd Date object
+ */
+export const getTimelinePosition = (itemStart: string, itemEnd: string, timelineStart: Date, timelineEnd: Date) => {
+    const tStart = timelineStart.getTime();
+    const tEnd = timelineEnd.getTime();
+    const iStart = new Date(itemStart).getTime();
+    const iEnd = new Date(itemEnd).getTime();
+
+    // Check if item is outside the view completely
+    if (iEnd < tStart || iStart > tEnd) return null;
+
+    // Clamp values to visible area
+    const visibleStart = Math.max(iStart, tStart);
+    const visibleEnd = Math.min(iEnd, tEnd);
+
+    const totalDuration = tEnd - tStart;
+    
+    // Calculate percentage positions
+    const left = ((visibleStart - tStart) / totalDuration) * 100;
+    const width = ((visibleEnd - visibleStart) / totalDuration) * 100;
+
+    return { left: `${left}%`, width: `${width}%` };
 };

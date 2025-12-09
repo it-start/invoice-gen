@@ -6,6 +6,7 @@ import { useBookingStore } from '../stores/bookingStore';
 import { DomainType } from '../types';
 import { ArrowLeft, ChevronLeft, ChevronRight, Calendar, User, DollarSign } from 'lucide-react';
 import { BrandLogo } from '../components/ui/BrandLogo';
+import { getTimelinePosition } from '../utils/dateUtils';
 
 const DOMAIN_COLORS: Record<DomainType, string> = {
   vehicle: 'bg-blue-500 border-blue-600 text-white',
@@ -58,29 +59,8 @@ export default function SchedulerPage() {
     setStartDate(newDate);
   };
 
-  // Helper to calculate position and width of booking bar
-  const getBookingStyle = (start: string, end: string) => {
-    const timelineStart = days[0].getTime();
-    const timelineEnd = days[days.length - 1].getTime() + 86400000; // End of last day
-    const bookingStart = new Date(start).getTime();
-    const bookingEnd = new Date(end).getTime();
-
-    // Intersection check
-    if (bookingEnd < timelineStart || bookingStart > timelineEnd) return null;
-
-    // Clamp dates to timeline view
-    const visibleStart = Math.max(bookingStart, timelineStart);
-    const visibleEnd = Math.min(bookingEnd, timelineEnd);
-
-    const totalTimelineMs = timelineEnd - timelineStart;
-    const startPercent = ((visibleStart - timelineStart) / totalTimelineMs) * 100;
-    const widthPercent = ((visibleEnd - visibleStart) / totalTimelineMs) * 100;
-
-    return {
-      left: `${startPercent}%`,
-      width: `${widthPercent}%`
-    };
-  };
+  const timelineStart = days[0];
+  const timelineEnd = new Date(days[days.length - 1].getTime() + 86400000);
 
   return (
     <div className="h-screen bg-slate-50 flex flex-col font-sans text-slate-900 overflow-hidden">
@@ -135,7 +115,6 @@ export default function SchedulerPage() {
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Asset</span>
               </div>
               <div className="flex-1 overflow-y-hidden">
-                  {/* Sync scroll with timeline happens via ref logic or simple matching heights */}
                   <div className="flex flex-col">
                       {filteredAssets.map(asset => (
                           <div key={asset.id} className="h-16 border-b border-slate-100 flex items-center px-4 hover:bg-slate-50 transition-colors group cursor-pointer" onClick={() => navigate(`/v2/assets?id=${asset.id}`)}>
@@ -197,7 +176,7 @@ export default function SchedulerPage() {
 
                                   {/* Booking Bars */}
                                   {assetBookings.map(booking => {
-                                      const style = getBookingStyle(booking.startDatetime, booking.endDatetime);
+                                      const style = getTimelinePosition(booking.startDatetime, booking.endDatetime, timelineStart, timelineEnd);
                                       if (!style) return null;
 
                                       return (

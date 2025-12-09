@@ -168,12 +168,36 @@ export interface ChatSession {
 
 export type DomainType = 'vehicle' | 'property' | 'equipment' | 'coworking';
 
+// Strict Attribute Definitions for Type Safety in Editors
+export interface VehicleAttributes {
+  plate?: string;
+  vin?: string;
+  mileage?: number;
+  fuelType?: string;
+  [key: string]: any;
+}
+
+export interface PropertyAttributes {
+  address?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  area?: number;
+  [key: string]: any;
+}
+
+export interface EquipmentAttributes {
+  serialNumber?: string;
+  modelYear?: number;
+  specs?: string;
+  [key: string]: any;
+}
+
 export interface Asset {
   id: string;
   organizationId: string;
   name: string;
   domainType: DomainType;
-  attributes: Record<string, any>;
+  attributes: VehicleAttributes | PropertyAttributes | EquipmentAttributes | Record<string, any>;
   images: string[];
   status: 'available' | 'booked' | 'maintenance';
 }
