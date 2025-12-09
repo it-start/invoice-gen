@@ -1,7 +1,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { PDFViewer, pdf } from '@react-pdf/renderer';
+import { pdf } from '@react-pdf/renderer';
 import { Loader2, AlertCircle, Lock, Download } from 'lucide-react';
 import { fetchInvoiceHtml, fetchInvoicePdfBlob, loadLeaseData } from '../services/ownimaApi';
 import { authService } from '../services/authService';
@@ -12,6 +12,7 @@ import { LeaseData, Language } from '../types';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { BrandLogo } from '../components/ui/BrandLogo';
 import { t } from '../utils/i18n';
+import { PDFViewerFrame } from '../components/ui/PDFViewerFrame';
 
 export default function PreviewPage() {
   const { id } = useParams<{ id: string }>();
@@ -310,9 +311,9 @@ export default function PreviewPage() {
             </button>
        </div>
        <div className="flex-1 w-full">
-          <PDFViewer width="100%" height="100%" className="border-none">
+          <PDFViewerFrame width="100%" height="100%" className="border-none">
              <LeasePdf data={data} />
-          </PDFViewer>
+          </PDFViewerFrame>
        </div>
     </div>
   );

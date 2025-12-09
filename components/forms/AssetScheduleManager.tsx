@@ -1,9 +1,12 @@
 
 import React, { useState } from 'react';
-import { BookingV2 } from '../../types';
+import { BookingV2, Asset } from '../../types';
 import InputGroup from '../ui/InputGroup';
-import { Plus, Calendar, Clock, Trash2, AlertCircle, X } from 'lucide-react';
+import { Plus, Calendar, Clock, Trash2, AlertCircle, X, FileText } from 'lucide-react';
 import { checkDateOverlap } from '../../utils/dateUtils';
+import { useAssetStore } from '../../stores/assetStore';
+import { ContractPdfV2 } from '../contracts/ContractPdfV2';
+import { PDFViewerFrame } from '../ui/PDFViewerFrame';
 
 interface AssetScheduleManagerProps {
     assetId: string;
@@ -20,7 +23,11 @@ const STATUS_BADGES: Record<string, string> = {
 };
 
 export const AssetScheduleManager: React.FC<AssetScheduleManagerProps> = ({ assetId, bookings, onAddBooking, onDeleteBooking }) => {
+    const { getAsset } = useAssetStore();
+    const asset = getAsset(assetId);
+    
     const [showForm, setShowForm] = useState(false);
+    const [previewBooking, setPreviewBooking] = useState<BookingV2 | null>(null);
     const [newBooking, setNewBooking] = useState<Partial<BookingV2>>({
         userId: '',
         startDatetime: new Date().toISOString().split('T')[0],
@@ -140,10 +147,34 @@ export const AssetScheduleManager: React.FC<AssetScheduleManagerProps> = ({ asse
                     <div className="text-center py-8 text-slate-400 italic bg-slate-50 rounded-xl border border-slate-100">No bookings yet.</div>
                 ) : (
                     bookings.sort((a,b) => new Date(b.startDatetime).getTime() - new Date(a.startDatetime).getTime()).map(booking => (
-                        <BookingItem key={booking.id} booking={booking} onDelete={() => onDeleteBooking(booking.id)} />
+                        <BookingItem 
+                            key={booking.id} 
+                            booking={booking} 
+                            onDelete={() => onDeleteBooking(booking.id)} 
+                            onViewContract={() => setPreviewBooking(booking)}
+                        />
                     ))
                 )}
             </div>
+
+            {/* Contract Modal */}
+            {previewBooking && asset && (
+                <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="bg-white w-full max-w-4xl h-[90vh] rounded-2xl overflow-hidden flex flex-col">
+                        <div className="flex justify-between items-center p-4 border-b border-slate-200">
+                            <h3 className="font-bold text-slate-800">Contract Preview</h3>
+                            <button onClick={() => setPreviewBooking(null)} className="p-2 hover:bg-slate-100 rounded-full">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="flex-1 bg-slate-100">
+                            <PDFViewerFrame width="100%" height="100%" className="border-none">
+                                <ContractPdfV2 asset={asset} booking={previewBooking} />
+                            </PDFViewerFrame>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -156,7 +187,7 @@ const StatCard = ({ label, value, color }: { label: string, value: string, color
     </div>
 );
 
-const BookingItem = ({ booking, onDelete }: { booking: BookingV2, onDelete: () => void }) => (
+const BookingItem = ({ booking, onDelete, onViewContract }: { booking: BookingV2, onDelete: () => void, onViewContract: () => void }) => (
     <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between hover:border-blue-300 transition-colors group gap-3">
         <div className="flex items-center gap-4">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-slate-500 bg-slate-100 shrink-0`}>
@@ -179,13 +210,22 @@ const BookingItem = ({ booking, onDelete }: { booking: BookingV2, onDelete: () =
                     {booking.status}
                 </span>
             </div>
-            <button 
-                onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-100 sm:opacity-0 group-hover:opacity-100"
-                title="Delete Booking"
-            >
-                <Trash2 size={16} />
-            </button>
+            <div className="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                <button 
+                    onClick={(e) => { e.stopPropagation(); onViewContract(); }}
+                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="View Contract"
+                >
+                    <FileText size={16} />
+                </button>
+                <button 
+                    onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                    className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Delete Booking"
+                >
+                    <Trash2 size={16} />
+                </button>
+            </div>
         </div>
     </div>
 );
