@@ -289,9 +289,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
 
     // @ts-ignore
     const mapboxToken = process.env.MAPBOX_API_KEY;
-    const mapStyle = mapboxToken 
-        ? { backgroundImage: `url('https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/100.0,13.0,12,0/300x150?access_token=${mapboxToken}')` }
-        : undefined;
 
     useEffect(() => {
         localStorage.setItem('chat_sidebar_open', JSON.stringify(isSidebarOpen));
@@ -590,9 +587,9 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                             {/* Map Visual */}
                             <div 
                                 className="h-24 bg-slate-100 relative bg-cover bg-center opacity-80 group-hover:opacity-100 transition-opacity"
-                                style={mapStyle}
+                                style={mapboxToken ? { backgroundImage: `url('https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/100.0,13.0,12,0/300x150?access_token=${mapboxToken}')` } : undefined}
                             >
-                                {!mapStyle && (
+                                {!mapboxToken && (
                                     <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#444_1px,transparent_1px)] [background-size:16px_16px]"></div>
                                 )}
                                 <div className="absolute inset-0 flex items-center justify-center">
