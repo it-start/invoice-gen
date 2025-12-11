@@ -12,7 +12,8 @@ export default defineConfig(({ mode }) => {
     define: {
       // This ensures process.env.API_KEY is replaced by the string value during build
       'process.env.API_KEY': JSON.stringify(env.API_KEY),
-      'process.env.OWNIMA_API_URL': JSON.stringify(env.OWNIMA_API_URL || 'https://stage.ownima.com/api/v1/reservation')
+      'process.env.OWNIMA_API_URL': JSON.stringify(env.OWNIMA_API_URL || 'https://stage.ownima.com/api/v1/reservation'),
+      'process.env.MAPBOX_API_KEY': JSON.stringify(env.MAPBOX_API_KEY || '')
     }
   };
 });

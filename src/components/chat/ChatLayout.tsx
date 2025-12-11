@@ -287,6 +287,12 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
         return true;
     });
 
+    // @ts-ignore
+    const mapboxToken = process.env.MAPBOX_API_KEY;
+    const mapStyle = mapboxToken 
+        ? { backgroundImage: `url('https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/100.0,13.0,12,0/300x150?access_token=${mapboxToken}')` }
+        : undefined;
+
     useEffect(() => {
         localStorage.setItem('chat_sidebar_open', JSON.stringify(isSidebarOpen));
     }, [isSidebarOpen]);
@@ -581,8 +587,14 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                             <BadgeCheck size={12} className="text-blue-500" /> Host Location
                         </h4>
                         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
-                            {/* Fake Map Visual */}
-                            <div className="h-24 bg-slate-100 relative bg-[url('https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/100.0,13.0,12,0/300x150?access_token=pk.xxx')] bg-cover bg-center opacity-80 group-hover:opacity-100 transition-opacity">
+                            {/* Map Visual */}
+                            <div 
+                                className="h-24 bg-slate-100 relative bg-cover bg-center opacity-80 group-hover:opacity-100 transition-opacity"
+                                style={mapStyle}
+                            >
+                                {!mapStyle && (
+                                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#444_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                                )}
                                 <div className="absolute inset-0 flex items-center justify-center">
                                     <div className="bg-red-500 text-white p-1.5 rounded-full shadow-lg animate-bounce">
                                         <MapPin size={16} fill="currentColor" />
