@@ -25,6 +25,17 @@ export const AssetScheduleManager: React.FC<AssetScheduleManagerProps> = ({ asse
     const { getAsset } = useAssetStore();
     const asset = getAsset(assetId);
     
+    // Safety check: if asset was deleted or ID is invalid
+    if (!asset) {
+        return (
+            <div className="p-8 text-center text-red-500 bg-red-50 rounded-xl border border-red-100">
+                <AlertCircle className="mx-auto mb-2" size={24} />
+                <p className="font-bold">Asset not found</p>
+                <p className="text-xs opacity-75">The requested asset context is missing.</p>
+            </div>
+        );
+    }
+    
     const [showForm, setShowForm] = useState(false);
     const [previewBooking, setPreviewBooking] = useState<BookingV2 | null>(null);
     const [newBooking, setNewBooking] = useState<Partial<BookingV2>>({

@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAssetStore } from '../stores/assetStore';
@@ -55,7 +54,7 @@ export default function DashboardPage() {
     return { totalAssets, totalRevenue, activeBookings, revenueByDomain, upcoming };
   }, [assets, bookings]);
 
-  const maxRevenue = Math.max(...Object.values(stats.revenueByDomain), 1);
+  const maxRevenue = Math.max(...(Object.values(stats.revenueByDomain) as number[]), 1);
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">

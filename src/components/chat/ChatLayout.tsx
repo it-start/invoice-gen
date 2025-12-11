@@ -12,6 +12,7 @@ import { useChatStore } from '../../stores/chatStore';
 import LeaseForm from '../forms/LeaseForm';
 import InputGroup from '../ui/InputGroup';
 import { SwipeableRow } from '../ui/SwipeableRow';
+import { SmartActionBar } from './SmartActionBar';
 
 // --- PIVOT: RIDER MODE ---
 const IS_RIDER_MODE = true; 
@@ -171,6 +172,10 @@ interface ChatListData {
 const ChatRow = React.memo(({ index, style, data }: ListChildComponentProps) => {
     const { sessions, activeSessionId, handleChatSelect, archiveSession, lang } = data as ChatListData;
     const chat = sessions[index];
+    
+    // Safety check to prevent crashing if index is out of bounds or session missing
+    if (!chat) return null;
+
     const isActive = activeSessionId === chat.id;
 
     // RIDER VIEW: Focus on Vehicle Name first, Owner/Host second
@@ -191,7 +196,7 @@ const ChatRow = React.memo(({ index, style, data }: ListChildComponentProps) => 
             <SwipeableRow onArchive={() => archiveSession(chat.id)} className="border-b border-slate-50 h-full">
                 <div 
                     onClick={() => handleChatSelect(chat.id)}
-                    className={`p-3 md:p-4 flex gap-3 cursor-pointer transition-all group h-full
+                    className={`p-3 md:p-4 flex gap-3 cursor-pointer group h-full
                         ${isActive 
                             ? 'bg-blue-50/50 border-l-4 border-l-blue-500 shadow-inner' 
                             : 'hover:bg-slate-50 border-l-4 border-l-transparent'
@@ -532,7 +537,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                 <div className="w-20 h-20 rounded-full bg-white mb-3 overflow-hidden flex items-center justify-center font-bold text-3xl text-slate-300 border-4 border-slate-50 shadow-md relative">
                     {/* IN RIDER MODE, THE AVATAR IS THE HOST (SHOP) */}
                     {activeChat && activeChat.user.avatar ? (
-                        <img src={activeChat.user.avatar} alt="Profile" className="w-full h-full object-cover" />
+                        <img src={activeChat.user.avatar} alt={activeChat.user.name} className="w-full h-full object-cover" />
                     ) : <UserIcon size={32} />}
                 </div>
                 {/* RIDER MODE: This is the Host Name */}
@@ -925,7 +930,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                                 : (status === 'confirmation_owner' && currentLeaseData.status !== 'confirmed');
 
                                             return (
-                                                <div className="flex flex-col gap-1 my-2 animate-in fade-in slide-in-from-bottom-2 duration-300 px-2 md:px-12">
+                                                <div className="flex flex-col gap-1 my-2 px-2 md:px-12">
                                                     <div className="flex items-start gap-3 w-full">
                                                         <div className="w-full flex flex-col items-center">
                                                             <div className="flex items-center gap-2 mb-1">
@@ -948,7 +953,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                                             {msg.text && <p className="text-[11px] md:text-xs text-slate-500 italic text-center max-w-xs">{msg.text}</p>}
                                                             
                                                             {isActionable && (
-                                                                <div className="mt-3 flex gap-2 md:gap-3 animate-in zoom-in duration-300">
+                                                                <div className="mt-3 flex gap-2 md:gap-3">
                                                                     <button 
                                                                         onClick={() => confirmReservation()}
                                                                         className="flex items-center gap-2 px-3 md:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95 ring-2 ring-offset-2 ring-transparent hover:ring-blue-200"
@@ -974,7 +979,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                                                 const isMe = msg.senderId === 'me';
                                                 return (
                                                     <div 
-                                                        className={`message-wrapper flex gap-2 md:gap-3 max-w-[90%] md:max-w-[70%] animate-in fade-in slide-in-from-bottom-2 duration-200 ${isMe ? 'self-end flex-row-reverse' : 'self-start'}`}
+                                                        className={`message-wrapper flex gap-2 md:gap-3 max-w-[90%] md:max-w-[70%] ${isMe ? 'self-end flex-row-reverse' : 'self-start'}`}
                                                         data-id={msg.id}
                                                         data-status={msg.status}
                                                         data-sender={msg.senderId}
@@ -1020,6 +1025,14 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ leaseData, lang, leaseHa
                             })}
                             <div ref={messagesEndRef} className="h-2" />
                         </div>
+
+                        {/* Smart Action Bar */}
+                        {activeChat && (
+                            <SmartActionBar 
+                                messages={activeChat.messages}
+                                onSuggestionClick={(text) => setMessageInput(text)}
+                            />
+                        )}
 
                         {/* Input Area */}
                         <div className="p-3 md:p-4 border-t border-slate-200 shrink-0 bg-white z-10 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
